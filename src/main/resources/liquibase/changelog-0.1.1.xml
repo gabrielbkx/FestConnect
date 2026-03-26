@@ -17,4 +17,14 @@
 
     </changeSet>
 
+    <changeSet author="GF" id="0.1.1-260326_1952">
+
+        <dropColumn tableName="tb_prestador" columnName="telefone" />
+
+        <addNotNullConstraint tableName="tb_prestador"
+                              columnName="whatsapp"
+                              columnDataType="VARCHAR(255)" />
+
+    </changeSet>
+
 </databaseChangeLog>

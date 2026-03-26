@@ -30,12 +30,10 @@ public class Prestador {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "telefone")
-    private String telefone;
-
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(name = "whatsapp", nullable = true)
     private String whatsapp;
 
     @Embedded
