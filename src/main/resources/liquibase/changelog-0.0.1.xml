@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='UTF-8' standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="GF" id="0.0.1-260326_1729">
+
+        <!-- Tabela Categorias -->
+        <createTable tableName="tb_categorias">
+            <column name="id_categoria" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="nome" type="VARCHAR(100)">
+                <constraints nullable="false" />
+            </column>
+            <column name="descricao" type="TEXT" />
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="icone_url" type="VARCHAR(255)" />
+        </createTable>
+
+        <!-- Tabela Prestadores -->
+        <createTable tableName="tb_prestador">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="nome" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="telefone" type="VARCHAR(255)" />
+            <column name="descricao" type="TEXT" />
+            <column name="whatsapp" type="VARCHAR(255)" />
+            <column name="latitude" type="DOUBLE" />
+            <column name="longitude" type="DOUBLE" />
+            <column name="raio_atendimento_km" type="DOUBLE" />
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="categoria_id" type="UUID" />
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="categoria_id"
+                                 baseTableName="tb_prestador"
+                                 constraintName="fk_prestador_categoria"
+                                 referencedColumnNames="id_categoria"
+                                 referencedTableName="tb_categorias" />
+
+        <!-- Tabela Mídia -->
+        <createTable tableName="tb_midia">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="midia_url" type="VARCHAR(255)" />
+            <column name="tipo_midia" type="VARCHAR(255)" />
+            <column name="ordem_exibicao" type="INT" />
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="prestador_id" type="UUID">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="prestador_id"
+                                 baseTableName="tb_midia"
+                                 constraintName="fk_midia_prestador"
+                                 referencedColumnNames="id"
+                                 referencedTableName="tb_prestador" />
+
+        <!-- Tabela Avaliações -->
+        <createTable tableName="tb_avaliacoes">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="nota" type="INT">
+                <constraints nullable="false" />
+            </column>
+            <column name="comentario" type="TEXT" />
+            <column name="data_criacao" type="TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="prestador_id" type="UUID" />
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="prestador_id"
+                                 baseTableName="tb_avaliacoes"
+                                 constraintName="fk_avaliacao_prestador"
+                                 referencedColumnNames="id"
+                                 referencedTableName="tb_prestador" />
+    </changeSet>
+
+</databaseChangeLog>

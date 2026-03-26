@@ -31,6 +31,5 @@ public class Midia {
 
     @ManyToOne
     @JoinColumn(name = "prestador_id")
-    @Column(name = "prestador_id", nullable = false, insertable = false, updatable = false)
     private Prestador prestador;
 }

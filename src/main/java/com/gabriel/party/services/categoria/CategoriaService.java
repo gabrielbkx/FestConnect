@@ -4,6 +4,8 @@ package com.gabriel.party.services.categoria;
 import com.gabriel.party.dtos.categoria.CategoriaReponseDTO;
 import com.gabriel.party.dtos.categoria.CategoriaRequestDTO;
 import com.gabriel.party.exceptions.RecursoDuplicadoException;
+import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
+import com.gabriel.party.exceptions.RegraNegocioException;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import jakarta.validation.Valid;
 import com.gabriel.party.mapper.categoria.CategoriaMapper;
@@ -43,13 +45,13 @@ public class CategoriaService {
     public void deletar(UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id) // Verificar se a categoria existe e está ativa
-                .orElseThrow(() -> new RuntimeException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
 
         // Verificar se a categoria tem prestadores associados
         var categoriaTemPrestadores = categoria.getPrestadores() != null && !categoria.getPrestadores().isEmpty();
 
         if (categoriaTemPrestadores){
-            throw new RuntimeException("Não é possível deletar a categoria, pois existem prestadores associados a ela.");
+            throw new RegraNegocioException("Não é possível deletar a categoria, pois existem prestadores associados a ela.");
         }
 
         categoria.setAtivo(false);
@@ -67,7 +69,7 @@ public class CategoriaService {
     public CategoriaReponseDTO atualizarCategoria(@Valid CategoriaRequestDTO dto, UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
 
         mapper.atualizarCategoriaDoDTO(dto, categoria);
          repository.save(categoria);
@@ -78,7 +80,7 @@ public class CategoriaService {
     public CategoriaReponseDTO buscarCategoriaPorId(UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
 
         return mapper.toDto(categoria);
     }

@@ -3,6 +3,7 @@ package com.gabriel.party.services.avaliacao;
 
 import com.gabriel.party.dtos.avaliacao.AvaliacaoRequestDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
+import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
 import com.gabriel.party.mapper.avaliacao.AvaliacaoMapper;
 import com.gabriel.party.repositories.avaliacao.AvaliacaoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
@@ -30,7 +31,7 @@ public class AvaliacaoService {
     @Transactional
     public AvaliacaoResponseDTO salvarAvaliacao(AvaliacaoRequestDTO dto) {
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new RuntimeException("Prestador não encontrado com id: " + dto.prestadorId()));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + dto.prestadorId()));
 
         var novaAvaliacao = mapper.toEntity(dto);
         novaAvaliacao.setPrestador(prestador);
@@ -47,17 +48,17 @@ public class AvaliacaoService {
     @Transactional(readOnly = true)
     public AvaliacaoResponseDTO buscarAvaliacaoPorId(UUID id) {
         var avaliacao = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Avaliacao não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Avaliacao não encontrada com id: " + id));
         return mapper.toDto(avaliacao);
     }
 
     @Transactional
     public AvaliacaoResponseDTO atualizarAvaliacao(@Valid AvaliacaoRequestDTO dto, UUID id) {
         var avaliacao = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Avaliacao não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Avaliacao não encontrada com id: " + id));
 
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new RuntimeException("Prestador não encontrado com id: " + dto.prestadorId()));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + dto.prestadorId()));
 
         mapper.atualizarAvaliacaoDoDTO(dto, avaliacao);
         avaliacao.setPrestador(prestador);
@@ -69,7 +70,7 @@ public class AvaliacaoService {
     @Transactional
     public void deletar(UUID id) {
         var avaliacao = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Avaliacao não encontrada com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Avaliacao não encontrada com id: " + id));
         avaliacao.setAtivo(false);
         repository.save(avaliacao);
     }
