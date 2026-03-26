@@ -1,5 +1,7 @@
 package com.gabriel.party.model.midia;
 
+import com.gabriel.party.model.catalogo.ItemCatalogo;
+import com.gabriel.party.model.midia.enums.TipoMidia;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -21,8 +23,11 @@ public class Midia {
 
     @Column(name = "midia_url")
     private String url;
+
     @Column(name = "tipo_midia")
-    private String tipo;
+
+    @Enumerated(EnumType.STRING)
+    private TipoMidia tipo;
     @Column(name = "ordem_exibicao")
     private Integer ordem;
 
@@ -32,4 +37,9 @@ public class Midia {
     @ManyToOne
     @JoinColumn(name = "prestador_id")
     private Prestador prestador;
+
+
+    @ManyToOne
+    @JoinColumn(name = "item_catalogo_id")
+    private ItemCatalogo itemCatalogo;
 }

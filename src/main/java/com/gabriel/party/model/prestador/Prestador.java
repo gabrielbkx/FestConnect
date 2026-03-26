@@ -2,6 +2,7 @@ package com.gabriel.party.model.prestador;
 
 
 import com.gabriel.party.model.avaliacao.Avaliacao;
+import com.gabriel.party.model.catalogo.ItemCatalogo;
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.endereco.Endereco;
@@ -53,4 +54,8 @@ public class Prestador {
 
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)
     private List<Avaliacao> avaliacoes;
+
+    @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItemCatalogo> itensCatalogo;
+
 }

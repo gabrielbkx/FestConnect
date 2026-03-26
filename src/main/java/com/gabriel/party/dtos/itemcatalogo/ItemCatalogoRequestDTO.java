@@ -1,0 +1,26 @@
+package com.gabriel.party.dtos.itemcatalogo;
+
+import com.gabriel.party.model.catalogo.enums.TipoItem;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+public record ItemCatalogoRequestDTO(
+        @NotBlank(message = "O título do anúncio é obrigatório")
+        String titulo,
+
+        String descricao,
+
+        @NotNull(message = "O preço base é obrigatório")
+        @Positive(message = "O preço deve ser maior que zero")
+        BigDecimal precoBase,
+
+        @NotNull(message = "O tipo do item (PRODUTO ou SERVICO) é obrigatório")
+        TipoItem tipo,
+
+        @NotNull(message = "O ID do prestador dono do anúncio é obrigatório")
+        UUID prestadorId
+) {}
