@@ -1,10 +1,12 @@
 package com.gabriel.party.model.categoria;
 
+import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @NoArgsConstructor
@@ -25,6 +27,7 @@ public class Categoria {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(name = "icone_url")
     private String iconeUrl;
 
     @OneToMany(mappedBy = "categoria")
