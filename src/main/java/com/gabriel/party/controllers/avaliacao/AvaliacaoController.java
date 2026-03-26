@@ -1,10 +1,9 @@
-package com.gabriel.party.controllers.midia;
-
+package com.gabriel.party.controllers.avaliacao;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/midias")
-public class MidiaController {
+@RequestMapping("/avaliacao")
+public class AvaliacaoController {
 }

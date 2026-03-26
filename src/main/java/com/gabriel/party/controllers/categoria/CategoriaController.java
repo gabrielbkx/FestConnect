@@ -1,10 +1,10 @@
-package com.gabriel.party.controllers.midia;
+package com.gabriel.party.controllers.categoria;
 
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/midias")
-public class MidiaController {
+@RequestMapping("/categorias")
+public class CategoriaController {
 }
