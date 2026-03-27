@@ -71,4 +71,13 @@
 
     </changeSet>
 
+    <changeSet author="GF" id="0.1.1-260326_2144">
+        <dropColumn tableName="tb_prestador" columnName="raio_atendimento_km"/>
+    </changeSet>
+
+    <changeSet author="GF" id="0.1.1-260326_2249">
+        <dropNotNullConstraint tableName="tb_item_catalogo"
+                               columnName="preco_base"
+                               columnDataType="decimal(19,2)"/>
+    </changeSet>
 </databaseChangeLog>

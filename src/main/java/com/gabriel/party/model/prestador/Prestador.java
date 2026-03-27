@@ -40,9 +40,6 @@ public class Prestador {
     @Embedded
     private Endereco endereco;
 
-    @Column(name = "raio_atendimento_km")
-    private Double raioAtendimentoKm;
-
     private Boolean ativo = true;
 
     @ManyToOne

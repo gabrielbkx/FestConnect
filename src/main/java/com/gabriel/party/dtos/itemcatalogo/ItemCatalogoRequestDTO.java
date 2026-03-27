@@ -14,8 +14,6 @@ public record ItemCatalogoRequestDTO(
 
         String descricao,
 
-        @NotNull(message = "O preço base é obrigatório")
-        @Positive(message = "O preço deve ser maior que zero")
         BigDecimal precoBase,
 
         @NotNull(message = "O tipo do item (PRODUTO ou SERVICO) é obrigatório")

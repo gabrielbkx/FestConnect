@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Endereco {
 
-
     private String cep;
     private String logradouro;
     private String numero;
@@ -23,6 +22,11 @@ public class Endereco {
     //  usa para calcular o raio:
     private Double latitude;
     private Double longitude;
+
+    public void atribuirCoordenadas(Double latitude, Double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 
 
 }

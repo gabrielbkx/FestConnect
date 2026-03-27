@@ -8,13 +8,16 @@ import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
 import com.gabriel.party.mapper.prestador.PrestadorMapper;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
+import com.gabriel.party.services.integracoes.geocoding.GeocodingService;
 import jakarta.validation.Valid;
+import lombok.extern.java.Log;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 
 @Service
 public class PrestadorService {
@@ -22,11 +25,14 @@ public class PrestadorService {
     private final PrestadorRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final PrestadorMapper mapper;
+    private final GeocodingService geocodingService;
+    private final Logger logger = Logger.getLogger(PrestadorService.class.getName());
 
-    public PrestadorService(PrestadorRepository repository, CategoriaRepository categoriaRepository, PrestadorMapper mapper) {
+    public PrestadorService(PrestadorRepository repository, CategoriaRepository categoriaRepository, PrestadorMapper mapper, GeocodingService geocodingService) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
         this.mapper = mapper;
+        this.geocodingService = geocodingService;
     }
 
     @Transactional
@@ -41,6 +47,23 @@ public class PrestadorService {
 
         var novoPrestador = mapper.toEntity(dto);
         novoPrestador.setCategoria(categoria);
+
+        // vamos buscar as coordenadas do endereço para salvar junto com o prestador, assim já fica pronto para calcular o raio de atendimento
+        String rua = dto.endereco().logradouro();
+        String cidade = dto.endereco().cidade();
+        String estado = dto.endereco().estado();
+        var coordenadas = geocodingService.buscarCoordenadas(rua, cidade, estado);
+
+        if (coordenadas != null) {
+            novoPrestador.getEndereco().atribuirCoordenadas(coordenadas.latitude(), coordenadas.longitude());
+
+        } else {
+            logger.warning("Não foi possível obter coordenadas para o endereço do prestador: " + dto.endereco());
+            throw new RuntimeException("Não é possivel salvar um novo prestador sem coordenadas de endereço."); // regra de negócio:
+            // não faz sentido ter um prestador sem coordenadas, porque não tem como calcular o raio de atendimento.
+            // Então a gente decide que se não conseguir as coordenadas, a gente nem salva o prestador.
+        }
+
         repository.save(novoPrestador);
 
         return mapper.toDto(novoPrestador);
