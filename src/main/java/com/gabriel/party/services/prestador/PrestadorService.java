@@ -6,6 +6,7 @@ import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.exceptions.RecursoDuplicadoException;
 import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
 import com.gabriel.party.mapper.prestador.PrestadorMapper;
+import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.integracoes.geocoding.GeocodingService;
@@ -16,8 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 public class PrestadorService {
@@ -102,5 +105,14 @@ public class PrestadorService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + id));
         prestador.setAtivo(false);
         repository.save(prestador);
+    }
+
+    public List<PrestadorResponseDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
+
+        List<Prestador> prestadores = repository.buscarPorProximidade(lat, lon, raio);
+
+        return prestadores.stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
     }
 }

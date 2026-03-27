@@ -14,6 +14,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.List;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*")
@@ -64,5 +65,15 @@ public class PrestadorController {
     public ResponseEntity<Void> deletarPrestador(@PathVariable UUID id) {
         prestadorService.deletar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/proximidade")
+    public ResponseEntity<List<PrestadorResponseDTO>> buscarPorProximidade(
+            @RequestParam Double lat,
+            @RequestParam Double lon,
+            @RequestParam(defaultValue = "10.0") Double raio) { // Raio padrão de 10km
+
+        var resultados = prestadorService.buscarPrestadoresProximos(lat, lon, raio);
+        return ResponseEntity.ok(resultados);
     }
 }
