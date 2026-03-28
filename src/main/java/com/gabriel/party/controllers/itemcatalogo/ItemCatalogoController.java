@@ -2,6 +2,7 @@ package com.gabriel.party.controllers.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
+import com.gabriel.party.model.catalogo.ItemCatalogo;
 import com.gabriel.party.services.itemcatalogo.ItemCatalogoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -102,5 +102,19 @@ public class ItemCatalogoController {
     public ResponseEntity<ItemCatalogoResponseDTO> buscarItemPorId(@PathVariable UUID id){
         var item = itemCatalogoService.buscarItemPorId(id);
         return ResponseEntity.ok(item);
+    }
+
+    @GetMapping("/filtro-radar")
+    public ResponseEntity<Page<ItemCatalogo>> buscarItensNoRadar(
+            @RequestParam(name = "busca", required = false) String busca,
+            @RequestParam(name = "lat") Double lat,
+            @RequestParam(name = "lon") Double lon,
+            @RequestParam(name = "raio", defaultValue = "5.0") Double raio,
+            @PageableDefault(size = 10, page = 0) Pageable pageable // O Spring faz a mágica aqui
+    ) {
+        // Agora você só repassa o objeto pageable direto pro Service
+        Page<ItemCatalogo> itensEncontrados = itemCatalogoService.buscarItensPorRadarEBusca(busca, lat, lon, raio, pageable);
+
+        return ResponseEntity.ok(itensEncontrados);
     }
 }

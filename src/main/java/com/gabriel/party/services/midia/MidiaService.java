@@ -3,7 +3,8 @@ package com.gabriel.party.services.midia;
 
 import com.gabriel.party.dtos.midia.MidiaRequestDTO;
 import com.gabriel.party.dtos.midia.MidiaResponseDTO;
-import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
+import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.midia.MidiaMapper;
 import com.gabriel.party.repositories.midia.MidiaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
@@ -31,7 +32,7 @@ public class MidiaService {
     @Transactional
     public MidiaResponseDTO salvarMidia(MidiaRequestDTO dto) {
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + dto.prestadorId()));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
 
         var novaMidia = mapper.toEntity(dto);
         novaMidia.setPrestador(prestador);
@@ -48,17 +49,17 @@ public class MidiaService {
     @Transactional(readOnly = true)
     public MidiaResponseDTO buscarMidiaPorId(UUID id) {
         var midia = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Midia não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.MIDIA_NAO_ENCONTRADA, id.toString()));
         return mapper.toDto(midia);
     }
 
     @Transactional
     public MidiaResponseDTO atualizarMidia(@Valid MidiaRequestDTO dto, UUID id) {
         var midia = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Midia não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.MIDIA_NAO_ENCONTRADA, id.toString()));
 
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + dto.prestadorId()));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
 
         mapper.atualizarMidiaDoDTO(dto, midia);
         midia.setPrestador(prestador);
@@ -70,7 +71,7 @@ public class MidiaService {
     @Transactional
     public void deletar(UUID id) {
         var midia = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Midia não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.MIDIA_NAO_ENCONTRADA, id.toString()));
         midia.setAtivo(false);
         repository.save(midia);
     }

@@ -2,6 +2,8 @@ package com.gabriel.party.services.integracoes.geocoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.gabriel.party.dtos.integracoes.CoordenadasDTO;
+import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.exceptions.enums.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -42,7 +44,12 @@ public class NominatimGeocodingService implements GeocodingService {
 
         } catch (Exception e) {
 
-            throw new RuntimeException("Erro de comunicação com a API de mapas: " + e.getMessage(), e);
+            StringBuilder detalhes = new StringBuilder();
+            detalhes.append(estado);
+            detalhes.append(logradouro);
+            detalhes.append(cidade);
+
+            throw new AppException(ErrorCode.GEOCODING_FALHA_COMUNICACAO, String.valueOf(detalhes));
         }
 
         return null;

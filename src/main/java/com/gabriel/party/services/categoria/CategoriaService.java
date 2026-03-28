@@ -3,9 +3,8 @@ package com.gabriel.party.services.categoria;
 
 import com.gabriel.party.dtos.categoria.CategoriaReponseDTO;
 import com.gabriel.party.dtos.categoria.CategoriaRequestDTO;
-import com.gabriel.party.exceptions.RecursoDuplicadoException;
-import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
-import com.gabriel.party.exceptions.RegraNegocioException;
+import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import jakarta.validation.Valid;
 import com.gabriel.party.mapper.categoria.CategoriaMapper;
@@ -32,7 +31,7 @@ public class CategoriaService {
             var categoriaExiste = repository.existsByNomeIgnoreCase(dto.nome());
 
             if (categoriaExiste){
-                throw new RecursoDuplicadoException("Categoria com nome " + dto.nome() + " já existe.");
+                throw new AppException(ErrorCode.CATEGORIA_NOME_DUPLICADO, dto.nome());
             }
 
             var novaCategoria = mapper.toEntity(dto);
@@ -45,13 +44,15 @@ public class CategoriaService {
     public void deletar(UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id) // Verificar se a categoria existe e está ativa
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, id.toString()));
 
         // Verificar se a categoria tem prestadores associados
         var categoriaTemPrestadores = categoria.getPrestadores() != null && !categoria.getPrestadores().isEmpty();
 
         if (categoriaTemPrestadores){
-            throw new RegraNegocioException("Não é possível deletar a categoria, pois existem prestadores associados a ela.");
+            throw new AppException(ErrorCode.REGRA_NEGOCIO_VIOLADA, ("A categoria '%categoria%'" +
+                    " não pode ser excluída pois existem prestadores vinculados a ela.")
+                    .replace("%categoria%", categoria.getNome()));
         }
 
         categoria.setAtivo(false);
@@ -69,7 +70,7 @@ public class CategoriaService {
     public CategoriaReponseDTO atualizarCategoria(@Valid CategoriaRequestDTO dto, UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, id.toString()));
 
         mapper.atualizarCategoriaDoDTO(dto, categoria);
          repository.save(categoria);
@@ -80,7 +81,7 @@ public class CategoriaService {
     public CategoriaReponseDTO buscarCategoriaPorId(UUID id) {
 
         var categoria = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, id.toString()));
 
         return mapper.toDto(categoria);
     }

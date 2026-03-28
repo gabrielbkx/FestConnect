@@ -3,15 +3,14 @@ package com.gabriel.party.services.prestador;
 
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
-import com.gabriel.party.exceptions.RecursoDuplicadoException;
-import com.gabriel.party.exceptions.RecursoNaoEncontradoException;
+import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.prestador.PrestadorMapper;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.integracoes.geocoding.GeocodingService;
 import jakarta.validation.Valid;
-import lombok.extern.java.Log;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,11 +41,11 @@ public class PrestadorService {
     public PrestadorResponseDTO salvarPrestador(PrestadorRequestDTO dto) {
 
         if (repository.existsByEmailIgnoreCase(dto.email())) {
-            throw new RecursoDuplicadoException("Prestador com e-mail " + dto.email() + " já existe.");
+            throw new AppException(ErrorCode.PRESTADOR_EMAIL_DUPLICADO, dto.email());
         }
 
         var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + dto.categoriaId()));
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
 
         var novoPrestador = mapper.toEntity(dto);
         novoPrestador.setCategoria(categoria);
@@ -80,17 +79,17 @@ public class PrestadorService {
     @Transactional(readOnly = true)
     public PrestadorResponseDTO buscarPrestadorPorId(UUID id) {
         var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
         return mapper.toDto(prestador);
     }
 
     @Transactional
     public PrestadorResponseDTO atualizarPrestador(@Valid PrestadorRequestDTO dto, UUID id) {
         var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
 
         var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Categoria não encontrada com id: " + dto.categoriaId()));
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
         prestador.setCategoria(categoria);
@@ -102,7 +101,7 @@ public class PrestadorService {
     @Transactional
     public void deletar(UUID id) {
         var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Prestador não encontrado com id: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
         prestador.setAtivo(false);
         repository.save(prestador);
     }
