@@ -31,9 +31,6 @@ public class Midia {
     @Column(name = "ordem_exibicao")
     private Integer ordem;
 
-    @Column(name = "ativo", nullable = false)
-    private Boolean ativo = true;
-
     @ManyToOne
     @JoinColumn(name = "prestador_id")
     private Prestador prestador;
