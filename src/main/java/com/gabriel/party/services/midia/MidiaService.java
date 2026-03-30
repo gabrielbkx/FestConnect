@@ -39,8 +39,8 @@ public class MidiaService {
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
 
+        var totalMidiasDoPrestador = repository.countMidiaByPrestadorId(prestador.getId());
 
-        var totalMidiasDoPrestador = repository.countByPrestadorId(prestador.getId());
         if (totalMidiasDoPrestador >= 10) {
             throw new AppException(ErrorCode.LIMITE_MIDIAS_PRESTADOR, prestador.getId().toString());
         }

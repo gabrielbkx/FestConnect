@@ -32,5 +32,5 @@ public interface MidiaRepository extends JpaRepository<Midia, UUID> {
 
     Optional<Midia> findById(UUID id);
 
-    long countByPrestadorId(UUID prestadorId);
+    long countMidiaByPrestadorId(UUID prestadorId);
 }
