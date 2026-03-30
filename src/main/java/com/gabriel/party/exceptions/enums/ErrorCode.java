@@ -38,7 +38,10 @@ public enum ErrorCode {
 
 
     // Regras de negócio
-    REGRA_NEGOCIO_VIOLADA("regra_negocio_violada", HttpStatus.BAD_REQUEST, "A ação solicitada viola uma regra de negócio: '%detalhes%'")
+    REGRA_NEGOCIO_VIOLADA("regra_negocio_violada", HttpStatus.BAD_REQUEST, "A ação solicitada viola uma regra de negócio: '%detalhes%'"),
+
+    //S3 bucket
+    ERRO_AO_PROCESAR_IMAGEM("erro_ao_processar_imagem", HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro ao processar a imagem: '%detalhes%'")
     ;
 
 
