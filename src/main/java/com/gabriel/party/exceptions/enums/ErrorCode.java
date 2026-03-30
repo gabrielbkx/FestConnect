@@ -27,6 +27,8 @@ public enum ErrorCode {
     MIDIA_NAO_ENCONTRADA("midia_nao_encontrada", HttpStatus.NOT_FOUND, "Mídia '%id%' não encontrada."),
     MIDIA_FORMATO_NAO_SUPORTADO("midia_formato_nao_suportado", HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Formato de arquivo '%formato%' não suportado. Envie apenas imagens ou vídeos."),
     MIDIA_TAMANHO_EXCEDIDO("midia_tamanho_excedido", HttpStatus.PAYLOAD_TOO_LARGE, "O tamanho do arquivo '%nomeArquivo%' excede o limite permitido."),
+    ERRO_AO_PROCESSAR_VIDEO( "erro_ao_processar_video", HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro ao processar o vídeo: '%detalhes%'"),
+    FORMATO_INVALIDO("formato_invalido", HttpStatus.BAD_REQUEST, "Formato de arquivo '%formato%' não suportado. Envie apenas imagens ou vídeos."),
 
     // Erros de Avaliação
     AVALIACAO_NAO_ENCONTRADA("avaliacao_nao_encontrada", HttpStatus.NOT_FOUND, "Avaliação '%id%' não encontrada."),
@@ -41,7 +43,8 @@ public enum ErrorCode {
     REGRA_NEGOCIO_VIOLADA("regra_negocio_violada", HttpStatus.BAD_REQUEST, "A ação solicitada viola uma regra de negócio: '%detalhes%'"),
 
     //S3 bucket
-    ERRO_AO_PROCESAR_IMAGEM("erro_ao_processar_imagem", HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro ao processar a imagem: '%detalhes%'")
+    ERRO_AO_PROCESAR_IMAGEM("erro_ao_processar_imagem", HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro ao processar a imagem: '%detalhes%'"),
+    URL_INVALIDA("url_invalida", HttpStatus.BAD_REQUEST, "A URL fornecida '%url%' é inválida.")
     ;
 
 

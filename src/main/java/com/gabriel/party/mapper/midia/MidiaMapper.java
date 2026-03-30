@@ -12,7 +12,6 @@ import org.mapstruct.ReportingPolicy;
 public interface MidiaMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "prestador", ignore = true)
     Midia toEntity(MidiaRequestDTO dto);
 
@@ -21,7 +20,6 @@ public interface MidiaMapper {
     MidiaResponseDTO toDto(Midia midia);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "prestador", ignore = true)
     void atualizarMidiaDoDTO(MidiaRequestDTO dto, @MappingTarget Midia midia);
 }
