@@ -39,10 +39,23 @@ public class MidiaService {
         var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
 
+
+        var totalMidiasDoPrestador = repository.countByPrestadorId(prestador.getId());
+        if (totalMidiasDoPrestador >= 10) {
+            throw new AppException(ErrorCode.LIMITE_MIDIAS_PRESTADOR, prestador.getId().toString());
+        }
         var novaMidia = mapper.toEntity(dto);
         novaMidia.setPrestador(prestador);
         novaMidia.setUrl(armazenamentoService.salvarMidias(arquivo));
-        repository.save(novaMidia);
+
+        // caso aconteca algum erro ao salvar a url da midia no banoc de dados, nos apagamos esse registro
+        // "fantasma" do bucket do s3
+        try {
+            repository.save(novaMidia);
+        }catch ( Exception e) {
+            armazenamentoService.deletaMidia(novaMidia.getUrl());
+            throw new AppException(ErrorCode.ERRO_SALVAR_MIDIA, e.getMessage());
+        }
 
         return mapper.toDto(novaMidia);
     }
