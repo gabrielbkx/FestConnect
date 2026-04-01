@@ -2,7 +2,7 @@ package com.gabriel.party.mapper.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
-import com.gabriel.party.model.catalogo.ItemCatalogo;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

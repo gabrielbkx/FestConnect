@@ -2,7 +2,7 @@ package com.gabriel.party.controllers.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
-import com.gabriel.party.model.catalogo.ItemCatalogo;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.services.itemcatalogo.ItemCatalogoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -2,7 +2,7 @@ package com.gabriel.party.model.prestador;
 
 
 import com.gabriel.party.model.avaliacao.Avaliacao;
-import com.gabriel.party.model.catalogo.ItemCatalogo;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.endereco.Endereco;

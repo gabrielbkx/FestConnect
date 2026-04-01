@@ -1,16 +1,16 @@
-package com.gabriel.party.model.midia.enums;
+package com.gabriel.party.model.itemcatalogo.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum TipoMidia {
-    VIDEO("video"),
-    FOTO("foto"),
+public enum TipoItem {
+    PRODUTO("produto"),
+    SERVICO("servico")
     ;
 
     private final String valor;
 
-    TipoMidia(String valor) {
+    TipoItem(String valor) {
         this.valor = valor;
     }
 
@@ -20,17 +20,17 @@ public enum TipoMidia {
     }
 
     @JsonCreator
-    public static TipoMidia fromValue(String text) {
+    public static TipoItem fromValue(String text) {
         if (text == null || text.trim().isEmpty()) {
             return null;
         }
 
-        for (TipoMidia tipo : TipoMidia.values()) {
+        for (TipoItem tipo : TipoItem.values()) {
             if (tipo.valor.equalsIgnoreCase(text.trim())) {
                 return tipo;
             }
         }
 
-        throw new IllegalArgumentException("Tipo de mídia inválido: '" + text + "'. Valores aceitos: video, foto.");
+        throw new IllegalArgumentException("Tipo de item inválido: '" + text + "'. Valores aceitos: produto, servico.");
     }
 }

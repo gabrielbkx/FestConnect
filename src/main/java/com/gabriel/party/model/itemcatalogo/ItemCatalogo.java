@@ -1,6 +1,6 @@
-package com.gabriel.party.model.catalogo;
+package com.gabriel.party.model.itemcatalogo;
 
-import com.gabriel.party.model.catalogo.enums.TipoItem;
+import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;

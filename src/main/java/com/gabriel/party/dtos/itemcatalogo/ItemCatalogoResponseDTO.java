@@ -1,6 +1,6 @@
 package com.gabriel.party.dtos.itemcatalogo;
 
-import com.gabriel.party.model.catalogo.enums.TipoItem;
+import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 
 import java.math.BigDecimal;
 import java.util.UUID;

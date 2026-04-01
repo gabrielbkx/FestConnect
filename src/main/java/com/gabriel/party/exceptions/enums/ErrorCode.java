@@ -46,7 +46,12 @@ public enum ErrorCode {
 
     //S3 bucket
     ERRO_AO_PROCESAR_IMAGEM("erro_ao_processar_imagem", HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro ao processar a imagem: '%detalhes%'"),
-    URL_INVALIDA("url_invalida", HttpStatus.BAD_REQUEST, "A URL fornecida '%url%' é inválida.")
+    URL_INVALIDA("url_invalida", HttpStatus.BAD_REQUEST, "A URL fornecida '%url%' é inválida."),
+
+    //AUTENTICAÇÃO E AUTORIZAÇÃO
+    ERRO_AO_GERAR_TOKEN_JWT("erro_ao_gerar_token_jwt", HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao gerar token)"),
+    ERRO_AO_VALIDAR_TOKEN_JWT("erro_ao_validar_token_jwt", HttpStatus.UNAUTHORIZED, "Token JWT inválido ou expirado"),
+    USUARIO_JA_EXISTE_POR_EMAIL("usuario_ja_existe_por_email", HttpStatus.CONFLICT, "Já existe um usuário cadastrado com esse email '%email%'")
     ;
 
 

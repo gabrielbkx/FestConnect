@@ -80,4 +80,21 @@
                                columnName="preco_base"
                                columnDataType="decimal(19,2)"/>
     </changeSet>
+
+    <changeSet id="20260401-1" author="gabriel">
+        <createTable tableName="tb_usuarios">
+            <column name="id_usuario" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="senha" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

@@ -5,7 +5,7 @@ import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.itemcatalogo.ItemCatalogoMapper;
-import com.gabriel.party.model.catalogo.ItemCatalogo;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
