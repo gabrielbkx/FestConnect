@@ -35,6 +35,7 @@ A arquitetura do projeto foi desenhada no padrão MVC (Model-View-Controller), f
 | Rastreamento | OpenTelemetry + Jaeger |
 | Visualização | Grafana |
 | Deploy (Planejado) | — |
+| Armazxenamento de Midias| AWS(S3)|
 
 ---
 
