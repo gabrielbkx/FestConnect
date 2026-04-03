@@ -55,6 +55,14 @@ public class AutenticacaoService implements UserDetailsService {
 
         usuarioRepository.save(usuario);
 
-        return mapper.toDto(usuario);
+        String token = tokenService.gerarToken(usuario);
+
+        return new CadastroResponseDTO(
+                usuario.getId(),
+                dto.nomeCompleto(),
+                usuario.getEmail(),
+                token,
+                new TokenResponseDTO(token)
+        );
     }
 }
