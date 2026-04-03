@@ -19,6 +19,10 @@ public enum ErrorCode {
     CATEGORIA_NOME_DUPLICADO("categoria_nome_duplicado", HttpStatus.CONFLICT, "Já existe uma categoria cadastrada com o nome '%nome%'."),
     CATEGORIA_EM_USO("categoria_em_uso", HttpStatus.CONFLICT, "A categoria '%categoria%' não pode ser excluída pois existem prestadores vinculados a ela."),
 
+    // Erros de Cliente
+    CLIENTE_NAO_ENCONTRADO("cliente_nao_encontrado", HttpStatus.NOT_FOUND, "Cliente '%id%' não encontrado."),
+    CLIENTE_EMAIL_DUPLICADO("cliente_email_duplicado", HttpStatus.CONFLICT, "Já existe um cliente cadastrado com o email '%email%'."),
+
     // Erros de ItemCatalogo
     ITEM_CATALOGO_NAO_ENCONTRADO("item_nao_encontrado", HttpStatus.NOT_FOUND, "Item do catálogo '%id%' não encontrado."),
     ITEM_PRECO_INVALIDO("item_preco_invalido", HttpStatus.BAD_REQUEST, "O preço do item '%nome%' não pode ser negativo."),
