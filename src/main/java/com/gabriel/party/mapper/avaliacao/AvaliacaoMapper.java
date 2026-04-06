@@ -18,7 +18,6 @@ public interface AvaliacaoMapper {
     Avaliacao toEntity(AvaliacaoRequestDTO dto);
 
     @Mapping(target = "prestadorId", source = "prestador.id")
-    @Mapping(target = "prestadorNome", source = "prestador.nome")
     AvaliacaoResponseDTO toDto(Avaliacao avaliacao);
 
     @Mapping(target = "id", ignore = true)

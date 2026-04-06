@@ -4,7 +4,7 @@ package com.gabriel.party.model.usuario.enums;
 public enum Role {
     ROLE_ADMINISTRADOR("role_administrador"),
     ROLE_PRESTADOR("role_prestador"),
-    ROLE_USUARIO("role_usuario");
+    ROLE_CLIENTE("role_clinete");
 
    private String role;
 

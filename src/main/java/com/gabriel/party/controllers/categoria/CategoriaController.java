@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +38,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Criar nova categoria", description = "Cria uma nova categoria e a retorna.")
     @PostMapping
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoriaReponseDTO> criarCategoria(@Valid @RequestBody CategoriaRequestDTO dto){
 
         var categoriaCriada = categoriaService.salvarCategoria(dto);
@@ -67,6 +69,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Deletar categoria", description = "Realiza a exclusão lógica (inativação) de uma categoria pelo ID.")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletarCategoria(@PathVariable UUID id){
         categoriaService.deletar(id);
         return ResponseEntity.noContent().build();

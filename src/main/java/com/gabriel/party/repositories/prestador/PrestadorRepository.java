@@ -14,7 +14,6 @@ import java.util.UUID;
 
 @Repository
 public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
-    boolean existsByEmailIgnoreCase(String email);
 
     Page<Prestador> findAllByAtivoTrue(Pageable pageable);
 
@@ -57,4 +56,6 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
             @Param("lonCliente") Double lon,
             @Param("raioKm") Double raio
     );
+
+    boolean existsByCnpjOuCpf(String cpfOuCnpj);
 }

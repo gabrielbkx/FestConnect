@@ -2,11 +2,13 @@ package com.gabriel.party.model.cliente;
 
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.prestador.Prestador;
-import com.gabriel.party.model.prestador.endereco.Endereco;
+import com.gabriel.party.shared.Endereco;
+import com.gabriel.party.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Set;
 import java.util.UUID;
@@ -16,6 +18,7 @@ import java.util.UUID;
 @Data
 @Entity
 @Table(name = "tb_cliente")
+@Setter
 public class Cliente {
 
     @Id
@@ -23,10 +26,10 @@ public class Cliente {
     private UUID id;
 
     @Column(name = "nome", nullable = false)
-    private String nome;
+    private String nomeCompleto;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+    @Column(name = "cpf", unique = true, nullable = false)
+    private String cpf;
 
     @Column(name = "whatsapp")
     private String whatsapp;
@@ -52,5 +55,9 @@ public class Cliente {
             inverseJoinColumns = @JoinColumn(name = "categoria_id")
     )
     private Set<Categoria> categoriasFavoritas;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", unique = true)
+    private Usuario usuario;
 }
 

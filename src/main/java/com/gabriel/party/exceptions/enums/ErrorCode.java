@@ -13,6 +13,8 @@ public enum ErrorCode {
     PRESTADOR_NAO_ENCONTRADO("prestador_nao_encontrado", HttpStatus.NOT_FOUND, "Prestador '%id%' não encontrado."),
     PRESTADOR_INATIVO("prestador_inativo", HttpStatus.BAD_REQUEST, "O prestador '%nome%' está inativo e não pode receber novas ações."),
     PRESTADOR_EMAIL_DUPLICADO("prestador_email_duplicado", HttpStatus.CONFLICT, "Já existe um prestador cadastrado com o email '%email%'."),
+    JA_EXISTE_POR_CNPJ("cnpj_duplicado", HttpStatus.CONFLICT, "Já existe um cadastro com o CNPJ '%cnpj%'."),
+    JA_EXISTE_POR_CPF("cpf_duplicado", HttpStatus.CONFLICT, "Já existe um cadastro com o CPF '%cpf%'."),
 
     // Erros de Categoria
     CATEGORIA_NAO_ENCONTRADA("categoria_nao_encontrada", HttpStatus.NOT_FOUND, "Categoria '%categoria%' não encontrada."),

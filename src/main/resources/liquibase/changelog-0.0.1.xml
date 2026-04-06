@@ -1,12 +1,32 @@
-<?xml version='1.0' encoding='UTF-8' standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
-
-    <changeSet author="GF" id="0.0.1-260326_1729">
-
-        <!-- Tabela Categorias -->
+    <changeSet author="GF" id="0.1.1-260405_1200">
+        <!-- tb_usuarios -->
+        <createTable tableName="tb_usuarios">
+            <column name="id_usuario" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="senha" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="role" type="VARCHAR(50)">
+                <constraints nullable="true" />
+            </column>
+            <column name="ativo" type="boolean"
+                    defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="data_criacao" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <!-- tb_categorias -->
         <createTable tableName="tb_categorias">
             <column name="id_categoria" type="UUID">
                 <constraints primaryKey="true" nullable="false" />
@@ -20,59 +40,152 @@
             </column>
             <column name="icone_url" type="VARCHAR(255)" />
         </createTable>
-
-        <!-- Tabela Prestadores -->
+        <!-- tb_prestador -->
         <createTable tableName="tb_prestador">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="nome_completo" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="cnpj_ou_cpf" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="descricao" type="TEXT" />
+            <column name="whatsapp" type="VARCHAR(255)" />
+            <column name="cep" type="VARCHAR(255)" />
+            <column name="logradouro" type="VARCHAR(255)" />
+            <column name="numero" type="VARCHAR(255)" />
+            <column name="complemento" type="VARCHAR(255)" />
+            <column name="bairro" type="VARCHAR(255)" />
+            <column name="cidade" type="VARCHAR(255)" />
+            <column name="estado" type="VARCHAR(255)" />
+            <column name="latitude" type="DOUBLE" />
+            <column name="longitude" type="DOUBLE" />
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false" />
+            </column>
+            <column name="categoria_id" type="UUID" />
+            <column name="usuario_id" type="UUID" />
+        </createTable>
+        <!-- Constraints tb_prestador -->
+        <addForeignKeyConstraint baseColumnNames="categoria_id" baseTableName="tb_prestador" constraintName="fk_prestador_categoria" referencedColumnNames="id_categoria" referencedTableName="tb_categorias" />
+        <addForeignKeyConstraint baseColumnNames="usuario_id" baseTableName="tb_prestador" constraintName="fk_prestador_usuario" referencedColumnNames="id_usuario" referencedTableName="tb_usuarios" />
+        <addUniqueConstraint tableName="tb_prestador" columnNames="usuario_id" constraintName="uk_prestador_usuario" />
+        <!-- tb_cliente -->
+        <createTable tableName="tb_cliente">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false" />
             </column>
             <column name="nome" type="VARCHAR(255)">
                 <constraints nullable="false" />
             </column>
-            <column name="email" type="VARCHAR(255)">
+            <column name="cpf" type="VARCHAR(255)">
                 <constraints nullable="false" unique="true" />
             </column>
-            <column name="telefone" type="VARCHAR(255)" />
-            <column name="descricao" type="TEXT" />
             <column name="whatsapp" type="VARCHAR(255)" />
+            <column name="cep" type="VARCHAR(255)" />
+            <column name="logradouro" type="VARCHAR(255)" />
+            <column name="numero" type="VARCHAR(255)" />
+            <column name="complemento" type="VARCHAR(255)" />
+            <column name="bairro" type="VARCHAR(255)" />
+            <column name="cidade" type="VARCHAR(255)" />
+            <column name="estado" type="VARCHAR(255)" />
             <column name="latitude" type="DOUBLE" />
             <column name="longitude" type="DOUBLE" />
-            <column name="raio_atendimento_km" type="DOUBLE" />
             <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
                 <constraints nullable="false" />
             </column>
-            <column name="categoria_id" type="UUID" />
+            <column name="usuario_id" type="UUID" />
         </createTable>
-
-        <addForeignKeyConstraint baseColumnNames="categoria_id"
-                                 baseTableName="tb_prestador"
-                                 constraintName="fk_prestador_categoria"
-                                 referencedColumnNames="id_categoria"
-                                 referencedTableName="tb_categorias" />
-
-        <!-- Tabela Mídia -->
-        <createTable tableName="tb_midia">
-            <column name="id" type="UUID">
-                <constraints primaryKey="true" nullable="false" />
-            </column>
-            <column name="midia_url" type="VARCHAR(255)" />
-            <column name="tipo_midia" type="VARCHAR(255)" />
-            <column name="ordem_exibicao" type="INT" />
-            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+        <!-- Constraints tb_cliente -->
+        <addForeignKeyConstraint baseColumnNames="usuario_id" baseTableName="tb_cliente" constraintName="fk_cliente_usuario" referencedColumnNames="id_usuario" referencedTableName="tb_usuarios" />
+        <addUniqueConstraint tableName="tb_cliente" columnNames="usuario_id" constraintName="uk_cliente_usuario" />
+        <!-- tb_cliente_prestador_favorito -->
+        <createTable tableName="tb_cliente_prestador_favorito">
+            <column name="cliente_id" type="UUID">
                 <constraints nullable="false" />
             </column>
             <column name="prestador_id" type="UUID">
                 <constraints nullable="false" />
             </column>
         </createTable>
-
-        <addForeignKeyConstraint baseColumnNames="prestador_id"
-                                 baseTableName="tb_midia"
-                                 constraintName="fk_midia_prestador"
-                                 referencedColumnNames="id"
-                                 referencedTableName="tb_prestador" />
-
-        <!-- Tabela Avaliações -->
+        <addPrimaryKey
+                tableName="tb_cliente_prestador_favorito"
+                columnNames="cliente_id,prestador_id"
+                constraintName="pk_cliente_prestador_favorito"/>
+        <addForeignKeyConstraint
+                baseColumnNames="cliente_id"
+                baseTableName="tb_cliente_prestador_favorito"
+                constraintName="fk_cpf_cliente"
+                referencedColumnNames="id"
+                referencedTableName="tb_cliente" />
+        <addForeignKeyConstraint
+                baseColumnNames="prestador_id"
+                baseTableName="tb_cliente_prestador_favorito"
+                constraintName="fk_cpf_prestador"
+                referencedColumnNames="id"
+                referencedTableName="tb_prestador" />
+        <!-- tb_cliente_categoria_favorita -->
+        <createTable tableName="tb_cliente_categoria_favorita">
+            <column name="cliente_id" type="UUID">
+                <constraints nullable="false" />
+            </column>
+            <column name="categoria_id" type="UUID">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <addPrimaryKey
+                tableName="tb_cliente_categoria_favorita"
+                columnNames="cliente_id,categoria_id"
+                constraintName="pk_cliente_categoria_favorita"/>
+        <addForeignKeyConstraint
+                baseColumnNames="cliente_id"
+                baseTableName="tb_cliente_categoria_favorita"
+                constraintName="fk_ccf_cliente"
+                referencedColumnNames="id"
+                referencedTableName="tb_cliente" />
+        <addForeignKeyConstraint
+                baseColumnNames="categoria_id"
+                baseTableName="tb_cliente_categoria_favorita"
+                constraintName="fk_ccf_categoria"
+                referencedColumnNames="id_categoria"
+                referencedTableName="tb_categorias" />
+        <!-- tb_item_catalogo -->
+        <createTable tableName="tb_item_catalogo">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="titulo" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="TEXT"/>
+            <column name="preco_base" type="DECIMAL(19, 2)"/>
+            <column name="tipo" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_item_catalogo" constraintName="fk_item_catalogo_prestador" referencedColumnNames="id" referencedTableName="tb_prestador"/>
+        <!-- tb_midia -->
+        <createTable tableName="tb_midia">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="midia_url" type="VARCHAR(255)" />
+            <column name="tipo_midia" type="VARCHAR(50)" />
+            <column name="ordem_exibicao" type="INT" />
+            <column name="prestador_id" type="UUID" />
+            <column name="item_catalogo_id" type="UUID" />
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_midia" constraintName="fk_midia_prestador" referencedColumnNames="id" referencedTableName="tb_prestador" />
+        <addForeignKeyConstraint baseColumnNames="item_catalogo_id" baseTableName="tb_midia" constraintName="fk_midia_item_catalogo" referencedColumnNames="id" referencedTableName="tb_item_catalogo"/>
+        <!-- tb_avaliacoes -->
         <createTable tableName="tb_avaliacoes">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false" />
@@ -81,20 +194,12 @@
                 <constraints nullable="false" />
             </column>
             <column name="comentario" type="TEXT" />
-            <column name="data_criacao" type="TIMESTAMP">
-                <constraints nullable="false" />
-            </column>
+            <column name="data_criacao" type="TIMESTAMP" />
             <column name="ativo" type="BOOLEAN" defaultValueBoolean="true">
                 <constraints nullable="false" />
             </column>
             <column name="prestador_id" type="UUID" />
         </createTable>
-
-        <addForeignKeyConstraint baseColumnNames="prestador_id"
-                                 baseTableName="tb_avaliacoes"
-                                 constraintName="fk_avaliacao_prestador"
-                                 referencedColumnNames="id"
-                                 referencedTableName="tb_prestador" />
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_avaliacoes" constraintName="fk_avaliacao_prestador" referencedColumnNames="id" referencedTableName="tb_prestador" />
     </changeSet>
-
 </databaseChangeLog>

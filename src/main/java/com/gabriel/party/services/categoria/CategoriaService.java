@@ -72,6 +72,14 @@ public class CategoriaService {
         var categoria = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, id.toString()));
 
+        var categoriaComMesmoNome = repository.findByNomeIgnoreCaseAndAtivoTrue(dto.nome())
+                .filter(c -> !c.getId().equals(id))
+                .isPresent();
+
+        if (categoriaComMesmoNome) {
+            throw new AppException(ErrorCode.CATEGORIA_NOME_DUPLICADO, dto.nome());
+        }
+
         mapper.atualizarCategoriaDoDTO(dto, categoria);
          repository.save(categoria);
          return mapper.toDto(categoria);

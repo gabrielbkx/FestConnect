@@ -5,7 +5,8 @@ import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.midia.Midia;
-import com.gabriel.party.model.prestador.endereco.Endereco;
+import com.gabriel.party.shared.Endereco;
+import com.gabriel.party.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,11 +26,11 @@ public class Prestador {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "nome", nullable = false)
-    private String nome;
+    @Column(name = "nome_completo", nullable = false)
+    private String nomeCompleto;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+    @Column(name = "cnpj_ou_cpf", unique = true, nullable = false)
+    private String cnpjOuCpf;
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
@@ -54,5 +55,9 @@ public class Prestador {
 
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemCatalogo> itensCatalogo;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", unique = true)
+    private Usuario usuario;
 
 }

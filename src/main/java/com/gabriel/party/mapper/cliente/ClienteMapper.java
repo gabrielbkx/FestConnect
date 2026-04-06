@@ -7,6 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
+import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ClienteMapper {
@@ -16,5 +17,6 @@ public interface ClienteMapper {
     ClienteResponseDTO toDto(Cliente cliente);
 
     void updateEntityFromDto(ClienteRequestDTO dto, @MappingTarget Cliente cliente);
+
 }
 

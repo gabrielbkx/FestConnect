@@ -9,6 +9,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -29,15 +31,20 @@ public class Usuario implements UserDetails {
     @Column(name = "senha",nullable = false)
     private String senha;
 
+    @Column(name = "data_criacao", nullable = false)
+    private LocalDateTime dataCriacao = LocalDateTime.now();
+
     @Enumerated(EnumType.STRING)
     private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == Role.ROLE_ADMINISTRADOR) {
-            return List.of(new SimpleGrantedAuthority("role_administrador"), new SimpleGrantedAuthority("role_administrador"));
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"));
+        } else if (this.role == Role.ROLE_PRESTADOR) {
+            return List.of(new SimpleGrantedAuthority("ROLE_PRESTADOR"));
         } else {
-            return List.of(new SimpleGrantedAuthority("role_usuario"));
+            return List.of(new SimpleGrantedAuthority("ROLE_CLIENTE")); // O padrão será cliente
         }
     }
 
@@ -66,8 +73,11 @@ public class Usuario implements UserDetails {
         return true;
     }
 
+    @Column(name = "ativo")
+    private Boolean ativo = true;
+
     @Override
     public boolean isEnabled() {
-        return true;
+        return this.ativo;
     }
 }

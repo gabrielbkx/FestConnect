@@ -8,8 +8,6 @@ public record CadastroResponseDTO(
         UUID id,
         String nomeCompleto,
         String email,
-        String token,
-
-        TokenResponseDTO tokenResponse
+        String token
         ) {
 }

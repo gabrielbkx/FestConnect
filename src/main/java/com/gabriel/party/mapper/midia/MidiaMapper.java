@@ -16,7 +16,6 @@ public interface MidiaMapper {
     Midia toEntity(MidiaRequestDTO dto);
 
     @Mapping(target = "prestadorId", source = "prestador.id")
-    @Mapping(target = "prestadorNome", source = "prestador.nome")
     MidiaResponseDTO toDto(Midia midia);
 
     @Mapping(target = "id", ignore = true)

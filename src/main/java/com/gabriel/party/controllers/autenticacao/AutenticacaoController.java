@@ -4,11 +4,12 @@ import com.gabriel.party.config.infra.security.AutenticacaoService;
 import com.gabriel.party.config.infra.security.TokenService;
 import com.gabriel.party.dtos.autenticacao.cadastro.CadastroRequestDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.CadastroResponseDTO;
+import com.gabriel.party.dtos.autenticacao.cadastro.cliente.CadastroClienteDTO;
+import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
 import com.gabriel.party.dtos.autenticacao.login.LoginRequestDTO;
 import com.gabriel.party.dtos.autenticacao.login.TokenResponseDTO;
 import com.gabriel.party.model.usuario.Usuario;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,12 +23,17 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping("/auth")
 public class AutenticacaoController {
 
-    @Autowired
-    TokenService tokenService;
-    @Autowired
-    AuthenticationManager authenticationManager;
-    @Autowired
-    AutenticacaoService autenticacaoService;
+    private final TokenService tokenService;
+    private final AuthenticationManager authenticationManager;
+    private final AutenticacaoService autenticacaoService;
+
+    public AutenticacaoController(TokenService tokenService,
+                                  AuthenticationManager authenticationManager,
+                                  AutenticacaoService autenticacaoService) {
+        this.tokenService = tokenService;
+        this.authenticationManager = authenticationManager;
+        this.autenticacaoService = autenticacaoService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
@@ -41,17 +47,23 @@ public class AutenticacaoController {
         return ResponseEntity.ok(new TokenResponseDTO(tokenJwt));
     }
 
-    @PostMapping("/cadastro")
-    public ResponseEntity<CadastroResponseDTO> cadastro(@RequestBody @Valid CadastroRequestDTO dto) {
+    @PostMapping("/cadastro/cliente")
+    public ResponseEntity<CadastroResponseDTO> cadastrarCliente(@RequestBody @Valid CadastroClienteDTO dto) {
+        var clienteCadastrado = autenticacaoService.cadastrarCliente(dto);
 
-        var usuarioCadastrado = autenticacaoService.cadastrarUsuario(dto);
+        var uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(clienteCadastrado.id()).toUri();
 
-        var uri = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(usuarioCadastrado.id())
-                .toUri();
+        return ResponseEntity.created(uri).body(clienteCadastrado);
+    }
 
-        return ResponseEntity.created(uri).body(usuarioCadastrado);
+    @PostMapping("/cadastro/prestador")
+    public ResponseEntity<CadastroResponseDTO> cadastrarPrestador(@RequestBody @Valid CadastroPrestadorDTO dto) {
+        var prestadorCadastrado = autenticacaoService.cadastrarPrestador(dto);
+
+        var uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(prestadorCadastrado.id()).toUri();
+
+        return ResponseEntity.created(uri).body(prestadorCadastrado);
     }
 }

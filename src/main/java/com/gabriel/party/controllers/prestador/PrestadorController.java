@@ -1,6 +1,9 @@
 package com.gabriel.party.controllers.prestador;
 
 
+
+
+
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.services.prestador.PrestadorService;
@@ -11,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,23 +35,6 @@ public class PrestadorController {
         this.prestadorService = prestadorService;
     }
 
-    @ApiResponses( value = {
-            @ApiResponse(responseCode = "201", description = "Prestador criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Requisição inválida, dados incorretos ou faltando"),
-            @ApiResponse(responseCode = "404", description = "Categoria associada não encontrada"),
-            @ApiResponse(responseCode = "409", description = "Conflito, prestador com essee-mail já existe")
-    })
-    @Operation(summary = "Criar novo prestador", description = "Cria um novo prestador associado a uma categoria e o retorna.")
-    @PostMapping
-    public ResponseEntity<PrestadorResponseDTO> criarPrestador(@Valid @RequestBody PrestadorRequestDTO dto) {
-        var prestadorCriado = prestadorService.salvarPrestador(dto);
-        var uri = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(prestadorCriado.id())
-                .toUri();
-        return ResponseEntity.created(uri).body(prestadorCriado);
-    }
 
     @ApiResponses( value = {
             @ApiResponse(responseCode = "200", description = "Lista de prestadores retornada com sucesso")
@@ -76,6 +63,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Atualizar prestador", description = "Atualiza os dados de um prestador existente pelo ID.")
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PRESTADOR','ADMIN')")
     public ResponseEntity<PrestadorResponseDTO> atualizarPrestador(@Valid @RequestBody PrestadorRequestDTO dto, @PathVariable UUID id) {
         return ResponseEntity.ok(prestadorService.atualizarPrestador(dto, id));
     }
@@ -86,6 +74,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Deletar prestador", description = "Realiza a exclusão lógica (inativação) de um prestador pelo ID.")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('PRESTADOR','ADMIN')")
     public ResponseEntity<Void> deletarPrestador(@PathVariable UUID id) {
         prestadorService.deletar(id);
         return ResponseEntity.noContent().build();
