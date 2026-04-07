@@ -105,7 +105,7 @@ public class ItemCatalogoController {
     }
 
     @GetMapping("/filtro-radar")
-    public ResponseEntity<Page<ItemCatalogo>> buscarItensNoRadar(
+    public ResponseEntity<Page<ItemCatalogoResponseDTO>> buscarItensNoRadar(
             @RequestParam(name = "busca", required = false) String busca,
             @RequestParam(name = "lat") Double lat,
             @RequestParam(name = "lon") Double lon,
@@ -113,7 +113,7 @@ public class ItemCatalogoController {
             @PageableDefault(size = 10, page = 0) Pageable pageable // O Spring faz a mágica aqui
     ) {
         // Agora você só repassa o objeto pageable direto pro Service
-        Page<ItemCatalogo> itensEncontrados = itemCatalogoService.buscarItensPorRadarEBusca(busca, lat, lon, raio, pageable);
+        Page<ItemCatalogoResponseDTO> itensEncontrados = itemCatalogoService.buscarItensPorRadarEBusca(busca, lat, lon, raio, pageable);
 
         return ResponseEntity.ok(itensEncontrados);
     }

@@ -1,5 +1,6 @@
 package com.gabriel.party.repositories.itemcatalogo;
 
+import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,7 +47,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
       )) <= :raioKm
     """,
             nativeQuery = true)
-    Page<ItemCatalogo> buscarItensPorTermoEProximidade(
+    Page<ItemCatalogoResponseDTO> buscarItensPorTermoEProximidade(
             @Param("termoBusca") String termoBusca,
             @Param("latCliente") Double lat,
             @Param("lonCliente") Double lon,

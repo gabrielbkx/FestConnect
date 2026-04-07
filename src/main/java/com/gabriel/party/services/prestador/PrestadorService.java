@@ -62,9 +62,9 @@ public class PrestadorService {
         novoPrestador.setUsuario(usuario);
 
 
-        String rua = dto.endereco().logradouro;
-        String cidade = dto.endereco().cidade;
-        String estado = dto.endereco().estado;
+        String rua = dto.endereco().logradouro();
+        String cidade = dto.endereco().cidade();
+        String estado = dto.endereco().estado();
         var coordenadas = geocodingService.buscarCoordenadas(rua, cidade, estado);
 
         if (coordenadas != null) {
@@ -74,7 +74,6 @@ public class PrestadorService {
             throw new AppException(ErrorCode.REGRA_NEGOCIO_VIOLADA,
                     "Não é possível salvar um novo prestador sem coordenadas de endereço.");
         }
-
 
         return repository.save(novoPrestador);
     }

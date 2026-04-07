@@ -11,6 +11,7 @@ import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
+import com.gabriel.party.services.integracoes.geocoding.GeocodingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,16 +27,18 @@ public class ClienteService {
     private final ClienteMapper mapper;
     private final UsuarioMapper usuarioMapper;
     private final UsuarioRepository usuarioRepository;
+    private final GeocodingService geocodingService;
 
     @Autowired
     public ClienteService(ClienteRepository clienteRepository,
                           ClienteMapper mapper,
                           UsuarioMapper usuarioMapper,
-                          UsuarioRepository usuarioRepository) {
+                          UsuarioRepository usuarioRepository, GeocodingService geocodingService) {
         this.clienteRepository = clienteRepository;
         this.mapper = mapper;
         this.usuarioMapper = usuarioMapper;
         this.usuarioRepository = usuarioRepository;
+        this.geocodingService = geocodingService;
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +92,16 @@ public class ClienteService {
 
         novoCliente.setAtivo(true);
         novoCliente.setUsuario(usuario);
+
+        String rua = dto.endereco().logradouro();
+        String cidade = dto.endereco().cidade();
+        String estado = dto.endereco().estado();
+
+        var coordenadas = geocodingService.buscarCoordenadas(rua, cidade, estado);
+
+        if (coordenadas != null) {
+            novoCliente.getEndereco().atribuirCoordenadas(coordenadas.latitude(), coordenadas.longitude());
+        }
 
        return clienteRepository.save(novoCliente);
     }

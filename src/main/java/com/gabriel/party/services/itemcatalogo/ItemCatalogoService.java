@@ -92,7 +92,7 @@ public class ItemCatalogoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ItemCatalogo> buscarItensPorRadarEBusca(String termoBusca, Double lat, Double lon, Double raio, Pageable pageable) {
+    public Page<ItemCatalogoResponseDTO> buscarItensPorRadarEBusca(String termoBusca, Double lat, Double lon, Double raio, Pageable pageable) {
         Double raioMaximo = (raio != null && raio <= 50.0) ? raio : 10.0;
 
         // Se vier nulo ou apenas espaços em branco, converte para string vazia
