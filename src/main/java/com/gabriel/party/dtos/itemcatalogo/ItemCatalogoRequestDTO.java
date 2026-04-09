@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record ItemCatalogoRequestDTO(
+
         @NotBlank(message = "O título do anúncio é obrigatório")
         String titulo,
 
@@ -16,8 +17,6 @@ public record ItemCatalogoRequestDTO(
         BigDecimal precoBase,
 
         @NotNull(message = "O tipo do item (PRODUTO ou SERVICO) é obrigatório")
-        TipoItem tipo,
+        TipoItem tipo
 
-        @NotNull(message = "O ID do prestador dono do anúncio é obrigatório")
-        UUID prestadorId
 ) {}
