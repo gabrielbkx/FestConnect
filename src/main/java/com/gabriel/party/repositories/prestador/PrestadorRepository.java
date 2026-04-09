@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.lang.ScopedValue;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,4 +59,8 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
     );
 
     boolean existsByCnpjOuCpf(String cpfOuCnpj);
+
+    Optional<Prestador> findByEmailAndAtivoTrue(String email);
+
+    Optional<Prestador> findByUsuarioIdAndAtivoTrue(UUID usuarioId);
 }

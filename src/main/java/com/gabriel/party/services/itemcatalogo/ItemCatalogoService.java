@@ -12,6 +12,9 @@ import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -33,10 +36,10 @@ public class ItemCatalogoService {
     }
 
     @Transactional
-    public ItemCatalogoResponseDTO criarItem(ItemCatalogoRequestDTO dto) {
+    public ItemCatalogoResponseDTO criarItem(ItemCatalogoRequestDTO dto, UUID usuarioId) {
 
-        Prestador prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
+        Prestador prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue((usuarioId))
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
 
         ItemCatalogo novoItem = itemCatalogoMapper.toEntity(dto);
 
@@ -69,15 +72,23 @@ public class ItemCatalogoService {
     }
 
     @Transactional
-    public ItemCatalogoResponseDTO atualizarItem(@Valid ItemCatalogoRequestDTO dto, UUID id) {
-        var itemCatalogo = itemCatalogoRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, id.toString()));
+    public ItemCatalogoResponseDTO atualizarItem(@Valid ItemCatalogoRequestDTO dto, UUID idItem, UUID usuarioId) {
 
-        var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
+        var itemCatalogo = itemCatalogoRepository.findByIdAndAtivoTrue(idItem)
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, idItem.toString()));
+
+        var prestadorIdDoItem = itemCatalogo.getPrestador().getId();
+
+        Prestador prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue((usuarioId))
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
+
+        var prestadorId = prestador.getId();
+
+        if(!prestadorId.equals(prestadorIdDoItem)){
+            throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
+        }
 
         itemCatalogoMapper.atualizarItemDoDTO(dto, itemCatalogo);
-        itemCatalogo.setPrestador(prestador);
         itemCatalogoRepository.save(itemCatalogo);
 
         return itemCatalogoMapper.toDto(itemCatalogo);

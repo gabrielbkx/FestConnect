@@ -3,6 +3,7 @@ package com.gabriel.party.controllers.itemcatalogo;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
+import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.itemcatalogo.ItemCatalogoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,9 +40,13 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Criar novo item de catálogo", description = "Cria um novo item (produto ou serviço) para um prestador.")
     @PostMapping
-    public ResponseEntity<ItemCatalogoResponseDTO> criarItem(@Valid @RequestBody ItemCatalogoRequestDTO dto){
+    @PreAuthorize("hasRole('PRESTADOR')")
+    public ResponseEntity<ItemCatalogoResponseDTO> criarItem(@Valid @RequestBody ItemCatalogoRequestDTO dto,
+                                                             @AuthenticationPrincipal Usuario usuario){
 
-        var itemCriado = itemCatalogoService.criarItem(dto);
+        UUID usuarioLogado = usuario.getId();
+
+        var itemCriado = itemCatalogoService.criarItem(dto, usuarioLogado);
 
         var uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -75,6 +82,7 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Deletar item de catálogo", description = "Realiza a exclusão lógica (inativação) de um item pelo ID.")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PRESTADOR')")
     public ResponseEntity<Void> deletarItemCatalogo(@PathVariable UUID id){
         itemCatalogoService.deletar(id);
         return ResponseEntity.noContent().build();
@@ -87,9 +95,12 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Atualizar item de catálogo", description = "Atualiza os dados de um item de catálogo existente pelo ID.")
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('PRESTADOR')")
     public ResponseEntity<ItemCatalogoResponseDTO> atualizarItemCatalogo(@Valid @RequestBody ItemCatalogoRequestDTO dto,
-                                                                         @PathVariable UUID id){
-        var itemAtualizado = itemCatalogoService.atualizarItem(dto, id);
+                                                                         @PathVariable UUID idItem,
+                                                                         @AuthenticationPrincipal Usuario usuario){
+        UUID idUsuarioLogado = usuario.getId();
+        var itemAtualizado = itemCatalogoService.atualizarItem(dto, idItem, idUsuarioLogado);
         return ResponseEntity.ok(itemAtualizado);
     }
 

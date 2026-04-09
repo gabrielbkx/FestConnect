@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -51,7 +52,7 @@ public class Prestador {
     private List<Midia> midias;
 
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)
-    private List<Avaliacao> avaliacoes;
+    private Set<Avaliacao> avaliacoes;
 
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemCatalogo> itensCatalogo;

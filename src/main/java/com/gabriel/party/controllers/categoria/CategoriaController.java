@@ -38,7 +38,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Criar nova categoria", description = "Cria uma nova categoria e a retorna.")
     @PostMapping
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoriaReponseDTO> criarCategoria(@Valid @RequestBody CategoriaRequestDTO dto){
 
         var categoriaCriada = categoriaService.salvarCategoria(dto);
