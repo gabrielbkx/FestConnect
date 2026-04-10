@@ -9,6 +9,9 @@ public record AvaliacaoResponseDTO(
         String comentario,
         LocalDateTime dataCriacao,
         UUID prestadorId,
-        String prestadorNome
+        String prestadorNome,
+        UUID clineteId,
+        String clienteNome
+
 ) {}
 

@@ -17,6 +17,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
     Page<Cliente> findAllByAtivoTrue(Pageable pageable);
 
     Optional<Cliente> findByIdAndAtivoTrue(UUID id);
+
+    Optional<Cliente> findByUsuarioIdAndAtivoTrue(UUID usuarioId);
 }
 
 

@@ -1,5 +1,6 @@
 package com.gabriel.party.model.cliente;
 
+import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.shared.Endereco;
@@ -59,5 +60,8 @@ public class Cliente {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", unique = true)
     private Usuario usuario;
+
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    private Set<Avaliacao> avaliacoesFeitas;
 }
 

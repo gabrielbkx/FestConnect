@@ -1,5 +1,6 @@
 package com.gabriel.party.mapper.avaliacao;
 
+import com.gabriel.party.dtos.avaliacao.AvaliacaoCreateDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoRequestDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
 import com.gabriel.party.model.avaliacao.Avaliacao;
@@ -15,7 +16,7 @@ public interface AvaliacaoMapper {
     @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "prestador", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
-    Avaliacao toEntity(AvaliacaoRequestDTO dto);
+    Avaliacao toEntity(AvaliacaoCreateDTO dto);
 
     @Mapping(target = "prestadorId", source = "prestador.id")
     AvaliacaoResponseDTO toDto(Avaliacao avaliacao);

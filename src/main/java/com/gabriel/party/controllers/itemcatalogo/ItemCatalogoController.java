@@ -40,7 +40,7 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Criar novo item de catálogo", description = "Cria um novo item (produto ou serviço) para um prestador.")
     @PostMapping
-    @PreAuthorize("hasRole('PRESTADOR')")
+    @PreAuthorize("hasRole('ROLE_PRESTADOR')")
     public ResponseEntity<ItemCatalogoResponseDTO> criarItem(@Valid @RequestBody ItemCatalogoRequestDTO dto,
                                                              @AuthenticationPrincipal Usuario usuario){
 
@@ -82,7 +82,7 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Deletar item de catálogo", description = "Realiza a exclusão lógica (inativação) de um item pelo ID.")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('PRESTADOR')")
+    @PreAuthorize("hasRole('ROLE_PRESTADOR')")
     public ResponseEntity<Void> deletarItemCatalogo(@PathVariable UUID id){
         itemCatalogoService.deletar(id);
         return ResponseEntity.noContent().build();
@@ -95,7 +95,7 @@ public class ItemCatalogoController {
     })
     @Operation(summary = "Atualizar item de catálogo", description = "Atualiza os dados de um item de catálogo existente pelo ID.")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('PRESTADOR')")
+    @PreAuthorize("hasRole('ROLE_PRESTADOR')")
     public ResponseEntity<ItemCatalogoResponseDTO> atualizarItemCatalogo(@Valid @RequestBody ItemCatalogoRequestDTO dto,
                                                                          @PathVariable UUID idItem,
                                                                          @AuthenticationPrincipal Usuario usuario){

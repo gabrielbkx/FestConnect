@@ -42,6 +42,7 @@ public enum ErrorCode {
     AVALIACAO_NAO_ENCONTRADA("avaliacao_nao_encontrada", HttpStatus.NOT_FOUND, "Avaliação '%id%' não encontrada."),
     AVALIACAO_NOTA_INVALIDA("avaliacao_nota_invalida", HttpStatus.BAD_REQUEST, "A nota da avaliação deve estar entre 1 e 5. Valor recebido: '%nota%'."),
     AVALIACAO_DUPLICADA("avaliacao_duplicada", HttpStatus.CONFLICT, "O usuário '%usuario%' já avaliou este serviço anteriormente."),
+    AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO( "avaliacao_nao_pertence_cliente", HttpStatus.UNAUTHORIZED, "A avaliação '%avaliacaoId%' não pertence ao cliente '%clienteId%'."),
 
     // Erros de Geocoding
     GEOCODING_FALHA_COMUNICACAO("geocoding_falha_comunicacao", HttpStatus.SERVICE_UNAVAILABLE, "Erro de comunicação com a API de geocoding: '%detalhes%'"),

@@ -1,5 +1,6 @@
 package com.gabriel.party.model.avaliacao;
 
+import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -34,4 +35,8 @@ public class Avaliacao {
     @ManyToOne
     @JoinColumn(name = "prestador_id")
     private Prestador prestador;
+
+    @ManyToOne()
+    @JoinColumn(name = "cliente_id")
+    private Cliente cliente;
 }

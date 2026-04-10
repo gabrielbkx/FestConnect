@@ -1,13 +1,18 @@
 package com.gabriel.party.controllers.avaliacao;
 
+import com.gabriel.party.dtos.avaliacao.AvaliacaoCreateDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoRequestDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
+import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.avaliacao.AvaliacaoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.AuthenticatedPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,8 +43,13 @@ public class AvaliacaoController {
     @Operation(summary = "Criar nova avaliação",
             description = "Cria uma nova avaliação e a associa a um prestador.")
     @PostMapping
-    public ResponseEntity<AvaliacaoResponseDTO> criarAvaliacao(@Valid @RequestBody AvaliacaoRequestDTO dto) {
-        var avaliacaoCriada = avaliacaoService.salvarAvaliacao(dto);
+    @PreAuthorize("hasRole('ROLE_CLIENTE')")
+    public ResponseEntity<AvaliacaoResponseDTO> criarAvaliacao(@Valid @RequestBody AvaliacaoCreateDTO dto,
+                                                               @AuthenticationPrincipal Usuario usuario) {
+
+        var usuarioLogado = usuario.getId();
+
+        var avaliacaoCriada = avaliacaoService.salvarAvaliacao(dto, usuarioLogado);
         var uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -78,8 +88,14 @@ public class AvaliacaoController {
     @Operation(summary = "Atualizar avaliação",
             description = "Atualiza os dados de uma avaliação existente pelo ID.")
     @PutMapping("/{id}")
-    public ResponseEntity<AvaliacaoResponseDTO> atualizarAvaliacao(@Valid @RequestBody AvaliacaoRequestDTO dto, @PathVariable UUID id) {
-        return ResponseEntity.ok(avaliacaoService.atualizarAvaliacao(dto, id));
+    @PreAuthorize("hasRole('CLIENTE')")
+    public ResponseEntity<AvaliacaoResponseDTO> atualizarAvaliacao(@Valid @RequestBody AvaliacaoRequestDTO dto,
+                                                                   @PathVariable UUID idAvaliacao,
+                                                                   @AuthenticationPrincipal Usuario usuario) {
+
+        var usuarioLogado = usuario.getId();
+
+        return ResponseEntity.ok(avaliacaoService.atualizarAvaliacao(dto, idAvaliacao, usuarioLogado));
     }
 
     @ApiResponses( value = {
@@ -89,8 +105,10 @@ public class AvaliacaoController {
     @Operation(summary = "Deletar avaliação",
             description = "Realiza a exclusão lógica (inativação) de uma avaliação pelo ID.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarAvaliacao(@PathVariable UUID id) {
-        avaliacaoService.deletar(id);
+    @PreAuthorize("hasAnyRole('ROLE_ADMINISTRADOR', 'ROLE_CLIENTE')")
+    public ResponseEntity<Void> deletarAvaliacao(@PathVariable UUID id, @AuthenticationPrincipal Usuario usuario) {
+
+        avaliacaoService.deletar(id, usuario);
         return ResponseEntity.noContent().build();
     }
 }
