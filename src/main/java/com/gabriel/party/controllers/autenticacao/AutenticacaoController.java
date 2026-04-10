@@ -47,7 +47,7 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/cadastro/cliente")
-    public ResponseEntity<CadastroResponseDTO> cadastrarCliente(@@RequestPart("dados") @Valid CadastroClienteDTO dto,
+    public ResponseEntity<CadastroResponseDTO> cadastrarCliente(@RequestPart("dados") @Valid CadastroClienteDTO dto,
                                                                 @RequestPart(value = "foto", required = false)
                                                                 MultipartFile fotoPerfil) {
 
