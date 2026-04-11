@@ -1,16 +1,17 @@
 package com.gabriel.party.services.autenticacao;
 
 import com.gabriel.party.config.infra.security.TokenService;
-import com.gabriel.party.dtos.autenticacao.DadosRecuperacapDTO;
+import com.gabriel.party.dtos.autenticacao.DadosDeValidacaoDeCodigoRecuperacaoDTO;
+import com.gabriel.party.dtos.autenticacao.DadosRecuperacaoDTO;
+import com.gabriel.party.dtos.autenticacao.DadosRedefinicaoDeSenhaDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.CadastroResponseDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.cliente.CadastroClienteDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
+import com.gabriel.party.dtos.autenticacao.login.TokenResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.autenticacao.UsuarioMapper;
 import com.gabriel.party.model.autenticacao.CodigoRecuperacao;
-import com.gabriel.party.model.cliente.Cliente;
-import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
@@ -19,10 +20,8 @@ import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.cliente.ClienteService;
 import com.gabriel.party.services.email.EmailService;
-import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import com.gabriel.party.services.prestador.PrestadorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.config.annotation.web.oauth2.client.OAuth2ClientSecurityMarker;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -65,8 +64,6 @@ public class AutenticacaoService implements UserDetailsService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 
-
-
     public CadastroResponseDTO cadastrarCliente(CadastroClienteDTO dto, MultipartFile fotoPerfil) {
         validarEmailExistente(dto.email());
         validarCpfOuCnpjExistente(dto.cpf());
@@ -85,7 +82,6 @@ public class AutenticacaoService implements UserDetailsService {
                 usuario.getEmail(),
                 tokenJwt);
     }
-
 
     public CadastroResponseDTO cadastrarPrestador(CadastroPrestadorDTO dto,MultipartFile fotoPerfil) {
 
@@ -107,7 +103,32 @@ public class AutenticacaoService implements UserDetailsService {
                 tokenJwt);
     }
 
-    public void enviarCodigoRecuperacao(DadosRecuperacapDTO dados) {
+
+    private void validarEmailExistente(String email) {
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new AppException(ErrorCode.USUARIO_JA_EXISTE_POR_EMAIL,
+                    "Já existe um usuário cadastrado com esse email", email);
+        }
+    }
+
+    private void validarCpfOuCnpjExistente(String cpfOuCnpj) {
+
+        boolean cpfExiste = clienteRepository.existsByCpf(cpfOuCnpj);
+        boolean cnpjExiste = prestadorRepository.existsByCnpjOuCpf(cpfOuCnpj);
+
+        if (cpfExiste){
+            throw new AppException(ErrorCode.JA_EXISTE_POR_CPF,
+                    "Já existe um cadastro com esse CPF", cpfOuCnpj);
+        }
+
+        if (cnpjExiste){
+            throw new AppException(ErrorCode.JA_EXISTE_POR_CNPJ,
+                    "Já existe um cadastro com esse CNPJ", cpfOuCnpj);
+        }
+
+    }
+
+    public void enviarCodigoRecuperacao(DadosRecuperacaoDTO dados) {
 
         var email = dados.email();
 
@@ -135,31 +156,34 @@ public class AutenticacaoService implements UserDetailsService {
             emailService.enviarEmail(user.getEmail(), assunto, corpoEmail);
 
         });
-
-
     }
 
-    private void validarEmailExistente(String email) {
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new AppException(ErrorCode.USUARIO_JA_EXISTE_POR_EMAIL,
-                    "Já existe um usuário cadastrado com esse email", email);
+    public String validarCodigoRecuperacao(DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
+
+        var codigo = codigoRecuperacaoRepository.findByUsuarioEmail(dados.email())
+                .orElseThrow(() -> new RuntimeException("Código não encontrado"));
+
+        if (!codigo.getCodigoPin().equals(dados.codigoPin()) || codigo.getDataExpiracao().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO,
+                    "O código de recuperação é inválido ou expirou", dados.email());
         }
+        codigoRecuperacaoRepository.delete(codigo);
+
+        return tokenService.gerarTokenParaRecuperacaoDeSenha(codigo.getUsuario());
     }
 
-    private void validarCpfOuCnpjExistente(String cpfOuCnpj) {
+    @Transactional
+    public void redefinirSenha(DadosRedefinicaoDeSenhaDTO dados){
 
-        boolean cpfExiste = clienteRepository.existsByCpf(cpfOuCnpj);
-        boolean cnpjExiste = prestadorRepository.existsByCnpjOuCpf(cpfOuCnpj);
+        String email = tokenService.validarTokenDeRecuperacaoDeSenha(dados.token());
 
-        if (cpfExiste){
-            throw new AppException(ErrorCode.JA_EXISTE_POR_CPF,
-                    "Já existe um cadastro com esse CPF", cpfOuCnpj);
-        }
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL,
+                        "Usuário não encontrado para o email do token", email));
 
-        if (cnpjExiste){
-            throw new AppException(ErrorCode.JA_EXISTE_POR_CNPJ,
-                    "Já existe um cadastro com esse CNPJ", cpfOuCnpj);
-        }
-
+        usuario.setSenha(encoder.encode(dados.novaSenha()));
+        usuarioRepository.save(usuario);
     }
+
 }
+

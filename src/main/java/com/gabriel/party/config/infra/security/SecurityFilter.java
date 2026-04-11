@@ -30,7 +30,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = recuperarToken(request);
 
         if (token != null) {
-            var email = tokenService.validarToken(token); // Lê o crachá
+            var email = tokenService.validarTokenDeLogin(token); // Lê o crachá
             UserDetails usuario = usuarioRepository.findByEmail(email).orElseThrow(); // Busca no banco
 
             // Força a autenticação no contexto do Spring

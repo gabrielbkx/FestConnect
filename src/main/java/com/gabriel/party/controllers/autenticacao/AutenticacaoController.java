@@ -1,6 +1,8 @@
 package com.gabriel.party.controllers.autenticacao;
 
-import com.gabriel.party.dtos.autenticacao.DadosRecuperacapDTO;
+import com.gabriel.party.dtos.autenticacao.DadosDeValidacaoDeCodigoRecuperacaoDTO;
+import com.gabriel.party.dtos.autenticacao.DadosRecuperacaoDTO;
+import com.gabriel.party.dtos.autenticacao.DadosRedefinicaoDeSenhaDTO;
 import com.gabriel.party.services.autenticacao.AutenticacaoService;
 import com.gabriel.party.config.infra.security.TokenService;
 import com.gabriel.party.dtos.autenticacao.cadastro.CadastroResponseDTO;
@@ -74,8 +76,21 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/recuperacao-senha")
-    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody DadosRecuperacapDTO email) {
+    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody DadosRecuperacaoDTO email) {
         autenticacaoService.enviarCodigoRecuperacao(email);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/validar-codigo")
+    public ResponseEntity<TokenResponseDTO> validarCodigoRecuperacao(@RequestBody DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
+
+        var tokenRecuperacao = autenticacaoService.validarCodigoRecuperacao(dados);
+        return ResponseEntity.ok().body(new TokenResponseDTO(tokenRecuperacao));
+    }
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Void> redefinirSenha(@RequestBody DadosRedefinicaoDeSenhaDTO dados) {
+        autenticacaoService.redefinirSenha(dados);
         return ResponseEntity.ok().build();
     }
 }

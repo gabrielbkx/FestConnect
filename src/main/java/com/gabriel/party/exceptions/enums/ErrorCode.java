@@ -59,7 +59,10 @@ public enum ErrorCode {
     ERRO_AO_GERAR_TOKEN_JWT("erro_ao_gerar_token_jwt", HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao gerar token)"),
     ERRO_AO_VALIDAR_TOKEN_JWT("erro_ao_validar_token_jwt", HttpStatus.UNAUTHORIZED, "Token JWT inválido ou expirado"),
     USUARIO_JA_EXISTE_POR_EMAIL("usuario_ja_existe_por_email", HttpStatus.CONFLICT, "Já existe um usuário cadastrado com esse email '%email%'"),
-    USUARIO_SEM_PERMISSAO("usuario_sem_permissao", HttpStatus.FORBIDDEN, "O usuário '%usuarioId%' não tem permissão para realizar esta ação.")
+    USUARIO_SEM_PERMISSAO("usuario_sem_permissao", HttpStatus.FORBIDDEN, "O usuário '%usuarioId%' não tem permissão para realizar esta ação."),
+    CODIGO_INVALIDO_OU_EXPIRADO("codigo_invalido_ou_expirado", HttpStatus.BAD_REQUEST, "O código de recuperação é inválido ou expirou"),
+    USUARIO_NAO_ENCONTRADO_POR_EMAIL("usuario_nao_encontrado_por_email", HttpStatus.NOT_FOUND, "Usuário não encontrado para o email '%email%'")
+
     ;
 
 
