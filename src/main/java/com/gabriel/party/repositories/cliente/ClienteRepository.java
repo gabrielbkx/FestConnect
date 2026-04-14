@@ -17,6 +17,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
     Optional<Cliente> findByIdAndAtivoTrue(UUID id);
 
     Optional<Cliente> findByUsuarioIdAndAtivoTrue(UUID usuarioId);
+
+    Optional<Cliente> findByUsuarioId(UUID usuarioId);
 }
 
 

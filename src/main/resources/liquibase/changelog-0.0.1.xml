@@ -199,4 +199,48 @@
         <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_avaliacoes" constraintName="fk_avaliacao_prestador" referencedColumnNames="id" referencedTableName="tb_prestador" />
         <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_avaliacoes" constraintName="fk_avaliacao_cliente" referencedColumnNames="id" referencedTableName="tb_cliente" />
     </changeSet>
+
+    <changeSet author="GF" id="0.1.2-pedido-orcamento">
+        <createTable tableName="tb_pedidos" remarks="Tabela que armazena os pedidos e orçamentos entre clientes e prestadores.">
+            <column name="id" type="UUID" remarks="Identificador único do pedido.">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="data_do_evento" type="TIMESTAMP" remarks="Data e hora previstas para o evento.">
+                <constraints nullable="false" />
+            </column>
+            <column name="local_do_evento" type="VARCHAR(255)" remarks="Local onde o evento será realizado.">
+                <constraints nullable="false" />
+            </column>
+            <column name="tipo_evento" type="VARCHAR(255)" remarks="Tipo do evento (ex: Casamento, Aniversário).">
+                <constraints nullable="false" />
+            </column>
+            <column name="numero_convidados" type="INT" remarks="Quantidade estimada de convidados.">
+                <constraints nullable="false" />
+            </column>
+            <column name="descricao" type="TEXT" remarks="Descrição detalhada do pedido feita pelo cliente." />
+
+            <column name="valor_do_orcamento" type="DECIMAL(19, 2)" remarks="Valor cobrado pelo prestador." />
+            <column name="detalhes_orcamento" type="TEXT" remarks="Detalhes e inclusões do orçamento propostos pelo prestador." />
+            <column name="validade_orcamento" type="TIMESTAMP" remarks="Data limite para o cliente aceitar o orçamento." />
+
+            <column name="status_pedido" type="VARCHAR(50)" remarks="Status atual do pedido (PENDENTE, ORCADO, ACEITO, RECUSADO, CANCELADO).">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="cliente_id" type="UUID" remarks="Identificador do cliente que fez o pedido.">
+                <constraints nullable="false" />
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Identificador do prestador que recebeu o pedido.">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="data_hora_criacao" type="TIMESTAMP" remarks="Data e hora de criação do registro.">
+                <constraints nullable="false" />
+            </column>
+            <column name="data_hora_atualizacao" type="TIMESTAMP" remarks="Data e hora da última atualização do registro." />
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_pedidos" constraintName="fk_pedidos_cliente" referencedColumnNames="id" referencedTableName="tb_cliente" />
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_pedidos" constraintName="fk_pedidos_prestador" referencedColumnNames="id" referencedTableName="tb_prestador" />
+    </changeSet>
 </databaseChangeLog>
