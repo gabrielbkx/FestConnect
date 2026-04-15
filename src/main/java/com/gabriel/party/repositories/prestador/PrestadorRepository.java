@@ -1,5 +1,7 @@
 package com.gabriel.party.repositories.prestador;
 
+import com.gabriel.party.model.pedido.Pedido;
+import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -60,4 +62,7 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
 
 
     Optional<Prestador> findByUsuarioIdAndAtivoTrue(UUID usuarioId);
+
+    Optional<Prestador> findByUsuarioId(UUID usuarioId);
+
 }
