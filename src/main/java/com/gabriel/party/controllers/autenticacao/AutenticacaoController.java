@@ -13,11 +13,12 @@ import com.gabriel.party.dtos.autenticacao.login.TokenResponseDTO;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
@@ -38,23 +39,30 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
-        var tokenAutenticacao = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO dto) {
+        try {
+            var tokenAutenticacao = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
+            var usuarioAutenticado = authenticationManager.authenticate(tokenAutenticacao);
 
-        var usuarioAutenticado = authenticationManager.authenticate(tokenAutenticacao);
+            if (!(usuarioAutenticado.getPrincipal() instanceof Usuario usuario)) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno na sessão.");
+            }
 
-        var usuario = (Usuario) usuarioAutenticado.getPrincipal();
-        var tokenJwt = tokenService.gerarToken(usuario);
+            var tokenJwt = tokenService.gerarToken(usuario);
+            return ResponseEntity.ok(new TokenResponseDTO(tokenJwt));
 
-        return ResponseEntity.ok(new TokenResponseDTO(tokenJwt));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("E-mail ou senha inválidos.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro inesperado.");
+        }
     }
 
     @PostMapping("/cadastro/cliente")
-    public ResponseEntity<CadastroResponseDTO> cadastrarCliente(@RequestPart("dados") @Valid CadastroClienteDTO dto,
-                                                                @RequestPart(value = "foto", required = false)
-                                                                MultipartFile fotoPerfil) {
+    public ResponseEntity<CadastroResponseDTO> cadastrarCliente(@RequestBody @Valid CadastroClienteDTO dto) {
 
-        var clienteCadastrado = autenticacaoService.cadastrarCliente(dto, fotoPerfil);
+        var clienteCadastrado = autenticacaoService.cadastrarCliente(dto);
 
         var uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(clienteCadastrado.id()).toUri();
@@ -63,11 +71,10 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/cadastro/prestador")
-    public ResponseEntity<CadastroResponseDTO> cadastrarPrestador(@RequestPart("dados") @Valid CadastroPrestadorDTO dto,
-                                                                  @RequestPart(value = "foto", required = false)
-                                                                  MultipartFile fotoPerfil) {
+    public ResponseEntity<CadastroResponseDTO> cadastrarPrestador(@RequestBody @Valid CadastroPrestadorDTO dto) {
 
-        var prestadorCadastrado = autenticacaoService.cadastrarPrestador(dto, fotoPerfil);
+        // CORREÇÃO: Mudamos de @RequestPart para @RequestBody e removemos a MultipartFile
+        var prestadorCadastrado = autenticacaoService.cadastrarPrestador(dto);
 
         var uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(prestadorCadastrado.id()).toUri();

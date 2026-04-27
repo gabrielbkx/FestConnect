@@ -1,6 +1,5 @@
 package com.gabriel.party.services.avaliacao;
 
-
 import com.gabriel.party.dtos.avaliacao.AvaliacaoCreateDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoRequestDTO;
 import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
@@ -12,7 +11,6 @@ import com.gabriel.party.repositories.avaliacao.AvaliacaoRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import jakarta.validation.Valid;
-import liquibase.ui.UIService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +26,8 @@ public class AvaliacaoService {
     private final AvaliacaoMapper mapper;
     private final ClienteRepository clienteRepository;
 
-    public AvaliacaoService(AvaliacaoRepository repository, PrestadorRepository prestadorRepository, AvaliacaoMapper mapper, ClienteRepository clienteRepository) {
+    public AvaliacaoService(AvaliacaoRepository repository, PrestadorRepository prestadorRepository,
+            AvaliacaoMapper mapper, ClienteRepository clienteRepository) {
         this.repository = repository;
         this.prestadorRepository = prestadorRepository;
         this.mapper = mapper;
@@ -76,8 +75,8 @@ public class AvaliacaoService {
         var avaliacaoClienteId = avaliacao.getCliente().getId();
 
         if (!clienteId.equals(avaliacaoClienteId)) {
-            throw new AppException(ErrorCode.AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO, idAvaliacao.toString()
-                    , clienteId.toString());
+            throw new AppException(ErrorCode.AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO, idAvaliacao.toString(),
+                    clienteId.toString());
         }
 
         mapper.atualizarAvaliacaoDoDTO(dto, avaliacao);
@@ -94,7 +93,7 @@ public class AvaliacaoService {
 
         String role = usuario.getRole().name();
 
-        if (role.equalsIgnoreCase("ROLE_ADMINISTRADOR")){
+        if (role.equalsIgnoreCase("ROLE_ADMINISTRADOR")) {
             avaliacao.setAtivo(false);
             repository.save(avaliacao);
             return;
@@ -103,9 +102,9 @@ public class AvaliacaoService {
         var cliente = clienteRepository.findByUsuarioIdAndAtivoTrue((usuario.getId()))
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuario.getId().toString()));
 
-        if (!cliente.getId().equals(avaliacao.getCliente().getId())){
-            throw new AppException(ErrorCode.AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO, id.toString()
-                    , cliente.getId().toString());
+        if (!cliente.getId().equals(avaliacao.getCliente().getId())) {
+            throw new AppException(ErrorCode.AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO, id.toString(),
+                    cliente.getId().toString());
         }
 
         avaliacao.setAtivo(false);

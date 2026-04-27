@@ -18,6 +18,7 @@ public class EmailService {
         email.setSubject(assunto);
         email.setText(mensagem);
 
+        System.out.println("enviando email para: " + destinatario);
         mailSender.send(email);
 
     }

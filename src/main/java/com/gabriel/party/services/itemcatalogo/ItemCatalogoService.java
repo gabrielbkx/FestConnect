@@ -12,9 +12,6 @@ import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -28,8 +25,8 @@ public class ItemCatalogoService {
     private final ItemCatalogoMapper itemCatalogoMapper;
 
     public ItemCatalogoService(ItemCatalogoRepository itemCatalogoRepository,
-                               PrestadorRepository prestadorRepository,
-                               ItemCatalogoMapper itemCatalogoMapper) {
+            PrestadorRepository prestadorRepository,
+            ItemCatalogoMapper itemCatalogoMapper) {
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.prestadorRepository = prestadorRepository;
         this.itemCatalogoMapper = itemCatalogoMapper;
@@ -84,7 +81,7 @@ public class ItemCatalogoService {
 
         var prestadorId = prestador.getId();
 
-        if(!prestadorId.equals(prestadorIdDoItem)){
+        if (!prestadorId.equals(prestadorIdDoItem)) {
             throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
         }
 
@@ -103,7 +100,8 @@ public class ItemCatalogoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ItemCatalogoResponseDTO> buscarItensPorRadarEBusca(String termoBusca, Double lat, Double lon, Double raio, Pageable pageable) {
+    public Page<ItemCatalogoResponseDTO> buscarItensPorRadarEBusca(String termoBusca, Double lat, Double lon,
+            Double raio, Pageable pageable) {
         Double raioMaximo = (raio != null && raio <= 50.0) ? raio : 10.0;
 
         // Se vier nulo ou apenas espaços em branco, converte para string vazia

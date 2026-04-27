@@ -7,7 +7,6 @@ import com.gabriel.party.dtos.autenticacao.DadosRedefinicaoDeSenhaDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.CadastroResponseDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.cliente.CadastroClienteDTO;
 import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
-import com.gabriel.party.dtos.autenticacao.login.TokenResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.autenticacao.UsuarioMapper;
@@ -28,7 +27,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Random;
@@ -60,18 +58,21 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // CORREÇÃO 1: Usando a exceção correta do Spring Security
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL, "email"));
     }
 
-    public CadastroResponseDTO cadastrarCliente(CadastroClienteDTO dto, MultipartFile fotoPerfil) {
+    @Transactional
+    public CadastroResponseDTO cadastrarCliente(CadastroClienteDTO dto) {
         validarEmailExistente(dto.email());
 
         Usuario usuario = mapper.toUsuarioCliente(dto);
         usuario.setSenha(encoder.encode(dto.senha()));
         usuario.setRole(Role.ROLE_CLIENTE);
 
-        clienteService.criarPerfilCliente(dto, usuario, fotoPerfil);
+        // CORREÇÃO 2: Salvando o usuário no banco de dados!
+        usuario = usuarioRepository.save(usuario);
 
         String tokenJwt = tokenService.gerarToken(usuario);
 
@@ -82,8 +83,9 @@ public class AutenticacaoService implements UserDetailsService {
                 tokenJwt);
     }
 
-    public CadastroResponseDTO cadastrarPrestador(CadastroPrestadorDTO dto,MultipartFile fotoPerfil) {
-
+    @Transactional
+    public CadastroResponseDTO cadastrarPrestador(CadastroPrestadorDTO dto) {
+        // Removi o MultipartFile da assinatura
         validarEmailExistente(dto.email());
         validarCpfOuCnpjExistente(dto.cnpjOuCpf());
 
@@ -91,7 +93,11 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setSenha(encoder.encode(dto.senha()));
         usuario.setRole(Role.ROLE_PRESTADOR);
 
-        prestadorService.criarPerfilPrestador(dto, usuario,fotoPerfil);
+        // Ajuste no seu PrestadorService para não exigir a foto por enquanto
+        prestadorService.criarPerfilPrestador(dto, usuario, null);
+
+        // Se o criarPerfilPrestador não fizer o save da entidade pai (Usuario), adicione:
+        // usuario = usuarioRepository.save(usuario);
 
         String tokenJwt = tokenService.gerarToken(usuario);
 
@@ -101,7 +107,6 @@ public class AutenticacaoService implements UserDetailsService {
                 usuario.getEmail(),
                 tokenJwt);
     }
-
 
     private void validarEmailExistente(String email) {
         if (usuarioRepository.existsByEmail(email)) {
@@ -111,22 +116,16 @@ public class AutenticacaoService implements UserDetailsService {
     }
 
     private void validarCpfOuCnpjExistente(String cpfOuCnpj) {
-
         boolean cnpjExiste = prestadorRepository.existsByCnpjOuCpf(cpfOuCnpj);
-
         if (cnpjExiste){
             throw new AppException(ErrorCode.JA_EXISTE_POR_CNPJ,
                     "Já existe um cadastro com esse CNPJ", cpfOuCnpj);
         }
-
     }
 
     public void enviarCodigoRecuperacao(DadosRecuperacaoDTO dados) {
-
         var email = dados.email();
-
         usuarioRepository.findByEmail(email).ifPresent(user -> {
-
             String pin = String.format("%06d", new Random().nextInt(1000000));
 
             CodigoRecuperacao codigoRecuperacao = new CodigoRecuperacao();
@@ -143,16 +142,14 @@ public class AutenticacaoService implements UserDetailsService {
                             "CÓDIGO: %s\n\n" +
                             "Este código é válido por 15 minutos. Se não foi você quem solicitou, " +
                             "apenas ignore este e-mail por segurança.\n\n" +
-                            "Atenciosamente,\nEquipe de Suporte.", pin
+                            "Atenciosamente,\nEquipe de Suporte.", user.getEmail(), pin
             );
 
             emailService.enviarEmail(user.getEmail(), assunto, corpoEmail);
-
         });
     }
 
     public String validarCodigoRecuperacao(DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
-
         var codigo = codigoRecuperacaoRepository.findByUsuarioEmail(dados.email())
                 .orElseThrow(() -> new RuntimeException("Código não encontrado"));
 
@@ -167,7 +164,6 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Transactional
     public void redefinirSenha(DadosRedefinicaoDeSenhaDTO dados){
-
         String email = tokenService.validarTokenDeRecuperacaoDeSenha(dados.token());
 
         Usuario usuario = usuarioRepository.findByEmail(email)
@@ -177,6 +173,4 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setSenha(encoder.encode(dados.novaSenha()));
         usuarioRepository.save(usuario);
     }
-
 }
-

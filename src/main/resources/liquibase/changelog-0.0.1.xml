@@ -111,7 +111,6 @@
             <column name="latitude" type="DOUBLE" remarks="Latitude para geolocalização." />
             <column name="longitude" type="DOUBLE" remarks="Longitude para geolocalização." />
             <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se o cliente está ativo.">
-                <constraints nullable="false" />
             </column>
             <column name="usuario_id" type="UUID" remarks="Identificador do login vinculado ao cliente." />
         </createTable>

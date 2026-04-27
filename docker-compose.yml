@@ -1,5 +1,16 @@
-version: '3'
+
 services:
+
+  postgres_db:
+    image: postgres:17
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+        - fest_connect_network
 
   # Configuracao do Jaeger para coleta de traces
   jaeger:
@@ -33,3 +44,20 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin # Senha padrão para logar
     depends_on:
       - prometheus
+
+  backend_api_fest_connect:
+    build:
+      context: .
+    container_name: api-fest-connect
+    ports:
+      - "8080:8080"
+    env_file:
+      - ".env"
+    depends_on:
+      - postgres_db
+    networks:
+      - fest_connect_network
+
+networks:
+  fest_connect_network:
+    driver: bridge
