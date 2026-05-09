@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/categorias")
+@RequestMapping("/api/v1/categorias")
 @Tag(name = "Categorias", description = "Endpoints para gerenciamento de categorias")
 public class CategoriaController {
 

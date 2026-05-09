@@ -25,7 +25,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/avaliacoes")
+@RequestMapping("/api/v1/avaliacoes")
 @Tag(name = "Avaliações", description = "Endpoints para gerenciamento de avaliações de prestadores")
 public class AvaliacaoController {
 

@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/itens-catalogo")
+@RequestMapping("/api/v1/itens-catalogo")
 @Tag(name = "Itens do Catálogo", description = "Endpoints para gerenciamento do catálogo de itens (produtos/serviços) dos prestadores")
 public class ItemCatalogoController {
 

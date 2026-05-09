@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/midias")
+@RequestMapping("/api/v1/midias")
 @Tag(name = "Mídias", description = "Endpoints para gerenciamento de mídias de prestadores")
 public class MidiaController {
 

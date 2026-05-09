@@ -47,15 +47,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
 
-                        .requestMatchers("/auth/**").permitAll() // Permite acesso sem autenticação para rotas de autenticação
+                        .requestMatchers("/api/v1/auth/**").permitAll() // Permite acesso sem autenticação para rotas de autenticação
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Permite acesso sem autenticação para rotas de documentação
 
-                        .requestMatchers(HttpMethod.GET, "/prestadores/**").permitAll() // Permite acesso público para GET em prestadores
+                        .requestMatchers(HttpMethod.GET, "/api/v1/prestadores/**").permitAll() // Permite acesso público para GET em prestadores
 
                         .requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar
-                        .requestMatchers(HttpMethod.PUT, "/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
-                        .requestMatchers(HttpMethod.DELETE, "/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
 
                         .anyRequest().authenticated() // Qualquer outra rota exige token
                 ).oauth2Login(Customizer.withDefaults())

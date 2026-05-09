@@ -1,8 +1,10 @@
 package com.gabriel.party.dtos.itemcatalogo;
 
+import com.gabriel.party.dtos.midia.MidiaResponseDTO;
 import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public record ItemCatalogoResponseDTO(
@@ -11,6 +13,6 @@ public record ItemCatalogoResponseDTO(
         String descricao,
         BigDecimal precoBase,
         TipoItem tipo,
-        boolean ativo
-        // Mais para frente, vou adicionar a lista de URLs de Mídia aqui dentro
+        boolean ativo,
+        List<MidiaResponseDTO> midias
 ) {}

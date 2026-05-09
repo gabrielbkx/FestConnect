@@ -76,7 +76,7 @@ class ItemCatalogoServiceTest {
 
         responseDTO = new ItemCatalogoResponseDTO(
                 itemId, "Bolo Decorado", "Bolo personalizado para festas",
-                new BigDecimal("150.00"), TipoItem.PRODUTO, true
+                new BigDecimal("150.00"), TipoItem.PRODUTO, true, java.util.List.of()
         );
     }
 

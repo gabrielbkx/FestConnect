@@ -25,7 +25,7 @@ import java.util.UUID;
 
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/prestadores")
+@RequestMapping("/api/v1/prestadores")
 @Tag(name = "Prestadores", description = "Endpoints para gerenciamento de prestadores")
 public class PrestadorController {
 
