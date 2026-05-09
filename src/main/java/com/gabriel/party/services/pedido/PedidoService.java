@@ -96,6 +96,12 @@ public class PedidoService {
             throw new RuntimeException("Apenas pedidos orçados podem ser aceitos.");
         }
 
+        boolean conflito = pedidoRepository.existsByPrestadorIdAndDataEventoAndStatusPedido(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), StatusPedido.ACEITO);
+        if (conflito) {
+            throw new RuntimeException("O prestador já possui um pedido confirmado nesta data.");
+        }
+
         pedido.setStatusPedido(StatusPedido.ACEITO);
         return pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
     }

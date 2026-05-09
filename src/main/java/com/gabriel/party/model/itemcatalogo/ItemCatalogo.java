@@ -1,6 +1,5 @@
 package com.gabriel.party.model.itemcatalogo;
 
-import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
@@ -16,7 +15,9 @@ import java.util.UUID;
 @Data
 @Entity
 @Table(name = "tb_item_catalogo")
-public class ItemCatalogo {
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "tipo", discriminatorType = DiscriminatorType.STRING)
+public abstract class ItemCatalogo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -31,18 +32,12 @@ public class ItemCatalogo {
     @Column(name = "preco_base")
     private BigDecimal precoBase;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TipoItem tipo;
-
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    // Relação com o dono do anúncio
     @ManyToOne
     @JoinColumn(name = "prestador_id", nullable = false)
     private Prestador prestador;
-
 
     @OneToMany(mappedBy = "itemCatalogo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Midia> midias;

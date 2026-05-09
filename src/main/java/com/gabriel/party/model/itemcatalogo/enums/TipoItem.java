@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum TipoItem {
     PRODUTO("produto"),
-    SERVICO("servico")
+    SERVICO("servico"),
+    LOCAL("local")
     ;
 
     private final String valor;
@@ -31,6 +32,6 @@ public enum TipoItem {
             }
         }
 
-        throw new IllegalArgumentException("Tipo de item inválido: '" + text + "'. Valores aceitos: produto, servico.");
+        throw new IllegalArgumentException("Tipo de item inválido: '" + text + "'. Valores aceitos: produto, servico, local.");
     }
 }

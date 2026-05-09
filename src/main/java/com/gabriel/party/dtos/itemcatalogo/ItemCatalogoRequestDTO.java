@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record ItemCatalogoRequestDTO(
 
@@ -16,7 +15,9 @@ public record ItemCatalogoRequestDTO(
 
         BigDecimal precoBase,
 
-        @NotNull(message = "O tipo do item (PRODUTO ou SERVICO) é obrigatório")
-        TipoItem tipo
+        @NotNull(message = "O tipo do item (PRODUTO, SERVICO ou LOCAL) é obrigatório")
+        TipoItem tipo,
+
+        LocalDetalheDTO localDetalhe
 
 ) {}

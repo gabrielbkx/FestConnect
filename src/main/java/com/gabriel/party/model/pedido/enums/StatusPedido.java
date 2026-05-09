@@ -9,7 +9,8 @@ public enum StatusPedido {
     ORCADO("orçado"),
     RECUSADO("recusado"),
     CANCELADO("cancelado"),
-    ACEITO("aceito");
+    ACEITO("aceito"),
+    EXPIRADO("expirado");
 
     private String valor;
 
@@ -35,6 +36,6 @@ public enum StatusPedido {
         }
 
         throw new IllegalArgumentException("Tipo de pedido inválido: '" + text + "'. Valores aceitos: pendente, " +
-                "orçado, recusado, cancelado.");
+                "orçado, recusado, cancelado, aceito, expirado.");
     }
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="GF" id="0.1.3-heranca-joined-item-catalogo">
+
+        <!-- Subclasse Produto (herança JOINED) -->
+        <createTable tableName="tb_produto" remarks="Especialização de ItemCatalogo para produtos alugáveis (mesas, cadeiras, etc.).">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="tb_produto" baseColumnNames="id"
+                referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                constraintName="fk_produto_item_catalogo"
+                onDelete="CASCADE"/>
+
+        <!-- Subclasse Servico (herança JOINED) -->
+        <createTable tableName="tb_servico" remarks="Especialização de ItemCatalogo para serviços (DJ, buffet, fotografia, etc.).">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="tb_servico" baseColumnNames="id"
+                referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                constraintName="fk_servico_item_catalogo"
+                onDelete="CASCADE"/>
+
+        <!-- Subclasse Local (herança JOINED) -->
+        <createTable tableName="tb_local" remarks="Especialização de ItemCatalogo para locais/espaços para eventos.">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="capacidade_maxima" type="INT" remarks="Número máximo de pessoas que o espaço comporta."/>
+            <column name="metragem" type="DECIMAL(10,2)" remarks="Área total em metros quadrados."/>
+            <column name="permite_som" type="BOOLEAN" remarks="Indica se permite aparelhagem de som."/>
+            <column name="tem_estacionamento" type="BOOLEAN" remarks="Indica se possui estacionamento."/>
+            <column name="tipo_espaco" type="VARCHAR(50)" remarks="ABERTO, FECHADO ou SEMI_ABERTO."/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="tb_local" baseColumnNames="id"
+                referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                constraintName="fk_local_item_catalogo"
+                onDelete="CASCADE"/>
+
+        <!-- Migra registros existentes para as tabelas de especialização -->
+        <sql>INSERT INTO tb_produto (id) SELECT id FROM tb_item_catalogo WHERE tipo = 'PRODUTO'</sql>
+        <sql>INSERT INTO tb_servico (id) SELECT id FROM tb_item_catalogo WHERE tipo = 'SERVICO'</sql>
+
+    </changeSet>
+
+</databaseChangeLog>

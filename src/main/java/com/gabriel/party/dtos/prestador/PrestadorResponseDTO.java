@@ -22,7 +22,10 @@ public record PrestadorResponseDTO(
 
         List<ItemCatalogoResponseDTO> itensCatalogo,
         List<MidiaResponseDTO> midias,
-        List<AvaliacaoResponseDTO> avaliacoes
+        List<AvaliacaoResponseDTO> avaliacoes,
+
+        Double mediaAvaliacoes,
+        Integer quantidadeAvaliacoes
 
 ) {}
 

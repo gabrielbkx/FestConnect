@@ -6,6 +6,7 @@ import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.itemcatalogo.ItemCatalogoMapper;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
+import com.gabriel.party.model.itemcatalogo.Produto;
 import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
@@ -65,18 +66,17 @@ class ItemCatalogoServiceTest {
         prestador.setId(prestadorId);
         prestador.setNomeCompleto("Prestador Teste");
 
-        item = new ItemCatalogo();
+        item = new Produto();
         item.setId(itemId);
         item.setTitulo("Bolo Decorado");
         item.setDescricao("Bolo personalizado para festas");
         item.setPrecoBase(new BigDecimal("150.00"));
-        item.setTipo(TipoItem.PRODUTO);
         item.setAtivo(true);
         item.setPrestador(prestador);
 
         responseDTO = new ItemCatalogoResponseDTO(
                 itemId, "Bolo Decorado", "Bolo personalizado para festas",
-                new BigDecimal("150.00"), TipoItem.PRODUTO, true, java.util.List.of()
+                new BigDecimal("150.00"), "produto", true, java.util.List.of(), null
         );
     }
 
@@ -88,7 +88,7 @@ class ItemCatalogoServiceTest {
         @DisplayName("Deve criar item com sucesso")
         void deveCriarItemComSucesso() {
             var dto = new ItemCatalogoRequestDTO("Bolo Decorado", "Bolo personalizado para festas",
-                    new BigDecimal("150.00"), TipoItem.PRODUTO);
+                    new BigDecimal("150.00"), TipoItem.PRODUTO, null);
 
             when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
             when(itemCatalogoMapper.toEntity(dto)).thenReturn(item);
@@ -99,7 +99,7 @@ class ItemCatalogoServiceTest {
 
             assertThat(resultado).isNotNull();
             assertThat(resultado.titulo()).isEqualTo("Bolo Decorado");
-            assertThat(resultado.tipo()).isEqualTo(TipoItem.PRODUTO);
+            assertThat(resultado.tipo()).isEqualTo("produto");
             verify(itemCatalogoRepository).save(item);
             assertThat(item.getPrestador()).isEqualTo(prestador);
         }
@@ -107,7 +107,7 @@ class ItemCatalogoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando prestador não encontrado")
         void deveLancarExcecaoQuandoPrestadorNaoEncontrado() {
-            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO);
+            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO, null);
 
             when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.empty());
 
@@ -217,7 +217,7 @@ class ItemCatalogoServiceTest {
         @DisplayName("Deve atualizar item com sucesso quando prestador é o dono")
         void deveAtualizarItemComSucesso() {
             var dto = new ItemCatalogoRequestDTO("Bolo Atualizado", "Nova descrição",
-                    new BigDecimal("200.00"), TipoItem.PRODUTO);
+                    new BigDecimal("200.00"), TipoItem.PRODUTO, null);
 
             when(itemCatalogoRepository.findByIdAndAtivoTrue(itemId)).thenReturn(Optional.of(item));
             when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
@@ -233,7 +233,7 @@ class ItemCatalogoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando item não encontrado ao atualizar")
         void deveLancarExcecaoQuandoItemNaoEncontradoAoAtualizar() {
-            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO);
+            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO, null);
 
             when(itemCatalogoRepository.findByIdAndAtivoTrue(itemId)).thenReturn(Optional.empty());
 
@@ -248,7 +248,7 @@ class ItemCatalogoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando prestador não encontrado ao atualizar")
         void deveLancarExcecaoQuandoPrestadorNaoEncontradoAoAtualizar() {
-            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO);
+            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO, null);
 
             when(itemCatalogoRepository.findByIdAndAtivoTrue(itemId)).thenReturn(Optional.of(item));
             when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.empty());
@@ -264,7 +264,7 @@ class ItemCatalogoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando prestador não é o dono do item")
         void deveLancarExcecaoQuandoPrestadorNaoEDono() {
-            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO);
+            var dto = new ItemCatalogoRequestDTO("Bolo", "Desc", new BigDecimal("100"), TipoItem.PRODUTO, null);
 
             var outroPrestador = new Prestador();
             outroPrestador.setId(UUID.randomUUID());

@@ -105,7 +105,7 @@ class PrestadorServiceTest {
                 "11999999999", categoriaId, "Buffet",
                 new EnderecoDTO("Rua Teste", "Centro", "01001000", "São Paulo", "SP",
                         null, 100, -23.5, -46.6),
-                List.of(), List.of(), List.of()
+                List.of(), List.of(), List.of(), null, null
         );
     }
 

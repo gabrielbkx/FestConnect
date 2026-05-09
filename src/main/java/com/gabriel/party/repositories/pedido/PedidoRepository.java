@@ -4,8 +4,11 @@ package com.gabriel.party.repositories.pedido;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +17,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     List<Pedido> findByPrestadorIdAndStatusPedido(UUID prestadorId, StatusPedido status);
 
+    boolean existsByPrestadorIdAndDataEventoAndStatusPedido(UUID prestadorId, LocalDateTime dataEvento, StatusPedido status);
 
-
+    @Modifying
+    @Query("UPDATE Pedido p SET p.statusPedido = :novoStatus WHERE p.statusPedido = :statusAtual AND p.validadeOrcamento < :agora")
+    int expirarOrcamentosVencidos(StatusPedido statusAtual, StatusPedido novoStatus, LocalDateTime agora);
 }
