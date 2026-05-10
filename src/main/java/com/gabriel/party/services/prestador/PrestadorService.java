@@ -4,6 +4,7 @@ package com.gabriel.party.services.prestador;
 import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
+import com.gabriel.party.dtos.prestador.PrestadorSummaryDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.autenticacao.UsuarioMapper;
@@ -84,8 +85,8 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PrestadorResponseDTO> listarPrestadores(Pageable pageable) {
-        return repository.findAllByAtivoTrue(pageable).map(mapper::toDto);
+    public Page<PrestadorSummaryDTO> listarPrestadores(Pageable pageable) {
+        return repository.findAllByAtivoTrue(pageable).map(mapper::toSummaryDto);
     }
 
     @Transactional(readOnly = true)
@@ -134,28 +135,19 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    //Aqui mostrando todos os prestadores proximos sem filtro.
-    //nos proximos passos vamos dar um jeito dele fazer um "top" prestadores mais proximos
-    public List<PrestadorResponseDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
-
-        List<Prestador> prestadores = repository.buscarPorProximidade(lat, lon, raio);
-
-        return prestadores.stream()
-                .map(mapper::toDto)
+    public List<PrestadorSummaryDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
+        return repository.buscarPorProximidade(lat, lon, raio)
+                .stream()
+                .map(mapper::toSummaryDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<PrestadorResponseDTO> buscarPorFiltros(UUID categoriaId, Double lat, Double lon, Double raio) {
-        // Define um raio padrão de 50km se vier nulo
+    public List<PrestadorSummaryDTO> buscarPorFiltros(UUID categoriaId, Double lat, Double lon, Double raio) {
         Double raioBusca = (raio != null) ? raio : 50.0;
-
-        // Chama o Repository com a Query de Haversine + Categoria
-        List<Prestador> prestadores = repository.buscarPorCategoriaEProximidade(categoriaId, lat, lon, raioBusca);
-
-        // Converte a lista de entidades (com itens e mídias) para DTOs
-        return prestadores.stream()
-                .map(mapper::toDto)
+        return repository.buscarPorCategoriaEProximidade(categoriaId, lat, lon, raioBusca)
+                .stream()
+                .map(mapper::toSummaryDto)
                 .collect(Collectors.toList());
     }
 }

@@ -2,6 +2,7 @@ package com.gabriel.party.mapper.prestador;
 
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
+import com.gabriel.party.dtos.prestador.PrestadorSummaryDTO;
 import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.prestador.Prestador;
 import org.mapstruct.Mapper;
@@ -10,6 +11,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
 import java.util.Collection;
+import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface PrestadorMapper {
@@ -24,6 +26,14 @@ public interface PrestadorMapper {
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
     @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
     PrestadorResponseDTO toDto(Prestador prestador);
+
+    @Mapping(target = "nome", source = "nomeCompleto")
+    @Mapping(target = "categoriaNome", source = "categoria.nome")
+    @Mapping(target = "cidade", source = "endereco.cidade")
+    @Mapping(target = "estado", source = "endereco.estado")
+    PrestadorSummaryDTO toSummaryDto(Prestador prestador);
+
+    List<PrestadorSummaryDTO> toSummaryList(List<Prestador> prestadores);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)

@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Formula;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -63,5 +65,11 @@ public class Prestador {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", unique = true)
     private Usuario usuario;
+
+    @Formula("(SELECT AVG(a.nota) FROM tb_avaliacoes a WHERE a.prestador_id = id AND a.ativo = true)")
+    private Double mediaAvaliacoes;
+
+    @Formula("(SELECT COUNT(a.id) FROM tb_avaliacoes a WHERE a.prestador_id = id AND a.ativo = true)")
+    private Integer quantidadeAvaliacoes;
 
 }
