@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.gabriel.party.dtos.integracoes.CoordenadasDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -20,7 +22,10 @@ public class NominatimGeocodingService implements GeocodingService {
     private record NominatimResponse(String lat, String lon) {}
 
     @Override
-    public CoordenadasDTO buscarCoordenadas(String logradouro, String cidade, String estado) {
+    @WithSpan("geocoding.buscarCoordenadas")
+    public CoordenadasDTO buscarCoordenadas(String logradouro,
+                                            @SpanAttribute("geocoding.cidade") String cidade,
+                                            @SpanAttribute("geocoding.estado") String estado) {
 
         String buscaLivre = logradouro + ", " + cidade + ", " + estado + ", Brazil";
 

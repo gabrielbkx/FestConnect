@@ -1,5 +1,7 @@
 package com.gabriel.party.services.email;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,10 @@ public class EmailService {
     @Value("${spring.mail.from:noreply@festconnect.com}")
     private String from;
 
-    public void enviarEmail(String destinatario, String assunto, String corpoHtml) {
+    @WithSpan("email.enviar")
+    public void enviarEmail(@SpanAttribute("email.destinatario") String destinatario,
+                            @SpanAttribute("email.assunto") String assunto,
+                            String corpoHtml) {
         if (mailSender == null) {
             logger.warning("JavaMailSender nao configurado. Email ignorado para: " + destinatario);
             return;

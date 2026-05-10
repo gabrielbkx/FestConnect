@@ -15,7 +15,8 @@ FROM amazoncorretto:21-alpine
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
+COPY opentelemetry-javaagent.jar otel-agent.jar
 
 EXPOSE 8080
 
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-javaagent:/app/otel-agent.jar", "-jar", "app.jar"]

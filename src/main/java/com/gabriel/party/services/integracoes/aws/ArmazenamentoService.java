@@ -2,6 +2,8 @@ package com.gabriel.party.services.integracoes.aws;
 
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ public class ArmazenamentoService {
     @Value("${aws.s3.bucket-name}")
     private String nomeBucket;
 
-    public String salvarMidias(MultipartFile arquivo) {
+    @WithSpan("s3.salvarMidia")
+    public String salvarMidias(@SpanAttribute("arquivo.contentType") MultipartFile arquivo) {
 
         // Precisamos saber o tipo de arquivo se é uma imagem ou video
         String tipoArquivo = arquivo.getContentType();
@@ -57,7 +60,8 @@ public class ArmazenamentoService {
     }
 
 
-    public void deletaMidia(String url) {
+    @WithSpan("s3.deletaMidia")
+    public void deletaMidia(@SpanAttribute("arquivo.url") String url) {
 
         if (url == null || !url.contains("/")) {
             throw new AppException(ErrorCode.URL_INVALIDA, url);
