@@ -105,8 +105,20 @@ public class PrestadorService {
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
         prestador.setCategoria(categoria);
-        repository.save(prestador);
 
+        if (dto.endereco() != null) {
+            var coordenadas = geocodingService.buscarCoordenadas(
+                    dto.endereco().logradouro(),
+                    dto.endereco().cidade(),
+                    dto.endereco().estado());
+            if (coordenadas != null) {
+                prestador.getEndereco().atribuirCoordenadas(coordenadas.latitude(), coordenadas.longitude());
+            } else {
+                logger.warning("Geocoding falhou durante atualização do prestador " + id + " — coordenadas mantidas.");
+            }
+        }
+
+        repository.save(prestador);
         return mapper.toDto(prestador);
     }
 

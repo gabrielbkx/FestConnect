@@ -21,14 +21,14 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
     Optional<Prestador> findByIdAndAtivoTrue(UUID id);
 
     @Query(value = """
-
-            SELECT * FROM tb_prestador
-    WHERE (6371 * acos(
-        cos(radians(:latCliente)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lonCliente)) + 
+    SELECT * FROM tb_prestador
+    WHERE ativo = true
+      AND (6371 * acos(
+        cos(radians(:latCliente)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lonCliente)) +
         sin(radians(:latCliente)) * sin(radians(latitude))
     )) <= :raioKm
     ORDER BY (6371 * acos(
-        cos(radians(:latCliente)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lonCliente)) + 
+        cos(radians(:latCliente)) * cos(radians(latitude)) * cos(radians(longitude) - radians(:lonCliente)) +
         sin(radians(:latCliente)) * sin(radians(latitude))
     )) ASC
     """, nativeQuery = true)

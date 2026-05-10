@@ -100,13 +100,14 @@ public class ItemCatalogoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ItemCatalogoResponseDTO> buscarItensPorRadarEBusca(String termoBusca, Double lat, Double lon,
-            Double raio, Pageable pageable) {
+    public Page<ItemCatalogoResponseDTO> buscarItensPorRadarEBusca(String termoBusca, String tipo, Double lat,
+            Double lon, Double raio, Pageable pageable) {
         Double raioMaximo = (raio != null && raio <= 50.0) ? raio : 10.0;
-
-        // Se vier nulo ou apenas espaços em branco, converte para string vazia
         String termoTratado = (termoBusca == null || termoBusca.trim().isEmpty()) ? "" : termoBusca.trim();
+        String tipoTratado = (tipo == null || tipo.trim().isEmpty()) ? "" : tipo.trim().toUpperCase();
 
-        return itemCatalogoRepository.buscarItensPorTermoEProximidade(termoTratado, lat, lon, raioMaximo, pageable);
+        return itemCatalogoRepository
+                .buscarItensPorTermoEProximidade(termoTratado, tipoTratado, lat, lon, raioMaximo, pageable)
+                .map(itemCatalogoMapper::toDto);
     }
 }

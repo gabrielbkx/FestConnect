@@ -318,57 +318,73 @@ class ItemCatalogoServiceTest {
         @DisplayName("Deve buscar itens com raio informado dentro do limite")
         void deveBuscarComRaioInformado() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCatalogoResponseDTO> pageEsperada = new PageImpl<>(List.of(responseDTO));
+            Page<ItemCatalogo> pageEntidade = new PageImpl<>(List.of(item));
 
-            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("bolo", -23.5, -46.6, 20.0, pageable))
-                    .thenReturn(pageEsperada);
+            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("bolo", "", -23.5, -46.6, 20.0, pageable))
+                    .thenReturn(pageEntidade);
+            when(itemCatalogoMapper.toDto(item)).thenReturn(responseDTO);
 
-            var resultado = service.buscarItensPorRadarEBusca("bolo", -23.5, -46.6, 20.0, pageable);
+            var resultado = service.buscarItensPorRadarEBusca("bolo", null, -23.5, -46.6, 20.0, pageable);
 
             assertThat(resultado.getContent()).hasSize(1);
-            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("bolo", -23.5, -46.6, 20.0, pageable);
+            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("bolo", "", -23.5, -46.6, 20.0, pageable);
         }
 
         @Test
         @DisplayName("Deve usar raio padrão de 10km quando raio for nulo")
         void deveUsarRaioPadraoQuandoRaioNulo() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCatalogoResponseDTO> pageEsperada = new PageImpl<>(List.of());
+            Page<ItemCatalogo> pageEntidade = new PageImpl<>(List.of());
 
-            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("", -23.5, -46.6, 10.0, pageable))
-                    .thenReturn(pageEsperada);
+            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("", "", -23.5, -46.6, 10.0, pageable))
+                    .thenReturn(pageEntidade);
 
-            service.buscarItensPorRadarEBusca(null, -23.5, -46.6, null, pageable);
+            service.buscarItensPorRadarEBusca(null, null, -23.5, -46.6, null, pageable);
 
-            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("", -23.5, -46.6, 10.0, pageable);
+            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("", "", -23.5, -46.6, 10.0, pageable);
         }
 
         @Test
         @DisplayName("Deve usar raio padrão de 10km quando raio excede 50km")
         void deveUsarRaioPadraoQuandoRaioExcede50() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCatalogoResponseDTO> pageEsperada = new PageImpl<>(List.of());
+            Page<ItemCatalogo> pageEntidade = new PageImpl<>(List.of());
 
-            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("festa", -23.5, -46.6, 10.0, pageable))
-                    .thenReturn(pageEsperada);
+            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("festa", "", -23.5, -46.6, 10.0, pageable))
+                    .thenReturn(pageEntidade);
 
-            service.buscarItensPorRadarEBusca("festa", -23.5, -46.6, 100.0, pageable);
+            service.buscarItensPorRadarEBusca("festa", null, -23.5, -46.6, 100.0, pageable);
 
-            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("festa", -23.5, -46.6, 10.0, pageable);
+            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("festa", "", -23.5, -46.6, 10.0, pageable);
         }
 
         @Test
         @DisplayName("Deve tratar termo de busca com espaços em branco como vazio")
         void deveTratarTermoComEspacosEmBranco() {
             Pageable pageable = PageRequest.of(0, 10);
-            Page<ItemCatalogoResponseDTO> pageEsperada = new PageImpl<>(List.of());
+            Page<ItemCatalogo> pageEntidade = new PageImpl<>(List.of());
 
-            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("", -23.5, -46.6, 10.0, pageable))
-                    .thenReturn(pageEsperada);
+            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("", "", -23.5, -46.6, 10.0, pageable))
+                    .thenReturn(pageEntidade);
 
-            service.buscarItensPorRadarEBusca("   ", -23.5, -46.6, null, pageable);
+            service.buscarItensPorRadarEBusca("   ", null, -23.5, -46.6, null, pageable);
 
-            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("", -23.5, -46.6, 10.0, pageable);
+            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("", "", -23.5, -46.6, 10.0, pageable);
+        }
+
+        @Test
+        @DisplayName("Deve filtrar por tipo quando informado")
+        void deveFiltrarPorTipo() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<ItemCatalogo> pageEntidade = new PageImpl<>(List.of(item));
+
+            when(itemCatalogoRepository.buscarItensPorTermoEProximidade("", "LOCAL", -23.5, -46.6, 10.0, pageable))
+                    .thenReturn(pageEntidade);
+            when(itemCatalogoMapper.toDto(item)).thenReturn(responseDTO);
+
+            service.buscarItensPorRadarEBusca(null, "local", -23.5, -46.6, null, pageable);
+
+            verify(itemCatalogoRepository).buscarItensPorTermoEProximidade("", "LOCAL", -23.5, -46.6, 10.0, pageable);
         }
     }
 }

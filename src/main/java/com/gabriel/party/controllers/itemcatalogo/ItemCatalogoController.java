@@ -97,10 +97,10 @@ public class ItemCatalogoController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_PRESTADOR')")
     public ResponseEntity<ItemCatalogoResponseDTO> atualizarItemCatalogo(@Valid @RequestBody ItemCatalogoRequestDTO dto,
-                                                                         @PathVariable UUID idItem,
+                                                                         @PathVariable("id") UUID id,
                                                                          @AuthenticationPrincipal Usuario usuario){
         UUID idUsuarioLogado = usuario.getId();
-        var itemAtualizado = itemCatalogoService.atualizarItem(dto, idItem, idUsuarioLogado);
+        var itemAtualizado = itemCatalogoService.atualizarItem(dto, id, idUsuarioLogado);
         return ResponseEntity.ok(itemAtualizado);
     }
 
@@ -115,17 +115,21 @@ public class ItemCatalogoController {
         return ResponseEntity.ok(item);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Itens encontrados no raio informado")
+    })
+    @Operation(summary = "Buscar itens por radar",
+            description = "Retorna itens ativos dentro do raio (km) a partir das coordenadas. " +
+                    "Filtros opcionais: busca por texto e tipo (PRODUTO, SERVICO, LOCAL).")
     @GetMapping("/filtro-radar")
     public ResponseEntity<Page<ItemCatalogoResponseDTO>> buscarItensNoRadar(
             @RequestParam(name = "busca", required = false) String busca,
+            @RequestParam(name = "tipo", required = false) String tipo,
             @RequestParam(name = "lat") Double lat,
             @RequestParam(name = "lon") Double lon,
             @RequestParam(name = "raio", defaultValue = "5.0") Double raio,
-            @PageableDefault(size = 10, page = 0) Pageable pageable // O Spring faz a mágica aqui
+            @PageableDefault(size = 10, page = 0) Pageable pageable
     ) {
-        // Agora você só repassa o objeto pageable direto pro Service
-        Page<ItemCatalogoResponseDTO> itensEncontrados = itemCatalogoService.buscarItensPorRadarEBusca(busca, lat, lon, raio, pageable);
-
-        return ResponseEntity.ok(itensEncontrados);
+        return ResponseEntity.ok(itemCatalogoService.buscarItensPorRadarEBusca(busca, tipo, lat, lon, raio, pageable));
     }
 }
