@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git stash *)",
+      "Bash(./mvnw -q test -Dtest=PartyApplicationTests)",
+      "Bash(./mvnw -q -DskipTests compile)",
+      "Bash(./mvnw -q test)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(mvn compile *)",
+      "Bash(mvn test *)"
+    ]
+  }
+}

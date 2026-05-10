@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
 @Component
-public class PedidoScheduler {
+public class PedidoExpiracaoJob {
 
-    private static final Logger logger = Logger.getLogger(PedidoScheduler.class.getName());
+    private static final Logger logger = Logger.getLogger(PedidoExpiracaoJob.class.getName());
 
     private final PedidoRepository pedidoRepository;
     private final EmailService emailService;
 
-    public PedidoScheduler(PedidoRepository pedidoRepository, EmailService emailService) {
+    public PedidoExpiracaoJob(PedidoRepository pedidoRepository, EmailService emailService) {
         this.pedidoRepository = pedidoRepository;
         this.emailService = emailService;
     }
@@ -43,6 +43,6 @@ public class PedidoScheduler {
             );
         });
 
-        logger.info("[PedidoScheduler] " + aExpirar.size() + " orcamento(s) expirado(s) e notificados.");
+        logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " orcamento(s) expirado(s) e notificados.");
     }
 }

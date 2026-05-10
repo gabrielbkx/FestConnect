@@ -25,13 +25,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PedidoSchedulerTest {
+class PedidoExpiracaoJobTest {
 
     @Mock private PedidoRepository pedidoRepository;
     @Mock private EmailService emailService;
 
     @InjectMocks
-    private PedidoScheduler scheduler;
+    private PedidoExpiracaoJob scheduler;
 
     private Pedido pedido;
 
