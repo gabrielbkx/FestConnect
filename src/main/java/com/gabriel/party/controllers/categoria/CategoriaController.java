@@ -38,7 +38,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Criar nova categoria", description = "Cria uma nova categoria e a retorna.")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
     public ResponseEntity<CategoriaReponseDTO> criarCategoria(@Valid @RequestBody CategoriaRequestDTO dto){
 
         var categoriaCriada = categoriaService.salvarCategoria(dto);
@@ -69,7 +69,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Deletar categoria", description = "Realiza a exclusão lógica (inativação) de uma categoria pelo ID.")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> deletarCategoria(@PathVariable UUID id){
         categoriaService.deletar(id);
         return ResponseEntity.noContent().build();

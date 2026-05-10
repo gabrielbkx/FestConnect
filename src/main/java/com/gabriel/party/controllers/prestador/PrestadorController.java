@@ -65,7 +65,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Atualizar prestador", description = "Atualiza os dados de um prestador existente pelo ID.")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PRESTADOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<PrestadorResponseDTO> atualizarPrestador(@Valid @RequestBody PrestadorRequestDTO dto, @PathVariable UUID id) {
         return ResponseEntity.ok(prestadorService.atualizarPrestador(dto, id));
     }
@@ -76,7 +76,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Deletar prestador", description = "Realiza a exclusão lógica (inativação) de um prestador pelo ID.")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PRESTADOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> deletarPrestador(@PathVariable UUID id) {
         prestadorService.deletar(id);
         return ResponseEntity.noContent().build();

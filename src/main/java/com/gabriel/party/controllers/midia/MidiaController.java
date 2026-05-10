@@ -88,7 +88,7 @@ public class MidiaController {
     })
     @Operation(summary = "Atualizar mídia", description = "Atualiza tipo, ordem ou vínculo com item do catálogo.")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<MidiaResponseDTO> atualizarMidia(@Valid @RequestBody MidiaRequestDTO dto,
                                                            @PathVariable UUID id,
                                                            @AuthenticationPrincipal Usuario usuario) {
@@ -102,7 +102,7 @@ public class MidiaController {
     })
     @Operation(summary = "Deletar mídia", description = "Remove a mídia do S3 e do banco de dados.")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> deletarMidia(@PathVariable UUID id,
                                              @AuthenticationPrincipal Usuario usuario) {
         midiaService.deletar(id, usuario.getId());

@@ -31,6 +31,10 @@ public enum ErrorCode {
     CLIENTE_NAO_ENCONTRADO("cliente_nao_encontrado", HttpStatus.NOT_FOUND, "Cliente '%id%' não encontrado."),
     CLIENTE_EMAIL_DUPLICADO("cliente_email_duplicado", HttpStatus.CONFLICT, "Já existe um cliente cadastrado com o email '%email%'."),
 
+    // Erros de Favoritos
+    FAVORITO_JA_ADICIONADO("favorito_ja_adicionado", HttpStatus.CONFLICT, "O item '%id%' já está nos favoritos."),
+    FAVORITO_NAO_ENCONTRADO("favorito_nao_encontrado", HttpStatus.NOT_FOUND, "O item '%id%' não está nos favoritos."),
+
     // Erros de ItemCatalogo
     ITEM_CATALOGO_NAO_ENCONTRADO("item_nao_encontrado", HttpStatus.NOT_FOUND, "Item do catálogo '%id%' não encontrado."),
     ITEM_PRECO_INVALIDO("item_preco_invalido", HttpStatus.BAD_REQUEST, "O preço do item '%nome%' não pode ser negativo."),
