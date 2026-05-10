@@ -19,6 +19,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     boolean existsByPrestadorIdAndDataEventoAndStatusPedido(UUID prestadorId, LocalDateTime dataEvento, StatusPedido status);
 
+    List<Pedido> findByStatusPedidoAndValidadeOrcamentoBefore(StatusPedido status, LocalDateTime agora);
+
     @Modifying
     @Query("UPDATE Pedido p SET p.statusPedido = :novoStatus WHERE p.statusPedido = :statusAtual AND p.validadeOrcamento < :agora")
     int expirarOrcamentosVencidos(StatusPedido statusAtual, StatusPedido novoStatus, LocalDateTime agora);
