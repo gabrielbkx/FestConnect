@@ -6,6 +6,7 @@ import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.itemcatalogo.ItemCatalogoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -123,11 +124,13 @@ public class ItemCatalogoController {
                     "Filtros opcionais: busca por texto e tipo (PRODUTO, SERVICO, LOCAL).")
     @GetMapping("/filtro-radar")
     public ResponseEntity<Page<ItemCatalogoResponseDTO>> buscarItensNoRadar(
-            @RequestParam(name = "busca", required = false) String busca,
+            @Parameter(description = "Texto livre para busca no título dos itens", example = "buffet") @RequestParam(name = "busca", required = false) String busca,
+            @Parameter(description = "Filtrar por tipo de item", allowEmptyValue = true, example = "SERVICO",
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(allowableValues = {"PRODUTO", "SERVICO", "LOCAL"}))
             @RequestParam(name = "tipo", required = false) String tipo,
-            @RequestParam(name = "lat") Double lat,
-            @RequestParam(name = "lon") Double lon,
-            @RequestParam(name = "raio", defaultValue = "5.0") Double raio,
+            @Parameter(description = "Latitude da localização do cliente", example = "-23.5505") @RequestParam(name = "lat") Double lat,
+            @Parameter(description = "Longitude da localização do cliente", example = "-46.6333") @RequestParam(name = "lon") Double lon,
+            @Parameter(description = "Raio de busca em quilômetros", example = "5.0") @RequestParam(name = "raio", defaultValue = "5.0") Double raio,
             @PageableDefault(size = 10, page = 0) Pageable pageable
     ) {
         return ResponseEntity.ok(itemCatalogoService.buscarItensPorRadarEBusca(busca, tipo, lat, lon, raio, pageable));

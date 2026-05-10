@@ -7,6 +7,7 @@ package com.gabriel.party.controllers.prestador;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.services.prestador.PrestadorService;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
@@ -86,9 +87,9 @@ public class PrestadorController {
     @Operation(summary = "Buscar por proximidade", description = "Retorna uma lista de prestadores mais próximos baseada nas coordenadas e raio fornecidos.")
     @GetMapping("/proximidade")
     public ResponseEntity<List<PrestadorResponseDTO>> buscarPorProximidade(
-            @RequestParam Double lat,
-            @RequestParam Double lon,
-            @RequestParam(defaultValue = "10.0") Double raio) { // Raio padrão de 10km
+            @Parameter(description = "Latitude da localização do cliente", example = "-23.5505") @RequestParam Double lat,
+            @Parameter(description = "Longitude da localização do cliente", example = "-46.6333") @RequestParam Double lon,
+            @Parameter(description = "Raio de busca em quilômetros", example = "10.0") @RequestParam(defaultValue = "10.0") Double raio) {
 
         var resultados = prestadorService.buscarPrestadoresProximos(lat, lon, raio);
         return ResponseEntity.ok(resultados);
@@ -102,10 +103,10 @@ public class PrestadorController {
                     " dentro de um raio definido a partir de coordenadas geográficas.")
     @GetMapping("/filtro-radar")
     public ResponseEntity<List<PrestadorResponseDTO>> filtrarPrestadores(
-            @RequestParam UUID categoriaId,
-            @RequestParam Double lat,
-            @RequestParam Double lon,
-            @RequestParam(required = false) Double raio) {
+            @Parameter(description = "ID da categoria", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6") @RequestParam UUID categoriaId,
+            @Parameter(description = "Latitude da localização do cliente", example = "-23.5505") @RequestParam Double lat,
+            @Parameter(description = "Longitude da localização do cliente", example = "-46.6333") @RequestParam Double lon,
+            @Parameter(description = "Raio de busca em quilômetros. Padrão: 50 km", example = "20.0") @RequestParam(required = false) Double raio) {
 
         var resultados = prestadorService.buscarPorFiltros(categoriaId, lat, lon, raio);
         return ResponseEntity.ok(resultados);
