@@ -38,35 +38,6 @@ services:
     networks:
       - fest_connect_network
 
-  # --- perfil monitoring: subir apenas em desenvolvimento/observabilidade ---
-  # uso: docker compose --profile monitoring up
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    profiles: [monitoring]
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - fest_connect_network
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    profiles: [monitoring]
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    depends_on:
-      - prometheus
-    networks:
-      - fest_connect_network
-
 networks:
   fest_connect_network:
     driver: bridge
