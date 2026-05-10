@@ -15,17 +15,15 @@ import com.gabriel.party.repositories.pedido.PedidoRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.email.EmailService;
+import com.gabriel.party.services.email.EmailTemplates;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class PedidoService {
-
-    private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'as' HH:mm");
 
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
@@ -58,14 +56,8 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 prestador.getUsuario().getEmail(),
-                "FestConnect - Novo pedido de orcamento",
-                "Ola, " + prestador.getNomeCompleto() + "!\n\n" +
-                "Voce recebeu um novo pedido de orcamento de " + cliente.getNomeCompleto() + ".\n\n" +
-                "Evento: " + salvo.getTipoEvento() + "\n" +
-                "Data: " + salvo.getDataEvento().format(FORMATO_DATA) + "\n" +
-                "Local: " + salvo.getLocalEvento() + "\n" +
-                "Convidados: " + salvo.getNumeroConvidados() + "\n\n" +
-                "Acesse a plataforma para enviar seu orcamento."
+                "FestConnect - Novo pedido de orçamento",
+                EmailTemplates.novoPedidoParaPrestador(salvo)
         );
 
         return salvo;
@@ -90,14 +82,8 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
-                "FestConnect - Seu orcamento esta pronto",
-                "Ola, " + pedido.getCliente().getNomeCompleto() + "!\n\n" +
-                pedido.getPrestador().getNomeCompleto() + " enviou um orcamento para o seu evento.\n\n" +
-                "Evento: " + pedido.getTipoEvento() + "\n" +
-                "Data: " + pedido.getDataEvento().format(FORMATO_DATA) + "\n" +
-                "Valor: R$ " + pedido.getValor() + "\n" +
-                "Validade do orcamento: " + pedido.getValidadeOrcamento().format(FORMATO_DATA) + "\n\n" +
-                "Acesse a plataforma para aceitar ou recusar o orcamento."
+                "FestConnect - Seu orçamento está pronto",
+                EmailTemplates.orcamentoEnviadoParaCliente(pedido)
         );
 
         return resposta;
@@ -111,13 +97,8 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
-                "FestConnect - Pedido nao disponivel",
-                "Ola, " + pedido.getCliente().getNomeCompleto() + ".\n\n" +
-                "Infelizmente " + pedido.getPrestador().getNomeCompleto() +
-                " nao esta disponivel para o seu evento.\n\n" +
-                "Evento: " + pedido.getTipoEvento() + "\n" +
-                "Data: " + pedido.getDataEvento().format(FORMATO_DATA) + "\n\n" +
-                "Explore outros prestadores na plataforma."
+                "FestConnect - Prestador não disponível",
+                EmailTemplates.pedidoRecusadoParaCliente(pedido)
         );
     }
 
@@ -140,14 +121,8 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getPrestador().getUsuario().getEmail(),
-                "FestConnect - Orcamento aceito",
-                "Ola, " + pedido.getPrestador().getNomeCompleto() + "!\n\n" +
-                pedido.getCliente().getNomeCompleto() + " aceitou seu orcamento.\n\n" +
-                "Evento: " + pedido.getTipoEvento() + "\n" +
-                "Data: " + pedido.getDataEvento().format(FORMATO_DATA) + "\n" +
-                "Local: " + pedido.getLocalEvento() + "\n" +
-                "Valor: R$ " + pedido.getValor() + "\n\n" +
-                "Entre em contato pelo WhatsApp do cliente para finalizar os detalhes."
+                "FestConnect - Orçamento aceito!",
+                EmailTemplates.orcamentoAceitoParaPrestador(pedido)
         );
 
         return resposta;
@@ -162,11 +137,7 @@ public class PedidoService {
         emailService.enviarEmail(
                 pedido.getPrestador().getUsuario().getEmail(),
                 "FestConnect - Pedido cancelado",
-                "Ola, " + pedido.getPrestador().getNomeCompleto() + ".\n\n" +
-                pedido.getCliente().getNomeCompleto() + " cancelou o pedido para o seguinte evento:\n\n" +
-                "Evento: " + pedido.getTipoEvento() + "\n" +
-                "Data: " + pedido.getDataEvento().format(FORMATO_DATA) + "\n\n" +
-                "O pedido foi encerrado na plataforma."
+                EmailTemplates.pedidoCanceladoParaPrestador(pedido)
         );
     }
 

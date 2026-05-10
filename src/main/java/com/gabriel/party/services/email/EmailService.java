@@ -1,9 +1,11 @@
 package com.gabriel.party.services.email;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.logging.Logger;
@@ -19,21 +21,21 @@ public class EmailService {
     @Value("${spring.mail.from:noreply@festconnect.com}")
     private String from;
 
-    public void enviarEmail(String destinatario, String assunto, String mensagem) {
+    public void enviarEmail(String destinatario, String assunto, String corpoHtml) {
         if (mailSender == null) {
-            logger.warning("JavaMailSender nao configurado. Email nao enviado para: " + destinatario);
+            logger.warning("JavaMailSender nao configurado. Email ignorado para: " + destinatario);
             return;
         }
-
         try {
-            SimpleMailMessage email = new SimpleMailMessage();
-            email.setFrom(from);
-            email.setTo(destinatario);
-            email.setSubject(assunto);
-            email.setText(mensagem);
-            mailSender.send(email);
-            logger.info("Email enviado para: " + destinatario + " | Assunto: " + assunto);
-        } catch (Exception e) {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(destinatario);
+            helper.setSubject(assunto);
+            helper.setText(corpoHtml, true);
+            mailSender.send(message);
+            logger.info("Email enviado para: " + destinatario + " | " + assunto);
+        } catch (MessagingException e) {
             logger.severe("Falha ao enviar email para " + destinatario + ": " + e.getMessage());
         }
     }
