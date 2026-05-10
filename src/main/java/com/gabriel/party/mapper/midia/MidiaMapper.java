@@ -13,13 +13,18 @@ public interface MidiaMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "prestador", ignore = true)
+    @Mapping(target = "itemCatalogo", ignore = true)
+    @Mapping(target = "url", ignore = true)
     Midia toEntity(MidiaRequestDTO dto);
 
     @Mapping(target = "prestadorId", source = "prestador.id")
+    @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
+    @Mapping(target = "itemCatalogoId", source = "itemCatalogo.id")
     MidiaResponseDTO toDto(Midia midia);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "prestador", ignore = true)
+    @Mapping(target = "itemCatalogo", ignore = true)
+    @Mapping(target = "url", ignore = true)
     void atualizarMidiaDoDTO(MidiaRequestDTO dto, @MappingTarget Midia midia);
 }
-

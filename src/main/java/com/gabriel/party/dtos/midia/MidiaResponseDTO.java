@@ -10,5 +10,6 @@ public record MidiaResponseDTO(
         TipoMidia tipo,
         Integer ordem,
         UUID prestadorId,
-        String prestadorNome
+        String prestadorNome,
+        UUID itemCatalogoId
 ) {}
