@@ -2,7 +2,7 @@ package com.gabriel.party.mapper.prestador;
 
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
-import com.gabriel.party.dtos.prestador.PrestadorSummaryDTO;
+import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.prestador.Prestador;
 import org.mapstruct.Mapper;
@@ -31,9 +31,9 @@ public interface PrestadorMapper {
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "cidade", source = "endereco.cidade")
     @Mapping(target = "estado", source = "endereco.estado")
-    PrestadorSummaryDTO toSummaryDto(Prestador prestador);
+    PrestadorResumoDTO toSummaryDto(Prestador prestador);
 
-    List<PrestadorSummaryDTO> toSummaryList(List<Prestador> prestadores);
+    List<PrestadorResumoDTO> toSummaryList(List<Prestador> prestadores);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)

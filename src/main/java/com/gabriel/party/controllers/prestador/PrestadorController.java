@@ -6,7 +6,7 @@ package com.gabriel.party.controllers.prestador;
 
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
-import com.gabriel.party.dtos.prestador.PrestadorSummaryDTO;
+import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.services.prestador.PrestadorService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,7 +43,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Listar prestadores", description = "Retorna uma lista paginada de todos os prestadores ativos.")
     @GetMapping
-    public ResponseEntity<Page<PrestadorSummaryDTO>> listarTodosPrestadores(
+    public ResponseEntity<Page<PrestadorResumoDTO>> listarTodosPrestadores(
             @PageableDefault(size = 10, sort = "nomeCompleto") Pageable pageable) {
         return ResponseEntity.ok(prestadorService.listarPrestadores(pageable));
     }
@@ -87,7 +87,7 @@ public class PrestadorController {
     })
     @Operation(summary = "Buscar por proximidade", description = "Retorna uma lista de prestadores mais próximos baseada nas coordenadas e raio fornecidos.")
     @GetMapping("/proximidade")
-    public ResponseEntity<List<PrestadorSummaryDTO>> buscarPorProximidade(
+    public ResponseEntity<List<PrestadorResumoDTO>> buscarPorProximidade(
             @Parameter(description = "Latitude da localização do cliente", example = "-23.5505") @RequestParam Double lat,
             @Parameter(description = "Longitude da localização do cliente", example = "-46.6333") @RequestParam Double lon,
             @Parameter(description = "Raio de busca em quilômetros", example = "10.0") @RequestParam(defaultValue = "10.0") Double raio) {
@@ -103,7 +103,7 @@ public class PrestadorController {
             description = "Retorna uma lista de prestadores ativos que pertencem a uma categoria específica e estão" +
                     " dentro de um raio definido a partir de coordenadas geográficas.")
     @GetMapping("/filtro-radar")
-    public ResponseEntity<List<PrestadorSummaryDTO>> filtrarPrestadores(
+    public ResponseEntity<List<PrestadorResumoDTO>> filtrarPrestadores(
             @Parameter(description = "ID da categoria", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6") @RequestParam UUID categoriaId,
             @Parameter(description = "Latitude da localização do cliente", example = "-23.5505") @RequestParam Double lat,
             @Parameter(description = "Longitude da localização do cliente", example = "-46.6333") @RequestParam Double lon,

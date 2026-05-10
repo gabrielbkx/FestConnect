@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Schema(description = "Resumo de um prestador para exibição em listagens e cards. " +
         "Use GET /prestadores/{id} para o perfil completo com catálogo, mídias e avaliações.")
-public record PrestadorSummaryDTO(
+public record PrestadorResumoDTO(
 
         @Schema(description = "ID único do prestador")
         UUID id,

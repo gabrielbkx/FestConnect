@@ -4,7 +4,7 @@ package com.gabriel.party.services.prestador;
 import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
-import com.gabriel.party.dtos.prestador.PrestadorSummaryDTO;
+import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.autenticacao.UsuarioMapper;
@@ -85,7 +85,7 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PrestadorSummaryDTO> listarPrestadores(Pageable pageable) {
+    public Page<PrestadorResumoDTO> listarPrestadores(Pageable pageable) {
         return repository.findAllByAtivoTrue(pageable).map(mapper::toSummaryDto);
     }
 
@@ -135,7 +135,7 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public List<PrestadorSummaryDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
+    public List<PrestadorResumoDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
         return repository.buscarPorProximidade(lat, lon, raio)
                 .stream()
                 .map(mapper::toSummaryDto)
@@ -143,7 +143,7 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public List<PrestadorSummaryDTO> buscarPorFiltros(UUID categoriaId, Double lat, Double lon, Double raio) {
+    public List<PrestadorResumoDTO> buscarPorFiltros(UUID categoriaId, Double lat, Double lon, Double raio) {
         Double raioBusca = (raio != null) ? raio : 50.0;
         return repository.buscarPorCategoriaEProximidade(categoriaId, lat, lon, raioBusca)
                 .stream()
