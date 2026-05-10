@@ -44,12 +44,12 @@ public class PedidoService {
     }
 
     @Transactional
-    public Pedido criarPedido(PedidoRequestDTO dto, Usuario usuarioLogado) {
+    public PedidoResponseDTO criarPedido(PedidoRequestDTO dto, Usuario usuarioLogado) {
         Cliente cliente = clienteRepository.findByUsuarioId(usuarioLogado.getId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado para o usuário logado."));
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioLogado.getId().toString()));
 
         Prestador prestador = prestadorRepository.findById(dto.prestadorId())
-                .orElseThrow(() -> new RuntimeException("Prestador não encontrado."));
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
 
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador);
         Pedido salvo = pedidoRepository.save(pedido);
@@ -60,7 +60,7 @@ public class PedidoService {
                 EmailTemplates.novoPedidoParaPrestador(salvo)
         );
 
-        return salvo;
+        return pedidoMapper.toResponseDTO(salvo);
     }
 
     @Transactional(readOnly = true)
@@ -72,9 +72,27 @@ public class PedidoService {
         return pedidoMapper.toResponseList(pedidos);
     }
 
+    @Transactional(readOnly = true)
+    public List<PedidoResponseDTO> listarPedidosDoCliente(Usuario usuarioLogado) {
+        Cliente cliente = clienteRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioLogado.getId().toString()));
+
+        return pedidoMapper.toResponseList(
+                pedidoRepository.findByClienteIdOrderByDataHoraCriacaoDesc(cliente.getId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PedidoResponseDTO> listarTodosPedidosDoPrestador(Usuario usuarioLogado) {
+        Prestador prestador = prestadorRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
+
+        return pedidoMapper.toResponseList(
+                pedidoRepository.findByPrestadorIdOrderByDataHoraCriacaoDesc(prestador.getId()));
+    }
+
     @Transactional
     public PedidoResponseDTO enviarOrcamento(UUID pedidoId, OrcamentoRequestDTO dto, Usuario usuarioLogado) {
-        Pedido pedido = buscarPedidoEPermanecerSeguro(pedidoId, usuarioLogado);
+        Pedido pedido = buscarPedidoComPermissaoPrestador(pedidoId, usuarioLogado);
 
         pedidoMapper.updatePedidoFromOrcamento(dto, pedido);
         pedido.setStatusPedido(StatusPedido.ORCADO);
@@ -91,7 +109,7 @@ public class PedidoService {
 
     @Transactional
     public void recusarPedido(UUID pedidoId, Usuario usuarioLogado) {
-        Pedido pedido = buscarPedidoEPermanecerSeguro(pedidoId, usuarioLogado);
+        Pedido pedido = buscarPedidoComPermissaoPrestador(pedidoId, usuarioLogado);
         pedido.setStatusPedido(StatusPedido.RECUSADO);
         pedidoRepository.save(pedido);
 
@@ -104,16 +122,15 @@ public class PedidoService {
 
     @Transactional
     public PedidoResponseDTO aceitarOrcamento(UUID pedidoId, Usuario usuarioLogado) {
-        Pedido pedido = buscarPedidoClienteSeguro(pedidoId, usuarioLogado);
+        Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
 
         if (pedido.getStatusPedido() != StatusPedido.ORCADO) {
-            throw new RuntimeException("Apenas pedidos orcados podem ser aceitos.");
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        boolean conflito = pedidoRepository.existsByPrestadorIdAndDataEventoAndStatusPedido(
-                pedido.getPrestador().getId(), pedido.getDataEvento(), StatusPedido.ACEITO);
-        if (conflito) {
-            throw new RuntimeException("O prestador ja possui um pedido confirmado nesta data.");
+        if (pedidoRepository.existsByPrestadorIdAndDataEventoAndStatusPedido(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), StatusPedido.ACEITO)) {
+            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA);
         }
 
         pedido.setStatusPedido(StatusPedido.ACEITO);
@@ -130,7 +147,7 @@ public class PedidoService {
 
     @Transactional
     public void cancelarPedidoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
-        Pedido pedido = buscarPedidoClienteSeguro(pedidoId, usuarioLogado);
+        Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
         pedido.setStatusPedido(StatusPedido.CANCELADO);
         pedidoRepository.save(pedido);
 
@@ -141,28 +158,28 @@ public class PedidoService {
         );
     }
 
-    private Pedido buscarPedidoEPermanecerSeguro(UUID pedidoId, Usuario usuarioLogado) {
+    private Pedido buscarPedidoComPermissaoPrestador(UUID pedidoId, Usuario usuarioLogado) {
         Prestador prestador = prestadorRepository.findByUsuarioId(usuarioLogado.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
 
         Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
 
         if (!pedido.getPrestador().getId().equals(prestador.getId())) {
-            throw new RuntimeException("Você não tem permissão para alterar este pedido.");
+            throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
         }
         return pedido;
     }
 
-    private Pedido buscarPedidoClienteSeguro(UUID pedidoId, Usuario usuarioLogado) {
+    private Pedido buscarPedidoComPermissaoCliente(UUID pedidoId, Usuario usuarioLogado) {
         Cliente cliente = clienteRepository.findByUsuarioId(usuarioLogado.getId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado."));
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioLogado.getId().toString()));
 
         Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RuntimeException("Pedido não encontrado."));
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
 
         if (!pedido.getCliente().getId().equals(cliente.getId())) {
-            throw new RuntimeException("Você não tem permissão para acessar este pedido.");
+            throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
         }
         return pedido;
     }

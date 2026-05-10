@@ -9,6 +9,12 @@ public enum ErrorCode {
 
 
 
+    // Erros de Pedido
+    PEDIDO_NAO_ENCONTRADO("pedido_nao_encontrado", HttpStatus.NOT_FOUND, "Pedido '%id%' não encontrado."),
+    PEDIDO_STATUS_INVALIDO("pedido_status_invalido", HttpStatus.BAD_REQUEST, "Operação inválida para o status atual do pedido: '%status%'."),
+    PEDIDO_CONFLITO_AGENDA("pedido_conflito_agenda", HttpStatus.CONFLICT, "O prestador já possui um pedido confirmado nesta data."),
+    PEDIDO_SEM_PERMISSAO("pedido_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este pedido."),
+
     // Erros de prestador
     PRESTADOR_NAO_ENCONTRADO("prestador_nao_encontrado", HttpStatus.NOT_FOUND, "Prestador '%id%' não encontrado."),
     PRESTADOR_INATIVO("prestador_inativo", HttpStatus.BAD_REQUEST, "O prestador '%nome%' está inativo e não pode receber novas ações."),
@@ -43,6 +49,7 @@ public enum ErrorCode {
     AVALIACAO_NOTA_INVALIDA("avaliacao_nota_invalida", HttpStatus.BAD_REQUEST, "A nota da avaliação deve estar entre 1 e 5. Valor recebido: '%nota%'."),
     AVALIACAO_DUPLICADA("avaliacao_duplicada", HttpStatus.CONFLICT, "O usuário '%usuario%' já avaliou este serviço anteriormente."),
     AVALIACAO_NAO_PERTENCE_AO_CLIENTE_MENCIONADO( "avaliacao_nao_pertence_cliente", HttpStatus.UNAUTHORIZED, "A avaliação '%avaliacaoId%' não pertence ao cliente '%clienteId%'."),
+    AVALIACAO_SEM_CONTRATO_ACEITO("avaliacao_sem_contrato", HttpStatus.FORBIDDEN, "Você precisa ter um pedido aceito com este prestador para avaliá-lo."),
 
     // Erros de Geocoding
     GEOCODING_FALHA_COMUNICACAO("geocoding_falha_comunicacao", HttpStatus.SERVICE_UNAVAILABLE, "Erro de comunicação com a API de geocoding: '%detalhes%'"),

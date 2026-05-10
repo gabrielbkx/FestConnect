@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -35,21 +34,20 @@ public class AvaliacaoController {
         this.avaliacaoService = avaliacaoService;
     }
 
-    @ApiResponses( value = {
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Avaliação criada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Requisição inválida, dados incorretos ou faltando"),
-            @ApiResponse(responseCode = "404", description = "Prestador associado não encontrado")
+            @ApiResponse(responseCode = "403", description = "Nenhum contrato aceito com este prestador"),
+            @ApiResponse(responseCode = "404", description = "Prestador associado não encontrado"),
+            @ApiResponse(responseCode = "409", description = "Avaliação duplicada")
     })
     @Operation(summary = "Criar nova avaliação",
-            description = "Cria uma nova avaliação e a associa a um prestador.")
+            description = "Cria uma nova avaliação para um prestador com o qual o cliente tem um pedido aceito.")
     @PostMapping
     @PreAuthorize("hasRole('ROLE_CLIENTE')")
     public ResponseEntity<AvaliacaoResponseDTO> criarAvaliacao(@Valid @RequestBody AvaliacaoCreateDTO dto,
                                                                @AuthenticationPrincipal Usuario usuario) {
-
-        var usuarioLogado = usuario.getId();
-
-        var avaliacaoCriada = avaliacaoService.salvarAvaliacao(dto, usuarioLogado);
+        var avaliacaoCriada = avaliacaoService.salvarAvaliacao(dto, usuario.getId());
         var uri = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -58,18 +56,31 @@ public class AvaliacaoController {
         return ResponseEntity.created(uri).body(avaliacaoCriada);
     }
 
-    @ApiResponses( value = {
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de avaliações retornada com sucesso")
     })
     @Operation(summary = "Listar todas as avaliações",
             description = "Retorna uma lista paginada de todas as avaliações ativas.")
     @GetMapping
     public ResponseEntity<Page<AvaliacaoResponseDTO>> listarTodasAvaliacoes(
-            @PageableDefault(size = 10, sort = "nome") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "dataCriacao") Pageable pageable) {
         return ResponseEntity.ok(avaliacaoService.listarAvaliacoes(pageable));
     }
 
-    @ApiResponses( value = {
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de avaliações do prestador retornada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Prestador não encontrado")
+    })
+    @Operation(summary = "Listar avaliações de um prestador",
+            description = "Retorna uma lista paginada de avaliações ativas de um prestador específico.")
+    @GetMapping("/prestador/{prestadorId}")
+    public ResponseEntity<Page<AvaliacaoResponseDTO>> listarAvaliacoesPorPrestador(
+            @PathVariable UUID prestadorId,
+            @PageableDefault(size = 10, sort = "dataCriacao") Pageable pageable) {
+        return ResponseEntity.ok(avaliacaoService.listarAvaliacoesPorPrestador(prestadorId, pageable));
+    }
+
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Avaliação retornada com sucesso"),
             @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
     })
@@ -80,7 +91,7 @@ public class AvaliacaoController {
         return ResponseEntity.ok(avaliacaoService.buscarAvaliacaoPorId(id));
     }
 
-    @ApiResponses( value = {
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Avaliação atualizada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Requisição inválida"),
             @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
@@ -88,17 +99,14 @@ public class AvaliacaoController {
     @Operation(summary = "Atualizar avaliação",
             description = "Atualiza os dados de uma avaliação existente pelo ID.")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('CLIENTE')")
+    @PreAuthorize("hasRole('ROLE_CLIENTE')")
     public ResponseEntity<AvaliacaoResponseDTO> atualizarAvaliacao(@Valid @RequestBody AvaliacaoRequestDTO dto,
-                                                                   @PathVariable UUID idAvaliacao,
+                                                                   @PathVariable("id") UUID idAvaliacao,
                                                                    @AuthenticationPrincipal Usuario usuario) {
-
-        var usuarioLogado = usuario.getId();
-
-        return ResponseEntity.ok(avaliacaoService.atualizarAvaliacao(dto, idAvaliacao, usuarioLogado));
+        return ResponseEntity.ok(avaliacaoService.atualizarAvaliacao(dto, idAvaliacao, usuario.getId()));
     }
 
-    @ApiResponses( value = {
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Avaliação inativada com sucesso"),
             @ApiResponse(responseCode = "404", description = "Avaliação não encontrada")
     })
@@ -107,7 +115,6 @@ public class AvaliacaoController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_ADMINISTRADOR', 'ROLE_CLIENTE')")
     public ResponseEntity<Void> deletarAvaliacao(@PathVariable UUID id, @AuthenticationPrincipal Usuario usuario) {
-
         avaliacaoService.deletar(id, usuario);
         return ResponseEntity.noContent().build();
     }

@@ -29,6 +29,8 @@ public interface PedidoMapper {
 
     @Mapping(source = "cliente.nomeCompleto", target = "nomeCliente")
     @Mapping(source = "cliente.fotoPerfilUrl", target = "fotoClienteUrl")
+    @Mapping(source = "prestador.nomeCompleto", target = "nomePrestador")
+    @Mapping(source = "statusPedido", target = "status")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
 
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
