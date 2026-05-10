@@ -1,4 +1,3 @@
-
 services:
 
   postgres_db:
@@ -10,40 +9,20 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
     networks:
-        - fest_connect_network
+      - fest_connect_network
 
-  # Configuracao do Jaeger para coleta de traces
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
+    restart: always
     ports:
-      - "16686:16686" # Interface Web (UI)
-      - "4317:4317"   # Porta para receber traces via gRPC (OpenTelemetry)
-      - "4318:4318"   # Porta para receber traces via HTTP
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
     environment:
       - COLLECTOR_OTLP_ENABLED=true
-
-  # Configuracao do Prometheus para coleta de métricas
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml # Injeta o arquivo que criamos
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # Permite acesso ao Windows
-
-  # Configuracao do Grafana para visualizacao de métricas e traces
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin # Senha padrão para logar
-    depends_on:
-      - prometheus
+    networks:
+      - fest_connect_network
 
   backend_api_fest_connect:
     build:
@@ -55,6 +34,36 @@ services:
       - ".env"
     depends_on:
       - postgres_db
+      - jaeger
+    networks:
+      - fest_connect_network
+
+  # --- perfil monitoring: subir apenas em desenvolvimento/observabilidade ---
+  # uso: docker compose --profile monitoring up
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    profiles: [monitoring]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - fest_connect_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    profiles: [monitoring]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
     networks:
       - fest_connect_network
 
