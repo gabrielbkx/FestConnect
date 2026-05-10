@@ -8,6 +8,7 @@ import com.gabriel.party.mapper.midia.MidiaMapper;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.midia.enums.TipoMidia;
 import com.gabriel.party.model.prestador.Prestador;
+import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.midia.MidiaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
@@ -37,26 +38,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MidiaServiceTest {
 
-    @Mock
-    private MidiaRepository repository;
-
-    @Mock
-    private PrestadorRepository prestadorRepository;
-
-    @Mock
-    private MidiaMapper mapper;
-
-    @Mock
-    private ArmazenamentoService armazenamentoService;
-
-    @Mock
-    private MultipartFile arquivo;
+    @Mock private MidiaRepository repository;
+    @Mock private PrestadorRepository prestadorRepository;
+    @Mock private ItemCatalogoRepository itemCatalogoRepository;
+    @Mock private MidiaMapper mapper;
+    @Mock private ArmazenamentoService armazenamentoService;
+    @Mock private MultipartFile arquivo;
 
     @InjectMocks
     private MidiaService service;
 
     private UUID prestadorId;
     private UUID midiaId;
+    private UUID usuarioId;
     private Prestador prestador;
     private Midia midia;
     private MidiaResponseDTO responseDTO;
@@ -65,6 +59,7 @@ class MidiaServiceTest {
     void setUp() {
         prestadorId = UUID.randomUUID();
         midiaId = UUID.randomUUID();
+        usuarioId = UUID.randomUUID();
 
         prestador = new Prestador();
         prestador.setId(prestadorId);
@@ -77,8 +72,10 @@ class MidiaServiceTest {
         midia.setOrdem(1);
         midia.setPrestador(prestador);
 
-        responseDTO = new MidiaResponseDTO(midiaId, "https://bucket.s3.amazonaws.com/foto.jpg",
-                TipoMidia.FOTO, 1, prestadorId, "Prestador Teste");
+        responseDTO = new MidiaResponseDTO(
+                midiaId, "https://bucket.s3.amazonaws.com/foto.jpg",
+                TipoMidia.FOTO, 1, prestadorId, "Prestador Teste", null
+        );
     }
 
     @Nested
@@ -88,15 +85,15 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve salvar mídia com sucesso")
         void deveSalvarMidiaComSucesso() {
-            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, null);
 
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.of(prestador));
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
             when(repository.countMidiaByPrestadorId(prestadorId)).thenReturn(5L);
             when(mapper.toEntity(dto)).thenReturn(midia);
             when(armazenamentoService.salvarMidias(arquivo)).thenReturn("https://bucket.s3.amazonaws.com/foto.jpg");
             when(mapper.toDto(midia)).thenReturn(responseDTO);
 
-            var resultado = service.salvarMidia(arquivo, dto);
+            var resultado = service.salvarMidia(arquivo, dto, usuarioId);
 
             assertThat(resultado).isNotNull();
             assertThat(resultado.tipo()).isEqualTo(TipoMidia.FOTO);
@@ -106,11 +103,11 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando prestador não encontrado")
         void deveLancarExcecaoQuandoPrestadorNaoEncontrado() {
-            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, null);
 
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.empty());
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto))
+            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
@@ -121,12 +118,12 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando limite de mídias atingido")
         void deveLancarExcecaoQuandoLimiteDeMidiasAtingido() {
-            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, null);
 
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.of(prestador));
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
             when(repository.countMidiaByPrestadorId(prestadorId)).thenReturn(10L);
 
-            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto))
+            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.LIMITE_MIDIAS_PRESTADOR));
@@ -137,16 +134,16 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve deletar mídia do S3 quando falhar ao salvar no banco")
         void deveDeletarMidiaDoS3QuandoFalharAoSalvarNoBanco() {
-            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.FOTO, 1, null);
             String urlMidia = "https://bucket.s3.amazonaws.com/foto.jpg";
 
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.of(prestador));
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
             when(repository.countMidiaByPrestadorId(prestadorId)).thenReturn(5L);
             when(mapper.toEntity(dto)).thenReturn(midia);
             when(armazenamentoService.salvarMidias(arquivo)).thenReturn(urlMidia);
             when(repository.save(midia)).thenThrow(new RuntimeException("Erro no banco"));
 
-            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto))
+            assertThatThrownBy(() -> service.salvarMidia(arquivo, dto, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.ERRO_SALVAR_MIDIA));
@@ -240,13 +237,13 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve atualizar mídia com sucesso")
         void deveAtualizarMidiaComSucesso() {
-            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, null);
 
             when(repository.findById(midiaId)).thenReturn(Optional.of(midia));
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.of(prestador));
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
             when(mapper.toDto(midia)).thenReturn(responseDTO);
 
-            var resultado = service.atualizarMidia(dto, midiaId);
+            var resultado = service.atualizarMidia(dto, midiaId, usuarioId);
 
             assertThat(resultado).isNotNull();
             verify(mapper).atualizarMidiaDoDTO(dto, midia);
@@ -256,11 +253,11 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando mídia não encontrada ao atualizar")
         void deveLancarExcecaoQuandoMidiaNaoEncontradaAoAtualizar() {
-            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, null);
 
             when(repository.findById(midiaId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.atualizarMidia(dto, midiaId))
+            assertThatThrownBy(() -> service.atualizarMidia(dto, midiaId, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.MIDIA_NAO_ENCONTRADA));
@@ -271,12 +268,12 @@ class MidiaServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando prestador não encontrado ao atualizar")
         void deveLancarExcecaoQuandoPrestadorNaoEncontradoAoAtualizar() {
-            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, prestadorId);
+            var dto = new MidiaRequestDTO(TipoMidia.VIDEO, 2, null);
 
             when(repository.findById(midiaId)).thenReturn(Optional.of(midia));
-            when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.empty());
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.atualizarMidia(dto, midiaId))
+            assertThatThrownBy(() -> service.atualizarMidia(dto, midiaId, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
@@ -293,11 +290,12 @@ class MidiaServiceTest {
         @DisplayName("Deve deletar mídia com sucesso")
         void deveDeletarMidiaComSucesso() {
             when(repository.findById(midiaId)).thenReturn(Optional.of(midia));
+            when(prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(prestador));
 
-            service.deletar(midiaId);
+            service.deletar(midiaId, usuarioId);
 
             verify(armazenamentoService).deletaMidia(midia.getUrl());
-            verify(repository).save(midia);
+            verify(repository).delete(midia);
         }
 
         @Test
@@ -305,7 +303,7 @@ class MidiaServiceTest {
         void deveLancarExcecaoQuandoMidiaNaoEncontradaAoDeletar() {
             when(repository.findById(midiaId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.deletar(midiaId))
+            assertThatThrownBy(() -> service.deletar(midiaId, usuarioId))
                     .isInstanceOf(AppException.class)
                     .satisfies(ex -> assertThat(((AppException) ex).getErrorCode())
                             .isEqualTo(ErrorCode.MIDIA_NAO_ENCONTRADA));

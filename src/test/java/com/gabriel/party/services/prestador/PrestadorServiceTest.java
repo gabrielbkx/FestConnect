@@ -4,6 +4,7 @@ import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorD
 import com.gabriel.party.dtos.integracoes.CoordenadasDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
+import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.dtos.prestador.endereco.EnderecoDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
@@ -77,6 +78,7 @@ class PrestadorServiceTest {
     private Categoria categoria;
     private Usuario usuario;
     private PrestadorResponseDTO responseDTO;
+    private PrestadorResumoDTO resumoDTO;
 
     @BeforeEach
     void setUp() {
@@ -106,6 +108,11 @@ class PrestadorServiceTest {
                 new EnderecoDTO("Rua Teste", "Centro", "01001000", "São Paulo", "SP",
                         null, 100, -23.5, -46.6),
                 List.of(), List.of(), List.of(), null, null
+        );
+
+        resumoDTO = new PrestadorResumoDTO(
+                prestadorId, "Prestador Teste", null, null,
+                "Buffet", "São Paulo", "SP", null, 0
         );
     }
 
@@ -183,9 +190,9 @@ class PrestadorServiceTest {
             Page<Prestador> page = new PageImpl<>(List.of(prestador));
 
             when(repository.findAllByAtivoTrue(pageable)).thenReturn(page);
-            when(mapper.toDto(prestador)).thenReturn(responseDTO);
+            when(mapper.toSummaryDto(prestador)).thenReturn(resumoDTO);
 
-            Page<PrestadorResponseDTO> resultado = service.listarPrestadores(pageable);
+            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(pageable);
 
             assertThat(resultado.getContent()).hasSize(1);
             assertThat(resultado.getContent().get(0).nome()).isEqualTo("Prestador Teste");
@@ -199,7 +206,7 @@ class PrestadorServiceTest {
 
             when(repository.findAllByAtivoTrue(pageable)).thenReturn(pageVazia);
 
-            Page<PrestadorResponseDTO> resultado = service.listarPrestadores(pageable);
+            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(pageable);
 
             assertThat(resultado.getContent()).isEmpty();
         }
@@ -328,7 +335,7 @@ class PrestadorServiceTest {
         @DisplayName("Deve buscar prestadores próximos com sucesso")
         void deveBuscarPrestadoresProximosComSucesso() {
             when(repository.buscarPorProximidade(-23.5, -46.6, 10.0)).thenReturn(List.of(prestador));
-            when(mapper.toDto(prestador)).thenReturn(responseDTO);
+            when(mapper.toSummaryDto(prestador)).thenReturn(resumoDTO);
 
             var resultado = service.buscarPrestadoresProximos(-23.5, -46.6, 10.0);
 
@@ -356,7 +363,7 @@ class PrestadorServiceTest {
         void deveBuscarPorFiltrosComRaioInformado() {
             when(repository.buscarPorCategoriaEProximidade(categoriaId, -23.5, -46.6, 20.0))
                     .thenReturn(List.of(prestador));
-            when(mapper.toDto(prestador)).thenReturn(responseDTO);
+            when(mapper.toSummaryDto(prestador)).thenReturn(resumoDTO);
 
             var resultado = service.buscarPorFiltros(categoriaId, -23.5, -46.6, 20.0);
 
@@ -369,7 +376,7 @@ class PrestadorServiceTest {
         void deveUsarRaioPadraoQuandoRaioForNulo() {
             when(repository.buscarPorCategoriaEProximidade(categoriaId, -23.5, -46.6, 50.0))
                     .thenReturn(List.of(prestador));
-            when(mapper.toDto(prestador)).thenReturn(responseDTO);
+            when(mapper.toSummaryDto(prestador)).thenReturn(resumoDTO);
 
             var resultado = service.buscarPorFiltros(categoriaId, -23.5, -46.6, null);
 

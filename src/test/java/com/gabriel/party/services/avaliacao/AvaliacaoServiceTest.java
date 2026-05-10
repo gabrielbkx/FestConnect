@@ -11,8 +11,10 @@ import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.model.usuario.enums.Role;
+import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.repositories.avaliacao.AvaliacaoRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
+import com.gabriel.party.repositories.pedido.PedidoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +53,9 @@ class AvaliacaoServiceTest {
 
     @Mock
     private ClienteRepository clienteRepository;
+
+    @Mock
+    private PedidoRepository pedidoRepository;
 
     @InjectMocks
     private AvaliacaoService service;
@@ -102,6 +107,7 @@ class AvaliacaoServiceTest {
 
             when(clienteRepository.findByUsuarioIdAndAtivoTrue(usuarioId)).thenReturn(Optional.of(cliente));
             when(prestadorRepository.findByIdAndAtivoTrue(prestadorId)).thenReturn(Optional.of(prestador));
+            when(pedidoRepository.existsByPrestadorIdAndClienteIdAndStatusPedido(prestadorId, clienteId, StatusPedido.ACEITO)).thenReturn(true);
             when(mapper.toEntity(dto)).thenReturn(avaliacao);
             when(mapper.toDto(avaliacao)).thenReturn(responseDTO);
 
