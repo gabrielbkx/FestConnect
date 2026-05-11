@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.gabriel</groupId>
-    <artifactId>party</artifactId>
+    <artifactId>festconnect</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>party</name>
-    <description>party</description>
+    <name>festconnect</name>
+    <description>FestConnect - Marketplace de servicos para eventos</description>
     <url/>
     <licenses>
         <license/>
