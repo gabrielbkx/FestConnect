@@ -1,122 +1,154 @@
-# 🚀 API de Marketplace Hiperlocal para Eventos
+# FestConnect API
 
-Uma API RESTful desenvolvida para conectar organizadores de eventos a prestadores de serviços locais (confeitarias, garçons, animadores, espaços) utilizando buscas geoespaciais baseadas em raio de proximidade.
-
----
-
-## 📌 Sobre o Projeto
-
-O principal problema na organização de festas e eventos é a logística de encontrar fornecedores qualificados nas proximidades. Esta API resolve essa dor atuando como o motor de um marketplace hiperlocal. Através do uso de coordenadas geográficas (Latitude e Longitude), o sistema permite que um cliente encontre rapidamente os prestadores de serviço mais próximos ao local do evento, otimizando custos de frete e facilitando o contato direto.
-
-### Principais Funcionalidades (MVP)
-
-- **Catálogo de Serviços:** Classificação estruturada de prestadores por categoria.
-- **Motor de Busca Geoespacial:** Pesquisa de prestadores dentro de um raio específico em quilômetros, utilizando PostGIS.
-- **Gestão de Perfis:** Armazenamento de dados de contato e localização exata de cada negócio.
-- **Migrações de Banco de Dados:** Controle de versão de esquema de dados seguro e automatizado.
-- **Autenticação e Autorização:** Controle de acesso baseado em roles via Spring Security com JWT.
-- **Observabilidade Completa:** Monitoramento de métricas, rastreamento distribuído e visualização em tempo real.
+API REST de marketplace que conecta organizadores de eventos a prestadores de serviços — DJs, buffets, aluguel de equipamentos e espaços para eventos.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Sobre o projeto
 
-A arquitetura do projeto foi desenhada no padrão MVC (Model-View-Controller), focando em manutenibilidade e escalabilidade para a nuvem.
+O FestConnect resolve um problema concreto: encontrar prestadores confiáveis para um evento sem depender de indicação boca a boca. Clientes descrevem o evento, buscam prestadores por categoria ou proximidade, solicitam orçamentos e fecham negócio diretamente via WhatsApp — sem intermediação de pagamento.
 
-| Categoria | Tecnologia |
+O backend gerencia dois perfis distintos: **clientes** (que buscam e solicitam) e **prestadores** (que cadastram serviços e respondem orçamentos).
+
+---
+
+## Funcionalidades
+
+- **Autenticação**: login via JWT com hash BCrypt, recuperação de senha por código PIN e login social com Google OAuth2
+- **Perfis de prestador**: endereço completo, geolocalização automática via Nominatim e contato por WhatsApp
+- **Catálogo de itens**: modelado com herança JOINED — `Produto`, `Servico` e `Local` estendem a entidade base `ItemCatalogo`
+- **Busca por proximidade**: filtragem de prestadores por raio em km usando lat/lng e fórmula de Haversine
+- **Pedidos e orçamentos**: cliente solicita com dados do evento, prestador responde com valor e detalhes; negociação segue pelo WhatsApp
+- **Avaliações**: clientes avaliam prestadores com nota e comentário após o evento
+- **Favoritos**: clientes salvam prestadores e categorias favoritas
+- **Gestão de mídias**: upload de fotos e vídeos para AWS S3 com geração automática de thumbnails via Thumbnailator
+- **Observabilidade**: rastreamento distribuído com OpenTelemetry + Jaeger e monitoramento de saúde via Spring Boot Actuator
+
+---
+
+## Stack
+
+| Camada | Tecnologia |
 |---|---|
 | Linguagem | Java 21 |
-| Framework | Spring Boot (Web, Data JPA, Security) |
-| Banco de Dados | PostgreSQL + PostGIS |
-| Versionamento de Banco | Liquibase |
-| Containerização | Docker & Docker Compose |
-| Autenticação | Spring Security + JWT |
-| Métricas | Micrometer + Prometheus |
-| Rastreamento | OpenTelemetry + Jaeger |
-| Visualização | Grafana |
-| Deploy (Planejado) | — |
-| Armazxenamento de Midias| AWS(S3)|
+| Framework | Spring Boot 4.0.4 |
+| Banco de dados | PostgreSQL 17 |
+| Migrations | Liquibase |
+| ORM | Spring Data JPA / Hibernate |
+| Mapeamento de DTOs | MapStruct |
+| Autenticação | Spring Security + JWT (Auth0) + OAuth2 Google |
+| Geocoding | Nominatim (OpenStreetMap) |
+| Armazenamento de mídias | AWS S3 + Thumbnailator |
+| E-mail (dev) | Mailtrap |
+| Rastreamento | OpenTelemetry Java Agent + Jaeger |
+| Documentação da API | SpringDoc OpenAPI (Swagger UI) |
+| Containerização | Docker + Docker Compose |
 
 ---
 
-## 🔐 Segurança
-
-A API utiliza **Spring Security** para controle de autenticação e autorização:
-
-- Autenticação via **JWT (JSON Web Token)** — tokens stateless gerados no login e validados em cada requisição.
-- Controle de acesso baseado em **roles** (ex: `ROLE_CLIENTE`, `ROLE_PRESTADOR`).
-- Endpoints públicos e protegidos configurados via Security Filter Chain.
-- Senhas armazenadas com hash **BCrypt**.
-
----
-
-## 📡 Observabilidade
-
-O projeto conta com uma stack completa de observabilidade, permitindo monitorar a saúde da aplicação, rastrear requisições distribuídas e visualizar métricas em tempo real.
-
-### Stack
-
-```
-Spring Boot Actuator
-       │
-       ├── Micrometer ──► Prometheus ──► Grafana (dashboards de métricas)
-       │
-       └── OpenTelemetry ──► Jaeger (rastreamento distribuído de traces)
-```
-
-### Métricas (Prometheus + Grafana)
-
-- Coleta automática de métricas via **Spring Boot Actuator** exposto em `/actuator/prometheus`.
-- **Prometheus** realiza scraping periódico do endpoint de métricas.
-- **Grafana** exibe dashboards com uptime, uso de heap/non-heap, CPU, requisições HTTP, pool de conexões HikariCP e muito mais.
-
-### Rastreamento Distribuído (OpenTelemetry + Jaeger)
-
-- Instrumentação automática via **OpenTelemetry** para captura de spans por requisição.
-- Traces enviados ao **Jaeger** via protocolo OTLP (gRPC na porta `4317`).
-- Interface do Jaeger disponível em `http://localhost:16686` para inspeção visual de traces end-to-end.
-
-### Serviços e Portas
-
-| Serviço | Porta | Descrição |
-|---|---|---|
-| API | `8080` | Aplicação principal |
-| Prometheus | `9090` | Coleta de métricas |
-| Grafana | `3000` | Dashboards de monitoramento |
-| Jaeger UI | `16686` | Visualização de traces |
-| Jaeger OTLP gRPC | `4317` | Recepção de traces |
-| Jaeger OTLP HTTP | `4318` | Recepção de traces (HTTP) |
-
----
-
-## ⚙️ Como Executar o Projeto Localmente
+## Executando localmente
 
 ### Pré-requisitos
 
-- Java 21+ instalado
-- Maven instalado
-- Docker e Docker Compose instalados
+- Java 21
+- Maven 3.9+
+- Docker e Docker Compose
 
-### Subindo a infraestrutura
+### Configuração
 
-```bash
-docker compose up -d
+Crie um arquivo `.env` na raiz do projeto com as variáveis abaixo:
+
+```env
+DB_USER=postgres
+DB_PASSWORD=sua_senha
+DB_NAME=partydb
+DB_URL=jdbc:postgresql://postgres_db:5432/partydb
+DB_USERNAME=postgres
+
+ACCESS_KEY_S3=...
+SECRET_KEY_S3=...
+BUCKET_NAME_S3=...
+BUCKET_REGION_S3=sa-east-1
+
+SECRET_KEY_TOKEN=seu_jwt_secret
+
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 ```
 
-Isso irá inicializar o  Prometheus, Grafana e Jaeger automaticamente.
+### Subindo apenas a infraestrutura
 
-### Executando a aplicação
+```bash
+docker compose up postgres_db jaeger -d
+```
+
+Em seguida, execute a aplicação com o perfil `dev` (padrão):
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-### Acessando os serviços
+O perfil `dev` conecta ao PostgreSQL em `postgres_db:5432`, exibe SQL no console e usa o Mailtrap para e-mails.
 
-| Serviço | URL |
-|---|---|
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 |
-| Jaeger UI | http://localhost:16686 |
+### Subindo tudo via Docker
+
+Para rodar a stack completa (infraestrutura + API containerizada):
+
+```bash
+docker compose up -d
+```
+
+A imagem da API é construída localmente pelo Dockerfile multi-stage.
+
+---
+
+## Serviços
+
+| Serviço | URL | Descrição |
+|---|---|---|
+| API | http://localhost:8080 | Aplicação principal |
+| Swagger UI | http://localhost:8080/swagger-ui.html | Documentação interativa (somente dev) |
+| Jaeger UI | http://localhost:16686 | Inspeção visual de traces distribuídos |
+
+---
+
+## Estrutura do projeto
+
+```
+src/main/java/com/gabriel/party/
+├── controllers/        # Endpoints REST
+├── services/           # Regras de negócio
+├── repositories/       # Spring Data JPA
+├── model/              # Entidades JPA
+│   ├── usuario/
+│   ├── cliente/
+│   ├── prestador/
+│   ├── itemcatalogo/   # Produto, Servico e Local (herança JOINED)
+│   ├── pedido/
+│   ├── avaliacao/
+│   └── midia/
+├── dtos/               # DTOs de request e response
+├── mapper/             # Mappers MapStruct
+└── config/             # Security, AWS S3, OpenAPI, etc.
+
+src/main/resources/liquibase/
+└── changelog-0.1.0.xml # Schema completo do banco de dados
+```
+
+---
+
+## Segurança
+
+- Tokens JWT stateless validados a cada requisição via Security Filter Chain
+- Senhas armazenadas com hash BCrypt
+- Roles: `ROLE_CLIENTE`, `ROLE_PRESTADOR`, `ROLE_ADMINISTRADOR`
+- Login com Google OAuth2 cria o usuário automaticamente no primeiro acesso
+- Swagger UI desabilitado no perfil `prod`
+
+---
+
+## Observabilidade
+
+O rastreamento distribuído é habilitado via OpenTelemetry Java Agent, injetado na inicialização do container. Os traces são enviados ao Jaeger via OTLP HTTP na porta `4318` e podem ser inspecionados em `http://localhost:16686`.
+
+A saúde da aplicação é exposta pelo Spring Boot Actuator em `/actuator/health`.
