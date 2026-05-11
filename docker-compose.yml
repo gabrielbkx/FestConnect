@@ -8,11 +8,18 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - fest_connect_network
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.57
     container_name: jaeger
     restart: always
     ports:
@@ -33,17 +40,23 @@ services:
     env_file:
       - ".env"
     environment:
+      - SPRING_PROFILES_ACTIVE=prod
       - OTEL_SERVICE_NAME=festconnect-api
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
     depends_on:
-      - postgres_db
-      - jaeger
+      postgres_db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - fest_connect_network
 
 networks:
   fest_connect_network:
     driver: bridge
+
+volumes:
+  postgres_data:

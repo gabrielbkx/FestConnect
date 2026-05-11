@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet author="GF" id="0.1.1-260405_1200">
+
+        <!-- tb_usuarios -->
+        <createTable tableName="tb_usuarios" remarks="Tabela que armazena os usuários do sistema.">
+            <column name="id_usuario" type="UUID" remarks="Identificador único do usuário.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)" remarks="E-mail de login do usuário.">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="senha" type="VARCHAR(255)" remarks="Senha criptografada do usuário.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(50)" remarks="Papel de acesso do usuário no sistema.">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se o usuário está ativo.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_criacao" type="TIMESTAMP" remarks="Data e hora de criação do usuário.">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- tb_codigo_recuperacao -->
+        <createTable tableName="tb_codigo_recuperacao" remarks="Tabela que armazena códigos para recuperação de senha/conta.">
+            <column name="id_codigo_recuperacao" type="UUID" remarks="Identificador único do código de recuperação.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo_pin" type="VARCHAR(6)" remarks="Código PIN de 6 dígitos.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_expiracao" type="TIMESTAMP" remarks="Data e hora de expiração do código.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_id" type="UUID" remarks="Referência ao usuário solicitante.">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="usuario_id" baseTableName="tb_codigo_recuperacao"
+                                 constraintName="fk_codigo_recuperacao_usuario"
+                                 referencedColumnNames="id_usuario" referencedTableName="tb_usuarios"/>
+
+        <!-- tb_categorias -->
+        <createTable tableName="tb_categorias" remarks="Tabela que armazena as categorias de serviços/produtos.">
+            <column name="id_categoria" type="UUID" remarks="Identificador único da categoria.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="VARCHAR(100)" remarks="Nome da categoria.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="TEXT" remarks="Descrição detalhada da categoria."/>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se a categoria está ativa.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="icone_url" type="VARCHAR(255)" remarks="URL do ícone representativo da categoria."/>
+        </createTable>
+
+        <!-- tb_prestador -->
+        <createTable tableName="tb_prestador" remarks="Tabela que armazena os prestadores de serviço/produto.">
+            <column name="id" type="UUID" remarks="Identificador único do prestador.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome_completo" type="VARCHAR(255)" remarks="Nome completo ou razão social do prestador.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cnpj_ou_cpf" type="VARCHAR(255)" remarks="Documento de identificação do prestador (CNPJ ou CPF).">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="descricao" type="TEXT" remarks="Descrição sobre os serviços do prestador."/>
+            <column name="whatsapp" type="VARCHAR(255)" remarks="Número do WhatsApp para contato."/>
+            <column name="foto_perfil_url" type="VARCHAR(255)" remarks="URL da foto de perfil."/>
+            <column name="cep" type="VARCHAR(255)" remarks="CEP do endereço."/>
+            <column name="logradouro" type="VARCHAR(255)" remarks="Logradouro do endereço."/>
+            <column name="numero" type="VARCHAR(255)" remarks="Número do endereço."/>
+            <column name="complemento" type="VARCHAR(255)" remarks="Complemento do endereço."/>
+            <column name="bairro" type="VARCHAR(255)" remarks="Bairro do endereço."/>
+            <column name="cidade" type="VARCHAR(255)" remarks="Cidade do endereço."/>
+            <column name="estado" type="VARCHAR(255)" remarks="Estado/UF do endereço."/>
+            <column name="latitude" type="DOUBLE" remarks="Latitude para geolocalização."/>
+            <column name="longitude" type="DOUBLE" remarks="Longitude para geolocalização."/>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se o prestador está ativo.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="categoria_id" type="UUID" remarks="Categoria primária associada ao prestador."/>
+            <column name="usuario_id" type="UUID" remarks="Identificador do login vinculado ao prestador."/>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="categoria_id" baseTableName="tb_prestador"
+                                 constraintName="fk_prestador_categoria"
+                                 referencedColumnNames="id_categoria" referencedTableName="tb_categorias"/>
+        <addForeignKeyConstraint baseColumnNames="usuario_id" baseTableName="tb_prestador"
+                                 constraintName="fk_prestador_usuario"
+                                 referencedColumnNames="id_usuario" referencedTableName="tb_usuarios"/>
+        <addUniqueConstraint tableName="tb_prestador" columnNames="usuario_id" constraintName="uk_prestador_usuario"/>
+
+        <!-- tb_cliente -->
+        <createTable tableName="tb_cliente" remarks="Tabela que armazena os clientes do sistema.">
+            <column name="id" type="UUID" remarks="Identificador único do cliente.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="VARCHAR(255)" remarks="Nome completo do cliente.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="whatsapp" type="VARCHAR(255)" remarks="Número do WhatsApp do cliente."/>
+            <column name="foto_perfil_url" type="VARCHAR(255)" remarks="URL da foto de perfil."/>
+            <column name="cep" type="VARCHAR(255)" remarks="CEP do endereço."/>
+            <column name="logradouro" type="VARCHAR(255)" remarks="Logradouro do endereço."/>
+            <column name="numero" type="VARCHAR(255)" remarks="Número do endereço."/>
+            <column name="complemento" type="VARCHAR(255)" remarks="Complemento do endereço."/>
+            <column name="bairro" type="VARCHAR(255)" remarks="Bairro do endereço."/>
+            <column name="cidade" type="VARCHAR(255)" remarks="Cidade do endereço."/>
+            <column name="estado" type="VARCHAR(255)" remarks="Estado/UF do endereço."/>
+            <column name="latitude" type="DOUBLE" remarks="Latitude para geolocalização."/>
+            <column name="longitude" type="DOUBLE" remarks="Longitude para geolocalização."/>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se o cliente está ativo.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_id" type="UUID" remarks="Identificador do login vinculado ao cliente."/>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="usuario_id" baseTableName="tb_cliente"
+                                 constraintName="fk_cliente_usuario"
+                                 referencedColumnNames="id_usuario" referencedTableName="tb_usuarios"/>
+        <addUniqueConstraint tableName="tb_cliente" columnNames="usuario_id" constraintName="uk_cliente_usuario"/>
+
+        <!-- tb_cliente_prestador_favorito -->
+        <createTable tableName="tb_cliente_prestador_favorito" remarks="Tabela de relacionamento entre clientes e prestadores favoritos.">
+            <column name="cliente_id" type="UUID" remarks="Identificador do cliente.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Identificador do prestador favoritado.">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="tb_cliente_prestador_favorito" columnNames="cliente_id,prestador_id"
+                       constraintName="pk_cliente_prestador_favorito"/>
+        <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_cliente_prestador_favorito"
+                                 constraintName="fk_cpf_cliente"
+                                 referencedColumnNames="id" referencedTableName="tb_cliente"/>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_cliente_prestador_favorito"
+                                 constraintName="fk_cpf_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+
+        <!-- tb_cliente_categoria_favorita -->
+        <createTable tableName="tb_cliente_categoria_favorita" remarks="Tabela de relacionamento entre clientes e categorias favoritas.">
+            <column name="cliente_id" type="UUID" remarks="Identificador do cliente.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="categoria_id" type="UUID" remarks="Identificador da categoria favoritada.">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="tb_cliente_categoria_favorita" columnNames="cliente_id,categoria_id"
+                       constraintName="pk_cliente_categoria_favorita"/>
+        <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_cliente_categoria_favorita"
+                                 constraintName="fk_ccf_cliente"
+                                 referencedColumnNames="id" referencedTableName="tb_cliente"/>
+        <addForeignKeyConstraint baseColumnNames="categoria_id" baseTableName="tb_cliente_categoria_favorita"
+                                 constraintName="fk_ccf_categoria"
+                                 referencedColumnNames="id_categoria" referencedTableName="tb_categorias"/>
+
+        <!-- tb_item_catalogo -->
+        <createTable tableName="tb_item_catalogo" remarks="Tabela de itens do catálogo (produtos, serviços ou locais) do prestador.">
+            <column name="id" type="UUID" remarks="Identificador único do item.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="titulo" type="VARCHAR(255)" remarks="Título do item do catálogo.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="TEXT" remarks="Descrição do item do catálogo."/>
+            <column name="preco_base" type="DECIMAL(19,2)" remarks="Preço base do item."/>
+            <column name="tipo" type="VARCHAR(50)" remarks="Tipo do item (PRODUTO, SERVICO, LOCAL). Usado como discriminador na herança JOINED.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se o item do catálogo está ativo.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Prestador ao qual este item pertence.">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_item_catalogo"
+                                 constraintName="fk_item_catalogo_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+
+        <!-- tb_midia -->
+        <createTable tableName="tb_midia" remarks="Tabela para armazenar mídias associadas a prestador ou a itens de catálogo.">
+            <column name="id" type="UUID" remarks="Identificador único da mídia.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="midia_url" type="VARCHAR(255)" remarks="URL onde o arquivo de mídia encontra-se hospedado."/>
+            <column name="tipo_midia" type="VARCHAR(50)" remarks="Tipo de mídia (FOTO, VIDEO, etc)."/>
+            <column name="ordem_exibicao" type="INT" remarks="Posição de ordenação da visualização."/>
+            <column name="prestador_id" type="UUID" remarks="Referência do prestador associado."/>
+            <column name="item_catalogo_id" type="UUID" remarks="Referência do item_catalogo associado."/>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_midia"
+                                 constraintName="fk_midia_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+        <addForeignKeyConstraint baseColumnNames="item_catalogo_id" baseTableName="tb_midia"
+                                 constraintName="fk_midia_item_catalogo"
+                                 referencedColumnNames="id" referencedTableName="tb_item_catalogo"/>
+
+        <!-- tb_avaliacoes -->
+        <createTable tableName="tb_avaliacoes" remarks="Tabela que armazena as avaliações dadas por clientes a prestadores.">
+            <column name="id" type="UUID" remarks="Identificador único da avaliação.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nota" type="INT" remarks="Nota numérica da avaliação.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comentario" type="TEXT" remarks="Comentário descritivo elaborado pelo cliente."/>
+            <column name="data_criacao" type="TIMESTAMP" remarks="Data em que a avaliação foi gerada."/>
+            <column name="ativo" type="BOOLEAN" defaultValueBoolean="true" remarks="Indicador se a avaliação está ativa e é contabilizada.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Prestador que recebeu a avaliação."/>
+            <column name="cliente_id" type="UUID" remarks="Cliente que emitiu a avaliação."/>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_avaliacoes"
+                                 constraintName="fk_avaliacao_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+        <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_avaliacoes"
+                                 constraintName="fk_avaliacao_cliente"
+                                 referencedColumnNames="id" referencedTableName="tb_cliente"/>
+
+    </changeSet>
+
+    <changeSet author="GF" id="0.1.2-pedido-orcamento">
+
+        <!-- tb_pedidos -->
+        <createTable tableName="tb_pedidos" remarks="Tabela que armazena os pedidos e orçamentos entre clientes e prestadores.">
+            <column name="id" type="UUID" remarks="Identificador único do pedido.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="data_do_evento" type="TIMESTAMP" remarks="Data e hora previstas para o evento.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="local_do_evento" type="VARCHAR(255)" remarks="Local onde o evento será realizado.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_evento" type="VARCHAR(255)" remarks="Tipo do evento (ex: Casamento, Aniversário).">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero_convidados" type="INT" remarks="Quantidade estimada de convidados.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="TEXT" remarks="Descrição detalhada do pedido feita pelo cliente."/>
+            <column name="valor_do_orcamento" type="DECIMAL(19,2)" remarks="Valor cobrado pelo prestador."/>
+            <column name="detalhes_orcamento" type="TEXT" remarks="Detalhes e inclusões do orçamento propostos pelo prestador."/>
+            <column name="validade_orcamento" type="TIMESTAMP" remarks="Data limite para o cliente aceitar o orçamento."/>
+            <column name="status_pedido" type="VARCHAR(50)" remarks="Status atual do pedido (PENDENTE, ORCADO, ACEITO, RECUSADO, CANCELADO).">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cliente_id" type="UUID" remarks="Identificador do cliente que fez o pedido.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Identificador do prestador que recebeu o pedido.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_criacao" type="TIMESTAMP" remarks="Data e hora de criação do registro.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_atualizacao" type="TIMESTAMP" remarks="Data e hora da última atualização do registro."/>
+        </createTable>
+        <addForeignKeyConstraint baseColumnNames="cliente_id" baseTableName="tb_pedidos"
+                                 constraintName="fk_pedidos_cliente"
+                                 referencedColumnNames="id" referencedTableName="tb_cliente"/>
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_pedidos"
+                                 constraintName="fk_pedidos_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+
+    </changeSet>
+
+    <changeSet author="GF" id="0.1.3-heranca-joined-item-catalogo">
+
+        <!-- Subclasse Produto (herança JOINED) -->
+        <createTable tableName="tb_produto" remarks="Especialização de ItemCatalogo para produtos alugáveis (mesas, cadeiras, etc.).">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="tb_produto" baseColumnNames="id"
+                                 referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                                 constraintName="fk_produto_item_catalogo"
+                                 onDelete="CASCADE"/>
+
+        <!-- Subclasse Servico (herança JOINED) -->
+        <createTable tableName="tb_servico" remarks="Especialização de ItemCatalogo para serviços (DJ, buffet, fotografia, etc.).">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="tb_servico" baseColumnNames="id"
+                                 referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                                 constraintName="fk_servico_item_catalogo"
+                                 onDelete="CASCADE"/>
+
+        <!-- Subclasse Local (herança JOINED) -->
+        <createTable tableName="tb_local" remarks="Especialização de ItemCatalogo para locais/espaços para eventos.">
+            <column name="id" type="UUID" remarks="FK para tb_item_catalogo.">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="capacidade_maxima" type="INT" remarks="Número máximo de pessoas que o espaço comporta."/>
+            <column name="metragem" type="DECIMAL(10,2)" remarks="Área total em metros quadrados."/>
+            <column name="permite_som" type="BOOLEAN" remarks="Indica se permite aparelhagem de som."/>
+            <column name="tem_estacionamento" type="BOOLEAN" remarks="Indica se possui estacionamento."/>
+            <column name="tipo_espaco" type="VARCHAR(50)" remarks="Tipo do espaço: ABERTO, FECHADO ou SEMI_ABERTO."/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="tb_local" baseColumnNames="id"
+                                 referencedTableName="tb_item_catalogo" referencedColumnNames="id"
+                                 constraintName="fk_local_item_catalogo"
+                                 onDelete="CASCADE"/>
+
+    </changeSet>
+
+</databaseChangeLog>

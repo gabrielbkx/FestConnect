@@ -35,5 +35,4 @@ build/
 # Ignorar variáveis de ambiente
 .env
 
-# Claude Code
-.claude/
+opentelemetry-javaagent.jar

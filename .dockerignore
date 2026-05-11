@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+.claude
+target
+*.iml
+*.md
+.env
+opentelemetry-javaagent.jar
