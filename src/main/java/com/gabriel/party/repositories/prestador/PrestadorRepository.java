@@ -58,6 +58,27 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
             @Param("raioKm") Double raio
     );
 
+    @Query(
+        value = """
+            SELECT p FROM Prestador p
+            JOIN FETCH p.usuario
+            WHERE p.ativo = true
+              AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%')))
+            """,
+        countQuery = """
+            SELECT COUNT(p) FROM Prestador p
+            WHERE p.ativo = true
+              AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%')))
+            """
+    )
+    Page<Prestador> buscarComFiltros(
+            @Param("categoriaId") UUID categoriaId,
+            @Param("busca") String busca,
+            Pageable pageable
+    );
+
     boolean existsByCnpjOuCpf(String cpfOuCnpj);
 
 

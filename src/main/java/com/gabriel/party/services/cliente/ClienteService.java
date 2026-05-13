@@ -198,17 +198,19 @@ public class ClienteService {
         Cliente novoCliente = usuarioMapper.toCliente(dto);
 
         novoCliente.setAtivo(true);
-        novoCliente.setFotoPerfilUrl(armazenamentoService.salvarMidias(fotoPerfil));
+        novoCliente.setFotoPerfilUrl(fotoPerfil != null ? armazenamentoService.salvarMidias(fotoPerfil) : null);
         novoCliente.setUsuario(usuario);
 
-        String rua = dto.endereco().logradouro();
-        String cidade = dto.endereco().cidade();
-        String estado = dto.endereco().estado();
+        if (dto.endereco() != null && novoCliente.getEndereco() != null) {
+            String rua = dto.endereco().logradouro();
+            String cidade = dto.endereco().cidade();
+            String estado = dto.endereco().estado();
 
-        var coordenadas = geocodingService.buscarCoordenadas(rua, cidade, estado);
+            var coordenadas = geocodingService.buscarCoordenadas(rua, cidade, estado);
 
-        if (coordenadas != null) {
-            novoCliente.getEndereco().atribuirCoordenadas(coordenadas.latitude(), coordenadas.longitude());
+            if (coordenadas != null) {
+                novoCliente.getEndereco().atribuirCoordenadas(coordenadas.latitude(), coordenadas.longitude());
+            }
         }
 
        return clienteRepository.save(novoCliente);

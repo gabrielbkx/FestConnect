@@ -90,6 +90,24 @@ public class PedidoService {
                 pedidoRepository.findByPrestadorIdOrderByDataHoraCriacaoDesc(prestador.getId()));
     }
 
+    @Transactional(readOnly = true)
+    public PedidoResponseDTO buscarPedidoPorId(UUID pedidoId, Usuario usuarioLogado) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
+
+        boolean autorizado = clienteRepository.findByUsuarioId(usuarioLogado.getId())
+                .map(c -> c.getId().equals(pedido.getCliente().getId()))
+                .orElseGet(() -> prestadorRepository.findByUsuarioId(usuarioLogado.getId())
+                        .map(p -> p.getId().equals(pedido.getPrestador().getId()))
+                        .orElse(false));
+
+        if (!autorizado) {
+            throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
+        }
+
+        return pedidoMapper.toResponseDTO(pedido);
+    }
+
     @Transactional
     public PedidoResponseDTO enviarOrcamento(UUID pedidoId, OrcamentoRequestDTO dto, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoPrestador(pedidoId, usuarioLogado);

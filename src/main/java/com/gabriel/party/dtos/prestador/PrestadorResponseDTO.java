@@ -30,6 +30,12 @@ public record PrestadorResponseDTO(
         @Schema(description = "Nome da categoria", example = "Buffet")
         String categoriaNome,
 
+        @Schema(description = "Descrição dos serviços oferecidos")
+        String descricao,
+
+        @Schema(description = "URL da foto de perfil")
+        String fotoPerfilUrl,
+
         @Schema(description = "Endereço do prestador")
         EnderecoDTO endereco,
 

@@ -11,7 +11,11 @@ import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorD
 import com.gabriel.party.dtos.autenticacao.login.LoginRequestDTO;
 import com.gabriel.party.dtos.autenticacao.login.TokenResponseDTO;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.model.usuario.enums.Role;
+import com.gabriel.party.repositories.cliente.ClienteRepository;
+import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,14 +32,20 @@ public class AutenticacaoController {
     private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
     private final AutenticacaoService autenticacaoService;
-
+    private final ClienteRepository clienteRepository;
+    private final PrestadorRepository prestadorRepository;
 
     public AutenticacaoController(TokenService tokenService,
                                   AuthenticationManager authenticationManager,
-                                  AutenticacaoService autenticacaoService, ArmazenamentoService armazenamentoService) {
+                                  AutenticacaoService autenticacaoService,
+                                  ArmazenamentoService armazenamentoService,
+                                  ClienteRepository clienteRepository,
+                                  PrestadorRepository prestadorRepository) {
         this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
         this.autenticacaoService = autenticacaoService;
+        this.clienteRepository = clienteRepository;
+        this.prestadorRepository = prestadorRepository;
     }
 
     @PostMapping("/login")
@@ -48,7 +58,16 @@ public class AutenticacaoController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno na sessão.");
             }
 
-            var tokenJwt = tokenService.gerarToken(usuario);
+            UUID profileId = null;
+            if (usuario.getRole() == Role.ROLE_CLIENTE) {
+                profileId = clienteRepository.findByUsuarioId(usuario.getId())
+                        .map(c -> c.getId()).orElse(null);
+            } else if (usuario.getRole() == Role.ROLE_PRESTADOR) {
+                profileId = prestadorRepository.findByUsuarioId(usuario.getId())
+                        .map(p -> p.getId()).orElse(null);
+            }
+
+            var tokenJwt = tokenService.gerarToken(usuario, profileId);
             return ResponseEntity.ok(new TokenResponseDTO(tokenJwt));
 
         } catch (BadCredentialsException e) {

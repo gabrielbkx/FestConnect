@@ -63,7 +63,7 @@ public class PrestadorService {
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
 
         var novoPrestador = usuarioMapper.toPrestador(dto);
-        novoPrestador.setFotoPerfilUrl(armazenamentoService.salvarMidias(fotoPerfil));
+        novoPrestador.setFotoPerfilUrl(fotoPerfil != null ? armazenamentoService.salvarMidias(fotoPerfil) : null);
         novoPrestador.setCategoria(categoria);
         novoPrestador.setUsuario(usuario);
 
@@ -85,8 +85,8 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PrestadorResumoDTO> listarPrestadores(Pageable pageable) {
-        return repository.findAllByAtivoTrue(pageable).map(mapper::toSummaryDto);
+    public Page<PrestadorResumoDTO> listarPrestadores(UUID categoriaId, String busca, Pageable pageable) {
+        return repository.buscarComFiltros(categoriaId, busca == null ? "" : busca.trim(), pageable).map(mapper::toSummaryDto);
     }
 
     @Transactional(readOnly = true)

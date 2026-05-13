@@ -189,10 +189,10 @@ class PrestadorServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<Prestador> page = new PageImpl<>(List.of(prestador));
 
-            when(repository.findAllByAtivoTrue(pageable)).thenReturn(page);
+            when(repository.buscarComFiltros(null, null, pageable)).thenReturn(page);
             when(mapper.toSummaryDto(prestador)).thenReturn(resumoDTO);
 
-            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(pageable);
+            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(null, null, pageable);
 
             assertThat(resultado.getContent()).hasSize(1);
             assertThat(resultado.getContent().get(0).nome()).isEqualTo("Prestador Teste");
@@ -204,9 +204,9 @@ class PrestadorServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<Prestador> pageVazia = new PageImpl<>(List.of());
 
-            when(repository.findAllByAtivoTrue(pageable)).thenReturn(pageVazia);
+            when(repository.buscarComFiltros(null, null, pageable)).thenReturn(pageVazia);
 
-            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(pageable);
+            Page<PrestadorResumoDTO> resultado = service.listarPrestadores(null, null, pageable);
 
             assertThat(resultado.getContent()).isEmpty();
         }

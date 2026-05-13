@@ -9,7 +9,10 @@ import com.gabriel.party.repositories.cliente.ClienteRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -21,6 +24,9 @@ import java.util.UUID;
 
 @Component
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -34,7 +40,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private PrestadorRepository prestadorRepository;
+
     @Override
+    @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -66,11 +76,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             clienteRepository.save(cliente);
         }
 
-        String tokenJwt = tokenService.gerarToken(usuario);
-
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\n  \"token\": \"" + tokenJwt + "\"\n}");
+        UUID profileId = null;
+        if (usuario.getRole() == Role.ROLE_CLIENTE) {
+            var cliente = clienteRepository.findByUsuarioId(usuario.getId()).orElse(null);
+            profileId = cliente != null ? cliente.getId() : null;
+        } else if (usuario.getRole() == Role.ROLE_PRESTADOR) {
+            var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
+            profileId = prestador != null ? prestador.getId() : null;
+        }
+        String tokenJwt = tokenService.gerarToken(usuario, profileId);
+        response.sendRedirect(frontendUrl + "/oauth2/callback?token=" + tokenJwt);
     }
 }
 

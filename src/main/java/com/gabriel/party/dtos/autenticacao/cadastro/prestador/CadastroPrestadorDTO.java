@@ -2,6 +2,7 @@ package com.gabriel.party.dtos.autenticacao.cadastro.prestador;
 
 import com.gabriel.party.dtos.prestador.endereco.EnderecoDTO;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -30,5 +31,7 @@ public record CadastroPrestadorDTO(
         @NotNull(message = "A categoria de serviço é obrigatória")
         UUID categoriaId,
 
+        @NotNull(message = "O endereço é obrigatório")
+        @Valid
         EnderecoDTO endereco
 ) {}

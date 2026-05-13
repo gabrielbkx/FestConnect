@@ -41,11 +41,13 @@ public class PrestadorController {
     @ApiResponses( value = {
             @ApiResponse(responseCode = "200", description = "Lista de prestadores retornada com sucesso")
     })
-    @Operation(summary = "Listar prestadores", description = "Retorna uma lista paginada de todos os prestadores ativos.")
+    @Operation(summary = "Listar prestadores", description = "Retorna uma lista paginada de prestadores ativos, com filtros opcionais por categoria e busca por nome.")
     @GetMapping
     public ResponseEntity<Page<PrestadorResumoDTO>> listarTodosPrestadores(
+            @RequestParam(required = false) UUID categoriaId,
+            @RequestParam(required = false) String busca,
             @PageableDefault(size = 10, sort = "nomeCompleto") Pageable pageable) {
-        return ResponseEntity.ok(prestadorService.listarPrestadores(pageable));
+        return ResponseEntity.ok(prestadorService.listarPrestadores(categoriaId, busca, pageable));
     }
 
     @ApiResponses( value = {

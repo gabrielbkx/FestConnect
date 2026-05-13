@@ -48,6 +48,19 @@ public class PedidoController {
     }
 
     @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedido retornado com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Pedido não pertence ao usuário autenticado"),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    @Operation(summary = "Buscar pedido por ID", description = "Retorna os dados de um pedido. Acessível pelo cliente ou prestador vinculado ao pedido.")
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_PRESTADOR')")
+    public ResponseEntity<PedidoResponseDTO> buscarPorId(@PathVariable UUID id,
+                                                         @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(pedidoService.buscarPedidoPorId(id, usuario));
+    }
+
+    @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de pedidos do cliente retornada"),
             @ApiResponse(responseCode = "404", description = "Perfil de cliente não encontrado")
     })

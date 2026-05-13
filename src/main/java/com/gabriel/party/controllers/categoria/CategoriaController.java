@@ -82,6 +82,7 @@ public class CategoriaController {
     })
     @Operation(summary = "Atualizar categoria", description = "Atualiza os dados de uma categoria existente pelo ID.")
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
     public ResponseEntity<CategoriaReponseDTO> atualizarCategoria(@Valid @RequestBody CategoriaRequestDTO dto,
                                                                   @PathVariable UUID id){
         var categoriaAtualizada = categoriaService.atualizarCategoria(dto, id);

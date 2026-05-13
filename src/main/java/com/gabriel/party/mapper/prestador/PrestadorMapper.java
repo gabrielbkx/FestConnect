@@ -21,6 +21,8 @@ public interface PrestadorMapper {
     @Mapping(target = "categoria", ignore = true)
     Prestador toEntity(PrestadorRequestDTO dto);
 
+    @Mapping(target = "nome", source = "nomeCompleto")
+    @Mapping(target = "email", source = "usuario.email")
     @Mapping(target = "categoriaId", source = "categoria.id")
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
@@ -28,9 +30,12 @@ public interface PrestadorMapper {
     PrestadorResponseDTO toDto(Prestador prestador);
 
     @Mapping(target = "nome", source = "nomeCompleto")
+    @Mapping(target = "email", source = "usuario.email")
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "cidade", source = "endereco.cidade")
     @Mapping(target = "estado", source = "endereco.estado")
+    @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
+    @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
     PrestadorResumoDTO toSummaryDto(Prestador prestador);
 
     List<PrestadorResumoDTO> toSummaryList(List<Prestador> prestadores);

@@ -19,8 +19,14 @@ public record PedidoResponseDTO(
         @Schema(description = "URL da foto de perfil do cliente")
         String fotoClienteUrl,
 
+        @Schema(description = "ID do prestador vinculado ao pedido")
+        UUID prestadorId,
+
         @Schema(description = "Nome do prestador vinculado ao pedido", example = "Buffet Silva & Cia")
         String nomePrestador,
+
+        @Schema(description = "WhatsApp do prestador (disponível após aceite)", example = "11987654321")
+        String whatsappPrestador,
 
         @Schema(description = "Data e hora do evento")
         LocalDateTime dataEvento,

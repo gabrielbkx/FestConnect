@@ -10,6 +10,7 @@ import com.gabriel.party.model.usuario.Usuario;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 public class TokenService {
@@ -18,21 +19,29 @@ public class TokenService {
     private String segredo;
 
     public String gerarToken(Usuario usuario) {
+        return gerarToken(usuario, null);
+    }
 
+    public String gerarToken(Usuario usuario, UUID profileId) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(segredo);
 
-            return JWT.create()
-                    .withIssuer("FestConnect") // Emissor do token
-                    .withSubject(usuario.getEmail()) // dono do token
-                    .withClaim("role", usuario.getRole().getRole()) // Guardamos o perfil
-                    .withExpiresAt((gerarDataExpiracao())) // Tempo de expiração do token
-                    .sign(algorithm);
+            var builder = JWT.create()
+                    .withIssuer("FestConnect")
+                    .withSubject(usuario.getEmail())
+                    .withClaim("role", usuario.getRole().name())
+                    .withClaim("usuarioId", usuario.getId().toString())
+                    .withExpiresAt(gerarDataExpiracao());
+
+            if (profileId != null) {
+                builder = builder.withClaim("profileId", profileId.toString());
+            }
+
+            return builder.sign(algorithm);
 
         } catch (Exception e) {
             throw new AppException(ErrorCode.ERRO_AO_GERAR_TOKEN_JWT, "Erro ao gerar token JWT");
         }
-
     }
 
 

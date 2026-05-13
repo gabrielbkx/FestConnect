@@ -14,6 +14,9 @@ public record PrestadorResumoDTO(
         @Schema(description = "Nome completo ou nome fantasia", example = "Buffet Silva & Cia")
         String nome,
 
+        @Schema(description = "E-mail de contato", example = "contato@buffetsilva.com.br")
+        String email,
+
         @Schema(description = "URL da foto de perfil")
         String fotoPerfilUrl,
 

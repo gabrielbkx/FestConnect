@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class AutenticacaoService implements UserDetailsService {
@@ -71,10 +72,10 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setSenha(encoder.encode(dto.senha()));
         usuario.setRole(Role.ROLE_CLIENTE);
 
-        // CORREÇÃO 2: Salvando o usuário no banco de dados!
         usuario = usuarioRepository.save(usuario);
 
-        String tokenJwt = tokenService.gerarToken(usuario);
+        var cliente = clienteService.criarPerfilCliente(dto, usuario, null);
+        String tokenJwt = tokenService.gerarToken(usuario, cliente.getId());
 
         return new CadastroResponseDTO(
                 usuario.getId(),
@@ -93,13 +94,11 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setSenha(encoder.encode(dto.senha()));
         usuario.setRole(Role.ROLE_PRESTADOR);
 
-        // Ajuste no seu PrestadorService para não exigir a foto por enquanto
         prestadorService.criarPerfilPrestador(dto, usuario, null);
 
-        // Se o criarPerfilPrestador não fizer o save da entidade pai (Usuario), adicione:
-        // usuario = usuarioRepository.save(usuario);
-
-        String tokenJwt = tokenService.gerarToken(usuario);
+        var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
+        UUID profileId = prestador != null ? prestador.getId() : null;
+        String tokenJwt = tokenService.gerarToken(usuario, profileId);
 
         return new CadastroResponseDTO(
                 usuario.getId(),

@@ -29,7 +29,9 @@ public interface PedidoMapper {
 
     @Mapping(source = "cliente.nomeCompleto", target = "nomeCliente")
     @Mapping(source = "cliente.fotoPerfilUrl", target = "fotoClienteUrl")
+    @Mapping(source = "prestador.id", target = "prestadorId")
     @Mapping(source = "prestador.nomeCompleto", target = "nomePrestador")
+    @Mapping(source = "prestador.whatsapp", target = "whatsappPrestador")
     @Mapping(source = "statusPedido", target = "status")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
 
