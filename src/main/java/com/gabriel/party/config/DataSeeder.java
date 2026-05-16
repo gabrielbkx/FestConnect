@@ -439,14 +439,14 @@ public class DataSeeder implements CommandLineRunner {
 
     // ─── Clientes ─────────────────────────────────────────────────────────────
     private static final String[][] CLIENTES = {
-        {"Ana Beatriz Santos",   "SP", 0}, {"Carlos Eduardo Lima",  "RJ", 1},
-        {"Fernanda Oliveira",    "MG", 2}, {"Ricardo Mendes",       "PR", 3},
-        {"Juliana Costa",       "RS", 4}, {"Thiago Almeida",       "DF", 5},
-        {"Mariana Ferreira",    "BA", 6}, {"Lucas Rodrigues",      "PE", 7},
-        {"Camila Pereira",      "CE", 8}, {"Rafael Souza",         "SP", 0},
-        {"Aline Nascimento",    "RJ", 1}, {"Bruno Torres",         "MG", 2},
-        {"Patrícia Gomes",      "PR", 3}, {"Gustavo Araújo",       "RS", 4},
-        {"Isabella Cardoso",    "SP", 9},
+        {"Ana Beatriz Santos",   "SP", "0"}, {"Carlos Eduardo Lima",  "RJ", "1"},
+        {"Fernanda Oliveira",    "MG", "2"}, {"Ricardo Mendes",       "PR", "3"},
+        {"Juliana Costa",       "RS", "4"}, {"Thiago Almeida",       "DF", "5"},
+        {"Mariana Ferreira",    "BA", "6"}, {"Lucas Rodrigues",      "PE", "7"},
+        {"Camila Pereira",      "CE", "8"}, {"Rafael Souza",         "SP", "0"},
+        {"Aline Nascimento",    "RJ", "1"}, {"Bruno Torres",         "MG", "2"},
+        {"Patrícia Gomes",      "PR", "3"}, {"Gustavo Araújo",       "RS", "4"},
+        {"Isabella Cardoso",    "SP", "9"},
     };
 
     private void seedClientes(String senhaHash) {
