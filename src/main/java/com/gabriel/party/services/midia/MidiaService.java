@@ -58,6 +58,7 @@ public class MidiaService {
 
         var novaMidia = mapper.toEntity(dto);
         novaMidia.setItemCatalogo(item);
+        novaMidia.setTipo(deduzirTipo(arquivo));
         novaMidia.setUrl(armazenamentoService.salvarMidias(arquivo));
 
         try {
@@ -107,6 +108,16 @@ public class MidiaService {
 
         repository.save(midia);
         return mapper.toDto(midia);
+    }
+
+    private TipoMidia deduzirTipo(MultipartFile arquivo) {
+        String contentType = arquivo.getContentType();
+        if (contentType == null) {
+            throw new AppException(ErrorCode.FORMATO_INVALIDO, "desconhecido");
+        }
+        if (contentType.startsWith("image/")) return TipoMidia.FOTO;
+        if (contentType.startsWith("video/")) return TipoMidia.VIDEO;
+        throw new AppException(ErrorCode.FORMATO_INVALIDO, contentType);
     }
 
     @Transactional

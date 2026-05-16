@@ -1,16 +1,12 @@
 package com.gabriel.party.dtos.midia;
 
-import com.gabriel.party.model.midia.enums.TipoMidia;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-@Schema(description = "Dados para associar metadados à mídia enviada via upload")
+@Schema(description = "Metadados da mídia. O tipo (foto/vídeo) é deduzido pelo backend a partir do MIME type do arquivo.")
 public record MidiaRequestDTO(
-
-        @Schema(description = "Tipo da mídia enviada", allowableValues = {"IMAGEM", "VIDEO"})
-        @NotNull TipoMidia tipo,
 
         @Schema(description = "Posição de exibição da mídia na galeria (menor número = exibido primeiro)", example = "1")
         Integer ordem,

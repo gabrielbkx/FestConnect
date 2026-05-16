@@ -14,6 +14,7 @@ public interface MidiaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "itemCatalogo", ignore = true)
     @Mapping(target = "url", ignore = true)
+    @Mapping(target = "tipo", ignore = true)
     Midia toEntity(MidiaRequestDTO dto);
 
     @Mapping(target = "itemCatalogoId", source = "itemCatalogo.id")
@@ -22,5 +23,6 @@ public interface MidiaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "itemCatalogo", ignore = true)
     @Mapping(target = "url", ignore = true)
+    @Mapping(target = "tipo", ignore = true)
     void atualizarMidiaDoDTO(MidiaRequestDTO dto, @MappingTarget Midia midia);
 }
