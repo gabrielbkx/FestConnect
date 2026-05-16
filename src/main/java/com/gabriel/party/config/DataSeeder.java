@@ -44,11 +44,15 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         log.info("DataSeeder: iniciando seed de dados...");
-        String hash = new BCryptPasswordEncoder().encode("123456");
-        UUID[] cats = seedCategorias();
-        seedPrestadores(cats, hash);
-        seedClientes(hash);
-        log.info("DataSeeder: seed concluído com sucesso!");
+        try {
+            String hash = new BCryptPasswordEncoder().encode("123456");
+            UUID[] cats = seedCategorias();
+            seedPrestadores(cats, hash);
+            seedClientes(hash);
+            log.info("DataSeeder: seed concluído com sucesso!");
+        } catch (Exception e) {
+            log.error("DataSeeder: FALHOU — {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
+        }
     }
 
     // ─── Categorias ────────────────────────────────────────────────────────────
