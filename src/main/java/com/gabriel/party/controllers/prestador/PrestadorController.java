@@ -15,14 +15,16 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*")
@@ -71,6 +73,20 @@ public class PrestadorController {
     @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<PrestadorResponseDTO> atualizarPrestador(@Valid @RequestBody PrestadorRequestDTO dto, @PathVariable UUID id) {
         return ResponseEntity.ok(prestadorService.atualizarPrestador(dto, id));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto de perfil atualizada"),
+            @ApiResponse(responseCode = "400", description = "Arquivo inválido ou formato não suportado"),
+            @ApiResponse(responseCode = "404", description = "Prestador não encontrado")
+    })
+    @Operation(summary = "Atualizar foto de perfil", description = "Faz upload de uma nova foto de perfil. A foto anterior é removida do storage.")
+    @PutMapping(value = "/{id}/foto-perfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
+    public ResponseEntity<Map<String, String>> atualizarFotoPerfil(@PathVariable UUID id,
+                                                                    @RequestPart("arquivo") MultipartFile arquivo) {
+        String url = prestadorService.atualizarFotoPerfil(id, arquivo);
+        return ResponseEntity.ok(Map.of("fotoPerfilUrl", url));
     }
 
     @ApiResponses( value = {

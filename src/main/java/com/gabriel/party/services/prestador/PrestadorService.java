@@ -144,6 +144,27 @@ public class PrestadorService {
         repository.save(prestador);
     }
 
+    @Transactional
+    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo) {
+        var prestador = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+
+        String contentType = arquivo.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new AppException(ErrorCode.FORMATO_INVALIDO, contentType == null ? "desconhecido" : contentType);
+        }
+
+        String urlAntiga = prestador.getFotoPerfilUrl();
+        String urlNova = armazenamentoService.salvarMidias(arquivo);
+        prestador.setFotoPerfilUrl(urlNova);
+        repository.save(prestador);
+
+        if (urlAntiga != null && !urlAntiga.isBlank()) {
+            try { armazenamentoService.deletaMidia(urlAntiga); } catch (Exception ignored) {}
+        }
+        return urlNova;
+    }
+
     @Transactional(readOnly = true)
     public List<PrestadorResumoDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
         return repository.buscarPorProximidade(lat, lon, raio)

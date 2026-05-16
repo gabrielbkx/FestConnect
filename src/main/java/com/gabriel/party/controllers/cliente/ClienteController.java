@@ -12,11 +12,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -61,6 +64,20 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDTO> atualizar(@PathVariable UUID id,
                                                         @RequestBody @Valid ClienteRequestDTO dto) {
         return ResponseEntity.ok(clienteService.atualizar(id, dto));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto de perfil atualizada"),
+            @ApiResponse(responseCode = "400", description = "Arquivo inválido ou formato não suportado"),
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    })
+    @Operation(summary = "Atualizar foto de perfil", description = "Faz upload de uma nova foto de perfil. A foto anterior é removida do storage.")
+    @PutMapping(value = "/{id}/foto-perfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
+    public ResponseEntity<Map<String, String>> atualizarFotoPerfil(@PathVariable UUID id,
+                                                                    @RequestPart("arquivo") MultipartFile arquivo) {
+        String url = clienteService.atualizarFotoPerfil(id, arquivo);
+        return ResponseEntity.ok(Map.of("fotoPerfilUrl", url));
     }
 
     @ApiResponses(value = {

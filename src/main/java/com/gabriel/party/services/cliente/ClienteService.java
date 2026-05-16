@@ -115,6 +115,27 @@ public class ClienteService {
     }
 
     @Transactional
+    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo) {
+        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, id.toString()));
+
+        String contentType = arquivo.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new AppException(ErrorCode.FORMATO_INVALIDO, contentType == null ? "desconhecido" : contentType);
+        }
+
+        String urlAntiga = cliente.getFotoPerfilUrl();
+        String urlNova = armazenamentoService.salvarMidias(arquivo);
+        cliente.setFotoPerfilUrl(urlNova);
+        clienteRepository.save(cliente);
+
+        if (urlAntiga != null && !urlAntiga.isBlank()) {
+            try { armazenamentoService.deletaMidia(urlAntiga); } catch (Exception ignored) {}
+        }
+        return urlNova;
+    }
+
+    @Transactional
     public void adicionarPrestadorFavorito(UUID clienteId, UUID prestadorId) {
         Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
