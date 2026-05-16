@@ -10,6 +10,7 @@ import com.gabriel.party.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Set;
@@ -51,12 +52,15 @@ public class Prestador {
     @JoinColumn(name = "categoria_id")
     private Categoria categoria;
 
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)
     private List<Midia> midias;
 
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)
     private Set<Avaliacao> avaliacoes;
 
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemCatalogo> itensCatalogo;
 

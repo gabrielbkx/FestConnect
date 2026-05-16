@@ -8,6 +8,7 @@ import com.gabriel.party.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -41,6 +42,7 @@ public class Cliente {
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
+    @EqualsAndHashCode.Exclude
     @ManyToMany
     @JoinTable(
             name = "tb_cliente_prestador_favorito",
@@ -49,6 +51,7 @@ public class Cliente {
     )
     private Set<Prestador> prestadoresFavoritos;
 
+    @EqualsAndHashCode.Exclude
     @ManyToMany
     @JoinTable(
             name = "tb_cliente_categoria_favorita",
@@ -61,6 +64,7 @@ public class Cliente {
     @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", unique = true)
     private Usuario usuario;
 
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
     private Set<Avaliacao> avaliacoesFeitas;
 }

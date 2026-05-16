@@ -6,6 +6,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class EmailService {
             helper.setText(corpoHtml, true);
             mailSender.send(message);
             logger.info("Email enviado para: " + destinatario + " | " + assunto);
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             logger.severe("Falha ao enviar email para " + destinatario + ": " + e.getMessage());
         }
     }

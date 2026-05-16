@@ -117,7 +117,8 @@ class PedidoServiceTest {
                 LocalDateTime.now().plusDays(7)
         );
 
-        responseDTO = new PedidoResponseDTO(
+        responseDTO =
+                new PedidoResponseDTO(
                 pedidoId, "Cliente Teste", null, "Prestador Teste",
                 LocalDateTime.now().plusDays(30), "Salão de Festas",
                 "Casamento", 100, "Preciso de buffet completo",
