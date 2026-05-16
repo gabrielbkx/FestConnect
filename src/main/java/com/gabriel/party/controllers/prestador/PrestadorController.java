@@ -44,10 +44,11 @@ public class PrestadorController {
     @Operation(summary = "Listar prestadores", description = "Retorna uma lista paginada de prestadores ativos, com filtros opcionais por categoria e busca por nome.")
     @GetMapping
     public ResponseEntity<Page<PrestadorResumoDTO>> listarTodosPrestadores(
-            @RequestParam(required = false) UUID categoriaId,
+            @RequestParam(required = false) List<UUID> categoriaId,
             @RequestParam(required = false) String busca,
+            @RequestParam(required = false) String cidade,
             @PageableDefault(size = 10, sort = "nomeCompleto") Pageable pageable) {
-        return ResponseEntity.ok(prestadorService.listarPrestadores(categoriaId, busca, pageable));
+        return ResponseEntity.ok(prestadorService.listarPrestadores(categoriaId, busca, cidade, pageable));
     }
 
     @ApiResponses( value = {

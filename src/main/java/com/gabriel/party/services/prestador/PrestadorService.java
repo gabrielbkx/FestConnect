@@ -85,8 +85,13 @@ public class PrestadorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PrestadorResumoDTO> listarPrestadores(UUID categoriaId, String busca, Pageable pageable) {
-        return repository.buscarComFiltros(categoriaId, busca == null ? "" : busca.trim(), pageable).map(mapper::toSummaryDto);
+    public Page<PrestadorResumoDTO> listarPrestadores(List<UUID> categoriaIds, String busca, String cidade, Pageable pageable) {
+        String buscaNorm = busca == null ? "" : busca.trim();
+        String cidadeNorm = cidade == null ? "" : cidade.trim();
+        if (categoriaIds == null || categoriaIds.isEmpty()) {
+            return repository.buscarSemCategoria(buscaNorm, cidadeNorm, pageable).map(mapper::toSummaryDto);
+        }
+        return repository.buscarComCategorias(categoriaIds, buscaNorm, cidadeNorm, pageable).map(mapper::toSummaryDto);
     }
 
     @Transactional(readOnly = true)

@@ -63,19 +63,47 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
             SELECT p FROM Prestador p
             JOIN FETCH p.usuario
             WHERE p.ativo = true
-              AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
-              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """,
         countQuery = """
             SELECT COUNT(p) FROM Prestador p
             WHERE p.ativo = true
-              AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
-              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """
     )
-    Page<Prestador> buscarComFiltros(
-            @Param("categoriaId") UUID categoriaId,
+    Page<Prestador> buscarSemCategoria(
             @Param("busca") String busca,
+            @Param("cidade") String cidade,
+            Pageable pageable
+    );
+
+    @Query(
+        value = """
+            SELECT p FROM Prestador p
+            JOIN FETCH p.usuario
+            WHERE p.ativo = true
+              AND p.categoria.id IN :categoriaIds
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+            """,
+        countQuery = """
+            SELECT COUNT(p) FROM Prestador p
+            WHERE p.ativo = true
+              AND p.categoria.id IN :categoriaIds
+              AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+              AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+            """
+    )
+    Page<Prestador> buscarComCategorias(
+            @Param("categoriaIds") List<UUID> categoriaIds,
+            @Param("busca") String busca,
+            @Param("cidade") String cidade,
             Pageable pageable
     );
 
