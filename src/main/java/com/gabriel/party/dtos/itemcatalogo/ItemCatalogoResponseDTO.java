@@ -38,5 +38,20 @@ public record ItemCatalogoResponseDTO(
         List<MidiaResponseDTO> midias,
 
         @Schema(description = "Detalhes do espaço. Presente apenas quando tipo = LOCAL.")
-        LocalDetalheDTO localDetalhe
+        LocalDetalheDTO localDetalhe,
+
+        @Schema(description = "ID do prestador dono do item")
+        UUID prestadorId,
+
+        @Schema(description = "Nome do prestador", example = "Buffet Silva & Cia")
+        String prestadorNome,
+
+        @Schema(description = "URL da foto de perfil do prestador")
+        String prestadorFotoUrl,
+
+        @Schema(description = "Cidade do prestador", example = "São Paulo")
+        String prestadorCidade,
+
+        @Schema(description = "Estado do prestador (UF)", example = "SP")
+        String prestadorEstado
 ) {}

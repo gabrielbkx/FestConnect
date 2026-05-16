@@ -48,18 +48,33 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "categoriaId", source = "categoria.id")
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "localDetalhe", expression = "java(montarDetalhe(local))")
+    @Mapping(target = "prestadorId", source = "prestador.id")
+    @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
+    @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
+    @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
+    @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
     ItemCatalogoResponseDTO toDto(Local local);
 
     @Mapping(target = "tipo", constant = "servico")
     @Mapping(target = "categoriaId", source = "categoria.id")
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "localDetalhe", ignore = true)
+    @Mapping(target = "prestadorId", source = "prestador.id")
+    @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
+    @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
+    @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
+    @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
     ItemCatalogoResponseDTO toDto(Servico servico);
 
     @Mapping(target = "tipo", constant = "produto")
     @Mapping(target = "categoriaId", source = "categoria.id")
     @Mapping(target = "categoriaNome", source = "categoria.nome")
     @Mapping(target = "localDetalhe", ignore = true)
+    @Mapping(target = "prestadorId", source = "prestador.id")
+    @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
+    @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
+    @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
+    @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
     ItemCatalogoResponseDTO toDto(Produto produto);
 
     default LocalDetalheDTO montarDetalhe(Local l) {
