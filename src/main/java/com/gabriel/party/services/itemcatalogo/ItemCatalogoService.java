@@ -2,6 +2,7 @@ package com.gabriel.party.services.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
+import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResumoDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.itemcatalogo.ItemCatalogoMapper;
@@ -65,6 +66,19 @@ public class ItemCatalogoService {
     @Transactional(readOnly = true)
     public Page<ItemCatalogoResponseDTO> listarItensCatalogo(Pageable pageable) {
         return itemCatalogoRepository.findAllByAtivoTrue(pageable).map(itemCatalogoMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ItemCatalogoResumoDTO> buscarItens(String busca, String cidade, List<UUID> categoriaIds,
+            Pageable pageable) {
+        String buscaTratada = busca == null ? "" : busca.trim();
+        String cidadeTratada = cidade == null ? "" : cidade.trim();
+
+        Page<ItemCatalogo> resultado = (categoriaIds == null || categoriaIds.isEmpty())
+                ? itemCatalogoRepository.buscarSemCategoria(buscaTratada, cidadeTratada, pageable)
+                : itemCatalogoRepository.buscarComCategorias(categoriaIds, buscaTratada, cidadeTratada, pageable);
+
+        return resultado.map(itemCatalogoMapper::toResumoDto);
     }
 
     @Transactional(readOnly = true)

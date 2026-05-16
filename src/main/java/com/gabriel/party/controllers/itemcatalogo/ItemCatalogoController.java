@@ -2,6 +2,7 @@ package com.gabriel.party.controllers.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
+import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResumoDTO;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.itemcatalogo.ItemCatalogoService;
@@ -61,11 +62,15 @@ public class ItemCatalogoController {
     @ApiResponses( value = {
             @ApiResponse(responseCode = "200", description = "Lista de itens retornada com sucesso")
     })
-    @Operation(summary = "Listar todos os itens", description = "Retorna uma lista paginada de todos os itens ativos.")
+    @Operation(summary = "Buscar itens do catálogo",
+            description = "Lista paginada dos itens ativos de prestadores ativos, com filtros opcionais por texto (título/descrição), cidade e uma ou mais categorias.")
     @GetMapping
-    public ResponseEntity<Page<ItemCatalogoResponseDTO>> listarTodosItens(
-            @PageableDefault(size = 10, sort = "titulo") Pageable pageable){
-        return ResponseEntity.ok(itemCatalogoService.listarItensCatalogo(pageable));
+    public ResponseEntity<Page<ItemCatalogoResumoDTO>> buscarItens(
+            @Parameter(description = "Texto livre para busca em título e descrição", example = "buffet") @RequestParam(required = false) String busca,
+            @Parameter(description = "Cidade do prestador", example = "São Paulo") @RequestParam(required = false) String cidade,
+            @Parameter(description = "Um ou mais IDs de categoria. Quando informado, retorna apenas itens dessas categorias.") @RequestParam(required = false) List<UUID> categoriaId,
+            @PageableDefault(size = 12, sort = "titulo") Pageable pageable){
+        return ResponseEntity.ok(itemCatalogoService.buscarItens(busca, cidade, categoriaId, pageable));
     }
 
     @ApiResponses( value = {

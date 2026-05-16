@@ -2,12 +2,15 @@ package com.gabriel.party.mapper.itemcatalogo;
 
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoRequestDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
+import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResumoDTO;
 import com.gabriel.party.dtos.itemcatalogo.LocalDetalheDTO;
 import com.gabriel.party.mapper.midia.MidiaMapper;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.itemcatalogo.Local;
 import com.gabriel.party.model.itemcatalogo.Produto;
 import com.gabriel.party.model.itemcatalogo.Servico;
+import com.gabriel.party.model.midia.Midia;
+import com.gabriel.party.model.midia.enums.TipoMidia;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,6 +20,7 @@ import org.mapstruct.ObjectFactory;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.SubclassMapping;
 
+import java.util.Comparator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -94,6 +98,32 @@ public interface ItemCatalogoMapper {
             local.setTemEstacionamento(dto.localDetalhe().temEstacionamento());
             local.setTipoEspaco(dto.localDetalhe().tipoEspaco());
         }
+    }
+
+    @Mapping(target = "tipo", expression = "java(tipoDoItem(item))")
+    @Mapping(target = "categoriaId", source = "categoria.id")
+    @Mapping(target = "categoriaNome", source = "categoria.nome")
+    @Mapping(target = "prestadorId", source = "prestador.id")
+    @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
+    @Mapping(target = "cidade", source = "prestador.endereco.cidade")
+    @Mapping(target = "estado", source = "prestador.endereco.estado")
+    @Mapping(target = "fotoPrincipalUrl", expression = "java(primeiraFotoUrl(item))")
+    ItemCatalogoResumoDTO toResumoDto(ItemCatalogo item);
+
+    default String tipoDoItem(ItemCatalogo item) {
+        if (item instanceof Local) return "local";
+        if (item instanceof Servico) return "servico";
+        if (item instanceof Produto) return "produto";
+        return null;
+    }
+
+    default String primeiraFotoUrl(ItemCatalogo item) {
+        if (item == null || item.getMidias() == null) return null;
+        return item.getMidias().stream()
+                .filter(m -> m.getTipo() == TipoMidia.FOTO)
+                .min(Comparator.comparing(Midia::getOrdem, Comparator.nullsLast(Integer::compare)))
+                .map(Midia::getUrl)
+                .orElse(null);
     }
 
     default void atualizarItemDoDTO(ItemCatalogoRequestDTO dto, @MappingTarget ItemCatalogo item) {
