@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -78,6 +79,15 @@ public class AvaliacaoService {
         prestadorRepository.findByIdAndAtivoTrue(prestadorId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, prestadorId.toString()));
         return repository.findAllByPrestadorIdAndAtivoTrue(prestadorId, pageable).map(mapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public
+    List<AvaliacaoResponseDTO> listarAvaliacoesPorItem(UUID itemCatalogoId) {
+        return repository.findAllByPedidoItemCatalogoIdAndAtivoTrue(itemCatalogoId)
+                .stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)

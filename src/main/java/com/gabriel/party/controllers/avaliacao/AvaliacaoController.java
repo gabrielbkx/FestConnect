@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -78,6 +79,16 @@ public class AvaliacaoController {
             @PathVariable UUID prestadorId,
             @PageableDefault(size = 10, sort = "dataCriacao") Pageable pageable) {
         return ResponseEntity.ok(avaliacaoService.listarAvaliacoesPorPrestador(prestadorId, pageable));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de avaliações do item retornada com sucesso")
+    })
+    @Operation(summary = "Listar avaliações de um item",
+            description = "Retorna todas as avaliações ativas de pedidos que usaram este item do catálogo.")
+    @GetMapping("/item/{itemId}")
+    public ResponseEntity<List<AvaliacaoResponseDTO>> listarAvaliacoesPorItem(@PathVariable UUID itemId) {
+        return ResponseEntity.ok(avaliacaoService.listarAvaliacoesPorItem(itemId));
     }
 
     @ApiResponses(value = {
