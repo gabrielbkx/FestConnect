@@ -6,7 +6,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -200,10 +199,6 @@ public class DataSeeder implements CommandLineRunner {
             int cidadeIdx    = (int) p[3];
             String descricao = (String) p[4];
 
-            String[] cidade = (String[]) new Object[]{
-                (String) CIDADES[cidadeIdx][0],
-                (String) CIDADES[cidadeIdx][1],
-            };
             double lat = (double) CIDADES[cidadeIdx][2] + (Math.random() * 0.05 - 0.025);
             double lon = (double) CIDADES[cidadeIdx][3] + (Math.random() * 0.05 - 0.025);
 
