@@ -15,6 +15,6 @@ public record MidiaRequestDTO(
         @Schema(description = "Posição de exibição da mídia na galeria (menor número = exibido primeiro)", example = "1")
         Integer ordem,
 
-        @Schema(description = "ID do item do catálogo ao qual a mídia será vinculada. Opcional — se omitido, a mídia fica vinculada apenas ao perfil do prestador.")
-        UUID itemCatalogoId
+        @Schema(description = "ID do item do catálogo ao qual a mídia será vinculada. Obrigatório.")
+        @NotNull UUID itemCatalogoId
 ) {}

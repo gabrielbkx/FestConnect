@@ -4,6 +4,7 @@ import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.prestador.Prestador;
 import org.mapstruct.Mapper;
@@ -24,14 +25,17 @@ public interface PedidoMapper {
     @Mapping(target = "statusPedido", constant = "PENDENTE")
     @Mapping(source = "cliente", target = "cliente")
     @Mapping(source = "prestador", target = "prestador")
+    @Mapping(source = "itemCatalogo", target = "itemCatalogo")
     @Mapping(source = "dto.descricao", target = "descricao")
-    Pedido toEntity(PedidoRequestDTO dto, Cliente cliente, Prestador prestador);
+    Pedido toEntity(PedidoRequestDTO dto, Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo);
 
     @Mapping(source = "cliente.nomeCompleto", target = "nomeCliente")
     @Mapping(source = "cliente.fotoPerfilUrl", target = "fotoClienteUrl")
     @Mapping(source = "prestador.id", target = "prestadorId")
     @Mapping(source = "prestador.nomeCompleto", target = "nomePrestador")
     @Mapping(source = "prestador.whatsapp", target = "whatsappPrestador")
+    @Mapping(source = "itemCatalogo.id", target = "itemCatalogoId")
+    @Mapping(source = "itemCatalogo.titulo", target = "itemCatalogoTitulo")
     @Mapping(source = "statusPedido", target = "status")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
 

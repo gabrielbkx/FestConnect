@@ -6,6 +6,7 @@ import com.gabriel.party.dtos.categoria.CategoriaRequestDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
+import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import jakarta.validation.Valid;
 import com.gabriel.party.mapper.categoria.CategoriaMapper;
 import org.springframework.data.domain.Page;
@@ -18,10 +19,14 @@ import java.util.UUID;
 public class CategoriaService {
 
     private final CategoriaRepository repository;
+    private final ItemCatalogoRepository itemCatalogoRepository;
     private final CategoriaMapper mapper;
 
-    public CategoriaService(CategoriaRepository repository, CategoriaMapper mapper) {
+    public CategoriaService(CategoriaRepository repository,
+                            ItemCatalogoRepository itemCatalogoRepository,
+                            CategoriaMapper mapper) {
         this.repository = repository;
+        this.itemCatalogoRepository = itemCatalogoRepository;
         this.mapper = mapper;
     }
 
@@ -46,12 +51,10 @@ public class CategoriaService {
         var categoria = repository.findByIdAndAtivoTrue(id) // Verificar se a categoria existe e está ativa
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, id.toString()));
 
-        // Verificar se a categoria tem prestadores associados
-        var categoriaTemPrestadores = categoria.getPrestadores() != null && !categoria.getPrestadores().isEmpty();
-
-        if (categoriaTemPrestadores){
+        // Não pode excluir se há itens de catálogo ativos vinculados a esta categoria
+        if (itemCatalogoRepository.existsByCategoriaIdAndAtivoTrue(id)) {
             throw new AppException(ErrorCode.REGRA_NEGOCIO_VIOLADA, ("A categoria '%categoria%'" +
-                    " não pode ser excluída pois existem prestadores vinculados a ela.")
+                    " não pode ser excluída pois existem itens vinculados a ela.")
                     .replace("%categoria%", categoria.getNome()));
         }
 

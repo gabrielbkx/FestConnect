@@ -30,5 +30,14 @@ public record AvaliacaoResponseDTO(
         UUID clienteId,
 
         @Schema(description = "Nome do cliente que fez a avaliação", example = "João da Silva")
-        String clienteNome
+        String clienteNome,
+
+        @Schema(description = "ID do pedido que originou a avaliação")
+        UUID pedidoId,
+
+        @Schema(description = "ID do item do catálogo avaliado")
+        UUID itemCatalogoId,
+
+        @Schema(description = "Título do item do catálogo avaliado", example = "Buffet Completo para 100 Pessoas")
+        String itemCatalogoTitulo
 ) {}

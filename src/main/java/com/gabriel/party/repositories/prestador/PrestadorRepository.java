@@ -1,7 +1,5 @@
 package com.gabriel.party.repositories.prestador;
 
-import com.gabriel.party.model.pedido.Pedido;
-import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,15 +37,17 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
     );
 
     @Query(value = """
-    SELECT prestador.* FROM tb_prestador prestador
-    WHERE prestador.categoria_id = :categoriaId
+    SELECT DISTINCT prestador.* FROM tb_prestador prestador
+    INNER JOIN tb_item_catalogo item ON item.prestador_id = prestador.id
+    WHERE item.categoria_id = :categoriaId
       AND prestador.ativo = true
+      AND item.ativo = true
       AND (6371 * acos(
-          cos(radians(:latCliente)) * cos(radians(prestador.latitude)) * cos(radians(prestador.longitude) - radians(:lonCliente)) + 
+          cos(radians(:latCliente)) * cos(radians(prestador.latitude)) * cos(radians(prestador.longitude) - radians(:lonCliente)) +
           sin(radians(:latCliente)) * sin(radians(prestador.latitude))
       )) <= :raioKm
     ORDER BY (6371 * acos(
-          cos(radians(:latCliente)) * cos(radians(prestador.latitude)) * cos(radians(prestador.longitude) - radians(:lonCliente)) + 
+          cos(radians(:latCliente)) * cos(radians(prestador.latitude)) * cos(radians(prestador.longitude) - radians(:lonCliente)) +
           sin(radians(:latCliente)) * sin(radians(prestador.latitude))
     )) ASC
     """, nativeQuery = true)
@@ -60,18 +60,20 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
 
     @Query(
         value = """
-            SELECT p FROM Prestador p
+            SELECT DISTINCT p FROM Prestador p
             JOIN FETCH p.usuario
             WHERE p.ativo = true
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
+                                          AND LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """,
         countQuery = """
-            SELECT COUNT(p) FROM Prestador p
+            SELECT COUNT(DISTINCT p) FROM Prestador p
             WHERE p.ativo = true
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
+                                          AND LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """
     )
@@ -83,20 +85,24 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
 
     @Query(
         value = """
-            SELECT p FROM Prestador p
+            SELECT DISTINCT p FROM Prestador p
             JOIN FETCH p.usuario
             WHERE p.ativo = true
-              AND p.categoria.id IN :categoriaIds
+              AND EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
+                          AND i.categoria.id IN :categoriaIds)
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR EXISTS (SELECT 1 FROM ItemCatalogo i2 WHERE i2.prestador = p AND i2.ativo = true
+                                          AND LOWER(i2.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """,
         countQuery = """
-            SELECT COUNT(p) FROM Prestador p
+            SELECT COUNT(DISTINCT p) FROM Prestador p
             WHERE p.ativo = true
-              AND p.categoria.id IN :categoriaIds
+              AND EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
+                          AND i.categoria.id IN :categoriaIds)
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(p.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR EXISTS (SELECT 1 FROM ItemCatalogo i2 WHERE i2.prestador = p AND i2.ativo = true
+                                          AND LOWER(i2.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """
     )

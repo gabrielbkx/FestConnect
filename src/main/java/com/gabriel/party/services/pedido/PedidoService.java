@@ -7,10 +7,12 @@ import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.pedido.PedidoMapper;
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.pedido.PedidoRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
@@ -28,17 +30,20 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
     private final PrestadorRepository prestadorRepository;
+    private final ItemCatalogoRepository itemCatalogoRepository;
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ClienteRepository clienteRepository,
                          PrestadorRepository prestadorRepository,
+                         ItemCatalogoRepository itemCatalogoRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService) {
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.prestadorRepository = prestadorRepository;
+        this.itemCatalogoRepository = itemCatalogoRepository;
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
     }
@@ -51,7 +56,15 @@ public class PedidoService {
         Prestador prestador = prestadorRepository.findById(dto.prestadorId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
 
-        Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador);
+        ItemCatalogo item = itemCatalogoRepository.findByIdAndAtivoTrue(dto.itemCatalogoId())
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, dto.itemCatalogoId().toString()));
+
+        if (!item.getPrestador().getId().equals(prestador.getId())) {
+            throw new AppException(ErrorCode.REGRA_NEGOCIO_VIOLADA,
+                    "O item solicitado não pertence ao prestador informado.");
+        }
+
+        Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item);
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(

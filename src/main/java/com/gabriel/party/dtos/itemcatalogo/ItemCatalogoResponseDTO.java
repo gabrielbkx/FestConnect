@@ -25,6 +25,12 @@ public record ItemCatalogoResponseDTO(
         @Schema(description = "Tipo do item: PRODUTO, SERVICO ou LOCAL", example = "SERVICO")
         String tipo,
 
+        @Schema(description = "ID da categoria do item")
+        UUID categoriaId,
+
+        @Schema(description = "Nome da categoria do item", example = "Buffet")
+        String categoriaNome,
+
         @Schema(description = "Indica se o item está ativo no catálogo")
         boolean ativo,
 

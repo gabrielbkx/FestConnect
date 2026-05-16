@@ -2,6 +2,7 @@ package com.gabriel.party.dtos.prestador;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
 import java.util.UUID;
 
 @Schema(description = "Resumo de um prestador para exibição em listagens e cards. " +
@@ -23,8 +24,11 @@ public record PrestadorResumoDTO(
         @Schema(description = "Descrição resumida dos serviços", example = "Buffet especializado em casamentos e eventos corporativos.")
         String descricao,
 
-        @Schema(description = "Nome da categoria de serviço", example = "Buffet")
-        String categoriaNome,
+        @Schema(description = "Nome da categoria principal (opcional)", example = "Buffet")
+        String categoriaPrincipalNome,
+
+        @Schema(description = "Nomes das categorias derivadas dos itens do catálogo", example = "[\"Buffet\", \"Doces e Bolos\"]")
+        List<String> categorias,
 
         @Schema(description = "Cidade onde o prestador atua", example = "São Paulo")
         String cidade,

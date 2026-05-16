@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Refatoração: categoria por item, mídias só em item, pedido com item, avaliação com pedido.
+        Como estamos em DEV, dados existentes de pedidos/avaliações/mídias órfãs são apagados.
+    -->
+
+    <changeSet author="GF" id="0.2.0-categoria-no-item">
+
+        <!-- 1) Renomeia categoria_id → categoria_principal_id em tb_prestador (passa a ser opcional) -->
+        <dropForeignKeyConstraint baseTableName="tb_prestador" constraintName="fk_prestador_categoria"/>
+        <renameColumn tableName="tb_prestador" oldColumnName="categoria_id" newColumnName="categoria_principal_id"
+                      columnDataType="UUID"/>
+        <addForeignKeyConstraint baseTableName="tb_prestador" baseColumnNames="categoria_principal_id"
+                                 constraintName="fk_prestador_categoria_principal"
+                                 referencedTableName="tb_categorias" referencedColumnNames="id_categoria"/>
+
+        <!-- 2) Adiciona categoria_id em tb_item_catalogo (inicialmente nullable para backfill) -->
+        <addColumn tableName="tb_item_catalogo">
+            <column name="categoria_id" type="UUID" remarks="Categoria do item do catálogo (obrigatório)."/>
+        </addColumn>
+
+        <!-- 2.1) Backfill: itens herdam a categoria principal do prestador -->
+        <sql>
+            UPDATE tb_item_catalogo i
+            SET categoria_id = (
+                SELECT p.categoria_principal_id FROM tb_prestador p WHERE p.id = i.prestador_id
+            )
+            WHERE i.categoria_id IS NULL;
+        </sql>
+
+        <!-- 2.2) Apaga itens órfãos (sem categoria após backfill) — em dev é aceitável -->
+        <sql>
+            DELETE FROM tb_midia WHERE item_catalogo_id IN (
+                SELECT id FROM tb_item_catalogo WHERE categoria_id IS NULL
+            );
+            DELETE FROM tb_item_catalogo WHERE categoria_id IS NULL;
+        </sql>
+
+        <addNotNullConstraint tableName="tb_item_catalogo" columnName="categoria_id" columnDataType="UUID"/>
+        <addForeignKeyConstraint baseTableName="tb_item_catalogo" baseColumnNames="categoria_id"
+                                 constraintName="fk_item_catalogo_categoria"
+                                 referencedTableName="tb_categorias" referencedColumnNames="id_categoria"/>
+
+        <!-- 3) Apaga mídias órfãs (com prestador_id e sem item_catalogo_id) -->
+        <sql>
+            DELETE FROM tb_midia WHERE item_catalogo_id IS NULL;
+        </sql>
+
+        <!-- 3.1) Remove relacionamento prestador em tb_midia -->
+        <dropForeignKeyConstraint baseTableName="tb_midia" constraintName="fk_midia_prestador"/>
+        <dropColumn tableName="tb_midia" columnName="prestador_id"/>
+        <addNotNullConstraint tableName="tb_midia" columnName="item_catalogo_id" columnDataType="UUID"/>
+
+        <!-- 4) Apaga pedidos e avaliações existentes (não têm item/pedido vinculado) -->
+        <sql>
+            DELETE FROM tb_avaliacoes;
+            DELETE FROM tb_pedidos;
+        </sql>
+
+        <!-- 4.1) Adiciona item_catalogo_id em tb_pedidos (NOT NULL após o delete) -->
+        <addColumn tableName="tb_pedidos">
+            <column name="item_catalogo_id" type="UUID" remarks="Item do catálogo solicitado pelo cliente.">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="tb_pedidos" baseColumnNames="item_catalogo_id"
+                                 constraintName="fk_pedidos_item_catalogo"
+                                 referencedTableName="tb_item_catalogo" referencedColumnNames="id"/>
+
+        <!-- 5) Adiciona pedido_id em tb_avaliacoes (1:1 com pedido) -->
+        <addColumn tableName="tb_avaliacoes">
+            <column name="pedido_id" type="UUID" remarks="Pedido que originou a avaliação (1:1).">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_avaliacao_pedido"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="tb_avaliacoes" baseColumnNames="pedido_id"
+                                 constraintName="fk_avaliacao_pedido"
+                                 referencedTableName="tb_pedidos" referencedColumnNames="id"/>
+
+    </changeSet>
+
+</databaseChangeLog>

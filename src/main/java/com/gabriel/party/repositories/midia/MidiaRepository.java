@@ -16,11 +16,11 @@ import java.util.UUID;
 public interface MidiaRepository extends JpaRepository<Midia, UUID> {
 
     @Query(
-            value = "SELECT m FROM Midia m" +
-                    " WHERE m.prestador.id = :prestadorId " +
+            value = "SELECT m FROM Midia m " +
+                    "WHERE m.itemCatalogo.prestador.id = :prestadorId " +
                     "AND (:tipoMidia IS NULL OR m.tipo = :tipoMidia)",
             countQuery = "SELECT COUNT(m) FROM Midia m " +
-                    "WHERE m.prestador.id = :prestadorId " +
+                    "WHERE m.itemCatalogo.prestador.id = :prestadorId " +
                     "AND (:tipoMidia IS NULL OR m.tipo = :tipoMidia)"
     )
     Page<Midia> buscarTodasAsMidiasDoPrestador(
@@ -32,5 +32,6 @@ public interface MidiaRepository extends JpaRepository<Midia, UUID> {
 
     Optional<Midia> findById(UUID id);
 
-    long countMidiaByPrestadorId(UUID prestadorId);
+    @Query("SELECT COUNT(m) FROM Midia m WHERE m.itemCatalogo.prestador.id = :prestadorId")
+    long countMidiaByPrestadorId(@Param("prestadorId") UUID prestadorId);
 }

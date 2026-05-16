@@ -5,6 +5,7 @@ import com.gabriel.party.dtos.midia.MidiaResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.midia.MidiaMapper;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.midia.enums.TipoMidia;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.midia.MidiaRepository;
@@ -45,22 +46,19 @@ public class MidiaService {
         var prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
 
-        if (repository.countMidiaByPrestadorId(prestador.getId()) >= 10) {
+        if (repository.countMidiaByPrestadorId(prestador.getId()) >= 30) {
             throw new AppException(ErrorCode.LIMITE_MIDIAS_PRESTADOR, prestador.getId().toString());
         }
 
-        var novaMidia = mapper.toEntity(dto);
-        novaMidia.setPrestador(prestador);
-        novaMidia.setUrl(armazenamentoService.salvarMidias(arquivo));
-
-        if (dto.itemCatalogoId() != null) {
-            var item = itemCatalogoRepository.findByIdAndAtivoTrue(dto.itemCatalogoId())
-                    .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, dto.itemCatalogoId().toString()));
-            if (!item.getPrestador().getId().equals(prestador.getId())) {
-                throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
-            }
-            novaMidia.setItemCatalogo(item);
+        ItemCatalogo item = itemCatalogoRepository.findByIdAndAtivoTrue(dto.itemCatalogoId())
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, dto.itemCatalogoId().toString()));
+        if (!item.getPrestador().getId().equals(prestador.getId())) {
+            throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
         }
+
+        var novaMidia = mapper.toEntity(dto);
+        novaMidia.setItemCatalogo(item);
+        novaMidia.setUrl(armazenamentoService.salvarMidias(arquivo));
 
         try {
             repository.save(novaMidia);
@@ -92,7 +90,7 @@ public class MidiaService {
         var prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
 
-        if (!midia.getPrestador().getId().equals(prestador.getId())) {
+        if (!midia.getItemCatalogo().getPrestador().getId().equals(prestador.getId())) {
             throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
         }
 
@@ -105,8 +103,6 @@ public class MidiaService {
                 throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
             }
             midia.setItemCatalogo(item);
-        } else {
-            midia.setItemCatalogo(null);
         }
 
         repository.save(midia);
@@ -121,7 +117,7 @@ public class MidiaService {
         var prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue(usuarioId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
 
-        if (!midia.getPrestador().getId().equals(prestador.getId())) {
+        if (!midia.getItemCatalogo().getPrestador().getId().equals(prestador.getId())) {
             throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioId.toString());
         }
 

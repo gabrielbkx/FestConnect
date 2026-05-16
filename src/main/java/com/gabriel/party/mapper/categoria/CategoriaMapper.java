@@ -9,24 +9,18 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring",
-unmappedTargetPolicy = ReportingPolicy.ERROR
+        unmappedTargetPolicy = ReportingPolicy.ERROR
 )
 public interface CategoriaMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
-    @Mapping(target = "prestadores", ignore = true)
     Categoria toEntity(CategoriaRequestDTO dto);
 
-    @Mapping(target = "quantidadePrestadores",
-            expression = "java(categoria.getPrestadores() == null ? 0 : categoria.getPrestadores().size())")
+    @Mapping(target = "quantidadePrestadores", constant = "0")
     CategoriaReponseDTO toDto(Categoria categoria);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
-    @Mapping(target = "prestadores", ignore = true)
     void atualizarCategoriaDoDTO(CategoriaRequestDTO dto, @MappingTarget Categoria categoria);
-
-
-
 }

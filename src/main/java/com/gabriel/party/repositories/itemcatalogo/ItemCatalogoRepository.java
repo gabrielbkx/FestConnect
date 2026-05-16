@@ -20,6 +20,8 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
 
     Optional<ItemCatalogo> findByIdAndAtivoTrue(UUID id);
 
+    boolean existsByCategoriaIdAndAtivoTrue(UUID categoriaId);
+
 
     @Query(value = """
     SELECT i.* FROM tb_item_catalogo i

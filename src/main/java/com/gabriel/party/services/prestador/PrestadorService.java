@@ -59,12 +59,13 @@ public class PrestadorService {
     @Transactional
     public Prestador criarPerfilPrestador(CadastroPrestadorDTO dto, Usuario usuario, MultipartFile fotoPerfil) {
 
-        var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
-                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
-
         var novoPrestador = usuarioMapper.toPrestador(dto);
         novoPrestador.setFotoPerfilUrl(fotoPerfil != null ? armazenamentoService.salvarMidias(fotoPerfil) : null);
-        novoPrestador.setCategoria(categoria);
+        if (dto.categoriaPrincipalId() != null) {
+            var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaPrincipalId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaPrincipalId().toString()));
+            novoPrestador.setCategoriaPrincipal(categoria);
+        }
         novoPrestador.setUsuario(usuario);
 
 
@@ -106,11 +107,15 @@ public class PrestadorService {
         var prestador = repository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
 
-        var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
-                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
-
         mapper.atualizarPrestadorDoDTO(dto, prestador);
-        prestador.setCategoria(categoria);
+
+        if (dto.categoriaPrincipalId() != null) {
+            var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaPrincipalId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaPrincipalId().toString()));
+            prestador.setCategoriaPrincipal(categoria);
+        } else {
+            prestador.setCategoriaPrincipal(null);
+        }
 
         if (dto.endereco() != null) {
             var coordenadas = geocodingService.buscarCoordenadas(

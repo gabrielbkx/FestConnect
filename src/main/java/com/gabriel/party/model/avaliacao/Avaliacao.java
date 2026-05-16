@@ -1,6 +1,7 @@
 package com.gabriel.party.model.avaliacao;
 
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,4 +43,9 @@ public class Avaliacao {
     @ManyToOne()
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
+
+    @EqualsAndHashCode.Exclude
+    @OneToOne(optional = false)
+    @JoinColumn(name = "pedido_id", nullable = false, unique = true)
+    private Pedido pedido;
 }

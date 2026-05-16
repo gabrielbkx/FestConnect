@@ -1,6 +1,7 @@
 package com.gabriel.party.model.pedido;
 
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
@@ -56,6 +57,10 @@ public class Pedido {
     private Cliente cliente;
     @ManyToOne
     private Prestador prestador;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "item_catalogo_id", nullable = false)
+    private ItemCatalogo itemCatalogo;
 
     @CreationTimestamp
     private LocalDateTime dataHoraCriacao;

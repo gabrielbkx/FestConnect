@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Schema(description = "Dados para criar ou atualizar um item do catálogo do prestador")
 public record ItemCatalogoRequestDTO(
@@ -24,6 +25,10 @@ public record ItemCatalogoRequestDTO(
                 allowableValues = {"PRODUTO", "SERVICO", "LOCAL"})
         @NotNull(message = "O tipo do item (PRODUTO, SERVICO ou LOCAL) é obrigatório")
         TipoItem tipo,
+
+        @Schema(description = "ID da categoria do item (ex: Buffet, Garçom, Segurança).", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+        @NotNull(message = "A categoria do item é obrigatória")
+        UUID categoriaId,
 
         @Schema(description = "Detalhes adicionais para itens do tipo LOCAL (capacidade, metragem, etc.). Ignorado para outros tipos.")
         LocalDetalheDTO localDetalhe

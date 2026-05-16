@@ -1,5 +1,6 @@
 package com.gabriel.party.model.itemcatalogo;
 
+import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
@@ -38,6 +39,10 @@ public abstract class ItemCatalogo {
     @ManyToOne
     @JoinColumn(name = "prestador_id", nullable = false)
     private Prestador prestador;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private Categoria categoria;
 
     @OneToMany(mappedBy = "itemCatalogo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Midia> midias;

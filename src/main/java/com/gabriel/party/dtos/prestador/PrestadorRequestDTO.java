@@ -27,6 +27,7 @@ public record PrestadorRequestDTO(
         @Schema(description = "Endereço do prestador. As coordenadas (lat/lon) são preenchidas automaticamente via geocoding.")
         EnderecoDTO endereco,
 
-        @Schema(description = "ID da categoria de serviço do prestador", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
-        @NotNull UUID categoriaId
+        @Schema(description = "ID da categoria principal do prestador (opcional). Define a identidade visual; cada item do catálogo tem sua própria categoria.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+        UUID categoriaPrincipalId
 ) {}

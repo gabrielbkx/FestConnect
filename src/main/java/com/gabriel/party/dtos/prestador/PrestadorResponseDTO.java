@@ -2,7 +2,6 @@ package com.gabriel.party.dtos.prestador;
 
 import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
 import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
-import com.gabriel.party.dtos.midia.MidiaResponseDTO;
 import com.gabriel.party.dtos.prestador.endereco.EnderecoDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -24,11 +23,14 @@ public record PrestadorResponseDTO(
         @Schema(description = "Número de WhatsApp (somente dígitos)", example = "11987654321")
         String whatsapp,
 
-        @Schema(description = "ID da categoria do prestador")
-        UUID categoriaId,
+        @Schema(description = "ID da categoria principal (opcional)")
+        UUID categoriaPrincipalId,
 
-        @Schema(description = "Nome da categoria", example = "Buffet")
-        String categoriaNome,
+        @Schema(description = "Nome da categoria principal", example = "Buffet")
+        String categoriaPrincipalNome,
+
+        @Schema(description = "Lista de categorias derivadas dos itens do catálogo")
+        List<CategoriaResumoDTO> categorias,
 
         @Schema(description = "Descrição dos serviços oferecidos")
         String descricao,
@@ -42,9 +44,6 @@ public record PrestadorResponseDTO(
         @Schema(description = "Itens do catálogo (produtos, serviços e locais) do prestador")
         List<ItemCatalogoResponseDTO> itensCatalogo,
 
-        @Schema(description = "Mídias (fotos e vídeos) do perfil do prestador")
-        List<MidiaResponseDTO> midias,
-
         @Schema(description = "Avaliações recebidas pelo prestador")
         List<AvaliacaoResponseDTO> avaliacoes,
 
@@ -53,4 +52,8 @@ public record PrestadorResponseDTO(
 
         @Schema(description = "Total de avaliações ativas recebidas", example = "27")
         Integer quantidadeAvaliacoes
-) {}
+) {
+
+    @Schema(description = "Resumo de categoria — id e nome")
+    public record CategoriaResumoDTO(UUID id, String nome) {}
+}

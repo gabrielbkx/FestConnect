@@ -6,6 +6,7 @@ import com.gabriel.party.dtos.avaliacao.AvaliacaoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.avaliacao.AvaliacaoMapper;
+import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.avaliacao.AvaliacaoRepository;
@@ -44,23 +45,24 @@ public class AvaliacaoService {
         var cliente = clienteRepository.findByUsuarioIdAndAtivoTrue(usuarioId)
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioId.toString()));
 
-        var prestador = prestadorRepository.findByIdAndAtivoTrue(dto.prestadorId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, dto.prestadorId().toString()));
+        Pedido pedido = pedidoRepository.findById(dto.pedidoId())
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, dto.pedidoId().toString()));
 
-        boolean temContratoAceito = pedidoRepository.existsByPrestadorIdAndClienteIdAndStatusPedido(
-                prestador.getId(), cliente.getId(), StatusPedido.ACEITO);
-        if (!temContratoAceito) {
+        if (!pedido.getCliente().getId().equals(cliente.getId())) {
+            throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
+        }
+
+        if (pedido.getStatusPedido() != StatusPedido.ACEITO) {
             throw new AppException(ErrorCode.AVALIACAO_SEM_CONTRATO_ACEITO);
         }
 
-        boolean jaAvaliou = repository.existsByClienteIdAndPrestadorIdAndAtivoTrue(
-                cliente.getId(), prestador.getId());
-        if (jaAvaliou) {
+        if (repository.existsByPedidoId(pedido.getId())) {
             throw new AppException(ErrorCode.AVALIACAO_DUPLICADA, usuarioId.toString());
         }
 
         var novaAvaliacao = mapper.toEntity(dto);
-        novaAvaliacao.setPrestador(prestador);
+        novaAvaliacao.setPedido(pedido);
+        novaAvaliacao.setPrestador(pedido.getPrestador());
         novaAvaliacao.setCliente(cliente);
         repository.save(novaAvaliacao);
         return mapper.toDto(novaAvaliacao);

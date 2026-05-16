@@ -28,8 +28,7 @@ public record CadastroPrestadorDTO(
                 "\\d{4}-\\d{2}$)|(^\\d{14}$)", message = "Formato de CPF ou CNPJ inválido")
         String cnpjOuCpf,
 
-        @NotNull(message = "A categoria de serviço é obrigatória")
-        UUID categoriaId,
+        UUID categoriaPrincipalId,
 
         @NotNull(message = "O endereço é obrigatório")
         @Valid

@@ -7,6 +7,7 @@ import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.itemcatalogo.ItemCatalogoMapper;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.prestador.Prestador;
+import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import jakarta.validation.Valid;
@@ -22,13 +23,16 @@ public class ItemCatalogoService {
 
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final PrestadorRepository prestadorRepository;
+    private final CategoriaRepository categoriaRepository;
     private final ItemCatalogoMapper itemCatalogoMapper;
 
     public ItemCatalogoService(ItemCatalogoRepository itemCatalogoRepository,
             PrestadorRepository prestadorRepository,
+            CategoriaRepository categoriaRepository,
             ItemCatalogoMapper itemCatalogoMapper) {
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.prestadorRepository = prestadorRepository;
+        this.categoriaRepository = categoriaRepository;
         this.itemCatalogoMapper = itemCatalogoMapper;
     }
 
@@ -38,10 +42,12 @@ public class ItemCatalogoService {
         Prestador prestador = prestadorRepository.findByUsuarioIdAndAtivoTrue((usuarioId))
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, usuarioId.toString()));
 
-        ItemCatalogo novoItem = itemCatalogoMapper.toEntity(dto);
+        var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
 
-        // 3. Amarra o dono ao item
+        ItemCatalogo novoItem = itemCatalogoMapper.toEntity(dto);
         novoItem.setPrestador(prestador);
+        novoItem.setCategoria(categoria);
 
         ItemCatalogo itemSalvo = itemCatalogoRepository.save(novoItem);
         return itemCatalogoMapper.toDto(itemSalvo);
@@ -86,6 +92,13 @@ public class ItemCatalogoService {
         }
 
         itemCatalogoMapper.atualizarItemDoDTO(dto, itemCatalogo);
+
+        if (dto.categoriaId() != null) {
+            var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaId().toString()));
+            itemCatalogo.setCategoria(categoria);
+        }
+
         itemCatalogoRepository.save(itemCatalogo);
 
         return itemCatalogoMapper.toDto(itemCatalogo);

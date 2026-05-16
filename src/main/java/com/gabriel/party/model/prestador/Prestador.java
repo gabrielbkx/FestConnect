@@ -4,7 +4,6 @@ package com.gabriel.party.model.prestador;
 import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.categoria.Categoria;
-import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.shared.Endereco;
 import com.gabriel.party.model.usuario.Usuario;
 import jakarta.persistence.*;
@@ -49,12 +48,8 @@ public class Prestador {
     private Boolean ativo = true;
 
     @ManyToOne
-    @JoinColumn(name = "categoria_id")
-    private Categoria categoria;
-
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)
-    private List<Midia> midias;
+    @JoinColumn(name = "categoria_principal_id")
+    private Categoria categoriaPrincipal;
 
     @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "prestador", cascade = CascadeType.ALL)

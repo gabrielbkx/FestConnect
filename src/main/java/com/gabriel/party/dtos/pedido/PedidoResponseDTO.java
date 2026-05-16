@@ -28,6 +28,12 @@ public record PedidoResponseDTO(
         @Schema(description = "WhatsApp do prestador (disponível após aceite)", example = "11987654321")
         String whatsappPrestador,
 
+        @Schema(description = "ID do item do catálogo solicitado")
+        UUID itemCatalogoId,
+
+        @Schema(description = "Título do item do catálogo solicitado", example = "Buffet Completo para 100 Pessoas")
+        String itemCatalogoTitulo,
+
         @Schema(description = "Data e hora do evento")
         LocalDateTime dataEvento,
 

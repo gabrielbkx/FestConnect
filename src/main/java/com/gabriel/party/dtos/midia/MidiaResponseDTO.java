@@ -20,12 +20,6 @@ public record MidiaResponseDTO(
         @Schema(description = "Posição de exibição na galeria (menor número = primeiro)", example = "1")
         Integer ordem,
 
-        @Schema(description = "ID do prestador dono da mídia")
-        UUID prestadorId,
-
-        @Schema(description = "Nome do prestador dono da mídia", example = "Buffet Silva & Cia")
-        String prestadorNome,
-
-        @Schema(description = "ID do item do catálogo ao qual a mídia está vinculada. Nulo se for mídia do perfil.")
+        @Schema(description = "ID do item do catálogo ao qual a mídia está vinculada.")
         UUID itemCatalogoId
 ) {}

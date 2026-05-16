@@ -18,5 +18,5 @@ public interface AvaliacaoRepository extends JpaRepository<Avaliacao, UUID> {
 
     Page<Avaliacao> findAllByPrestadorIdAndAtivoTrue(UUID prestadorId, Pageable pageable);
 
-    boolean existsByClienteIdAndPrestadorIdAndAtivoTrue(UUID clienteId, UUID prestadorId);
+    boolean existsByPedidoId(UUID pedidoId);
 }

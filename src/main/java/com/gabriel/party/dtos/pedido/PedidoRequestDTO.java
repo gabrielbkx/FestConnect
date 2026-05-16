@@ -16,6 +16,10 @@ public record PedidoRequestDTO(
         @NotNull(message = "O ID do prestador é obrigatório")
         UUID prestadorId,
 
+        @Schema(description = "ID do item do catálogo solicitado pelo cliente", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+        @NotNull(message = "O item do catálogo é obrigatório")
+        UUID itemCatalogoId,
+
         @Schema(description = "Data e hora do evento. Deve ser uma data futura. Formato: ISO-8601", example = "2026-12-31T18:00:00")
         @NotNull(message = "A data do evento é obrigatória")
         @Future(message = "A data do evento deve ser no futuro")

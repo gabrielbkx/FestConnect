@@ -52,6 +52,9 @@ public class ItemCatalogoMapper {
                         ? item.getMidias().stream().map(midiaMapper::toDto).toList()
                         : Collections.emptyList();
 
+        java.util.UUID categoriaId = item.getCategoria() != null ? item.getCategoria().getId() : null;
+        String categoriaNome = item.getCategoria() != null ? item.getCategoria().getNome() : null;
+
         if (item instanceof Local local) {
             LocalDetalheDTO detalhe = new LocalDetalheDTO(
                     local.getCapacidadeMaxima(),
@@ -63,6 +66,7 @@ public class ItemCatalogoMapper {
             return new ItemCatalogoResponseDTO(
                     local.getId(), local.getTitulo(), local.getDescricao(),
                     local.getPrecoBase(), TipoItem.LOCAL.getValor(),
+                    categoriaId, categoriaNome,
                     local.getAtivo(), midias, detalhe
             );
         }
@@ -70,7 +74,8 @@ public class ItemCatalogoMapper {
         String tipo = item instanceof Servico ? TipoItem.SERVICO.getValor() : TipoItem.PRODUTO.getValor();
         return new ItemCatalogoResponseDTO(
                 item.getId(), item.getTitulo(), item.getDescricao(),
-                item.getPrecoBase(), tipo, item.getAtivo(), midias, null
+                item.getPrecoBase(), tipo, categoriaId, categoriaNome,
+                item.getAtivo(), midias, null
         );
     }
 

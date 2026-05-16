@@ -16,6 +16,7 @@ public interface AvaliacaoMapper {
     @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "prestador", ignore = true)
     @Mapping(target = "cliente", ignore = true)
+    @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     Avaliacao toEntity(AvaliacaoCreateDTO dto);
 
@@ -23,12 +24,16 @@ public interface AvaliacaoMapper {
     @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
     @Mapping(target = "clienteId", source = "cliente.id")
     @Mapping(target = "clienteNome", source = "cliente.nomeCompleto")
+    @Mapping(target = "pedidoId", source = "pedido.id")
+    @Mapping(target = "itemCatalogoId", source = "pedido.itemCatalogo.id")
+    @Mapping(target = "itemCatalogoTitulo", source = "pedido.itemCatalogo.titulo")
     AvaliacaoResponseDTO toDto(Avaliacao avaliacao);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
     @Mapping(target = "prestador", ignore = true)
     @Mapping(target = "cliente", ignore = true)
+    @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "dataCriacao", ignore = true)
     void atualizarAvaliacaoDoDTO(AvaliacaoRequestDTO dto, @MappingTarget Avaliacao avaliacao);
 }
