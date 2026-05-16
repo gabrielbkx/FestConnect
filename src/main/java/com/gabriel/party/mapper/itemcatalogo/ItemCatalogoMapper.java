@@ -8,78 +8,95 @@ import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.itemcatalogo.Local;
 import com.gabriel.party.model.itemcatalogo.Produto;
 import com.gabriel.party.model.itemcatalogo.Servico;
-import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
-import org.springframework.stereotype.Component;
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
+import org.mapstruct.ObjectFactory;
+import org.mapstruct.ReportingPolicy;
+import org.mapstruct.SubclassMapping;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-@Component
-public class ItemCatalogoMapper {
+@Mapper(componentModel = "spring",
+        uses = { MidiaMapper.class },
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface ItemCatalogoMapper {
 
-    private final MidiaMapper midiaMapper;
-
-    public ItemCatalogoMapper(MidiaMapper midiaMapper) {
-        this.midiaMapper = midiaMapper;
+    @Named("listaAtivosItens")
+    default List<ItemCatalogoResponseDTO> toDtoListAtivos(Collection<ItemCatalogo> itens) {
+        if (itens == null || itens.isEmpty()) return Collections.emptyList();
+        return itens.stream()
+                .filter(i -> Boolean.TRUE.equals(i.getAtivo()))
+                .map(this::toDto)
+                .toList();
     }
 
-    public ItemCatalogo toEntity(ItemCatalogoRequestDTO dto) {
-        ItemCatalogo item = switch (dto.tipo()) {
-            case LOCAL -> {
-                Local local = new Local();
-                if (dto.localDetalhe() != null) {
-                    local.setCapacidadeMaxima(dto.localDetalhe().capacidadeMaxima());
-                    local.setMetragem(dto.localDetalhe().metragem());
-                    local.setPermiteSom(dto.localDetalhe().permiteSom());
-                    local.setTemEstacionamento(dto.localDetalhe().temEstacionamento());
-                    local.setTipoEspaco(dto.localDetalhe().tipoEspaco());
-                }
-                yield local;
-            }
-            case SERVICO -> new Servico();
-            default -> new Produto();
-        };
-        item.setTitulo(dto.titulo());
-        item.setDescricao(dto.descricao());
-        item.setPrecoBase(dto.precoBase());
-        item.setAtivo(true);
-        return item;
-    }
+    @SubclassMapping(source = Local.class, target = ItemCatalogoResponseDTO.class)
+    @SubclassMapping(source = Servico.class, target = ItemCatalogoResponseDTO.class)
+    @SubclassMapping(source = Produto.class, target = ItemCatalogoResponseDTO.class)
+    ItemCatalogoResponseDTO toDto(ItemCatalogo item);
 
-    public ItemCatalogoResponseDTO toDto(ItemCatalogo item) {
-        List<com.gabriel.party.dtos.midia.MidiaResponseDTO> midias =
-                item.getMidias() != null
-                        ? item.getMidias().stream().map(midiaMapper::toDto).toList()
-                        : Collections.emptyList();
+    @Mapping(target = "tipo", constant = "local")
+    @Mapping(target = "categoriaId", source = "categoria.id")
+    @Mapping(target = "categoriaNome", source = "categoria.nome")
+    @Mapping(target = "localDetalhe", expression = "java(montarDetalhe(local))")
+    ItemCatalogoResponseDTO toDto(Local local);
 
-        java.util.UUID categoriaId = item.getCategoria() != null ? item.getCategoria().getId() : null;
-        String categoriaNome = item.getCategoria() != null ? item.getCategoria().getNome() : null;
+    @Mapping(target = "tipo", constant = "servico")
+    @Mapping(target = "categoriaId", source = "categoria.id")
+    @Mapping(target = "categoriaNome", source = "categoria.nome")
+    @Mapping(target = "localDetalhe", ignore = true)
+    ItemCatalogoResponseDTO toDto(Servico servico);
 
-        if (item instanceof Local local) {
-            LocalDetalheDTO detalhe = new LocalDetalheDTO(
-                    local.getCapacidadeMaxima(),
-                    local.getMetragem(),
-                    local.getPermiteSom(),
-                    local.getTemEstacionamento(),
-                    local.getTipoEspaco()
-            );
-            return new ItemCatalogoResponseDTO(
-                    local.getId(), local.getTitulo(), local.getDescricao(),
-                    local.getPrecoBase(), TipoItem.LOCAL.getValor(),
-                    categoriaId, categoriaNome,
-                    local.getAtivo(), midias, detalhe
-            );
-        }
+    @Mapping(target = "tipo", constant = "produto")
+    @Mapping(target = "categoriaId", source = "categoria.id")
+    @Mapping(target = "categoriaNome", source = "categoria.nome")
+    @Mapping(target = "localDetalhe", ignore = true)
+    ItemCatalogoResponseDTO toDto(Produto produto);
 
-        String tipo = item instanceof Servico ? TipoItem.SERVICO.getValor() : TipoItem.PRODUTO.getValor();
-        return new ItemCatalogoResponseDTO(
-                item.getId(), item.getTitulo(), item.getDescricao(),
-                item.getPrecoBase(), tipo, categoriaId, categoriaNome,
-                item.getAtivo(), midias, null
+    default LocalDetalheDTO montarDetalhe(Local l) {
+        if (l == null) return null;
+        return new LocalDetalheDTO(
+                l.getCapacidadeMaxima(),
+                l.getMetragem(),
+                l.getPermiteSom(),
+                l.getTemEstacionamento(),
+                l.getTipoEspaco()
         );
     }
 
-    public void atualizarItemDoDTO(ItemCatalogoRequestDTO dto, ItemCatalogo item) {
+    @ObjectFactory
+    default ItemCatalogo criarItemConcreto(ItemCatalogoRequestDTO dto) {
+        return switch (dto.tipo()) {
+            case LOCAL -> new Local();
+            case SERVICO -> new Servico();
+            case PRODUTO -> new Produto();
+        };
+    }
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "ativo", constant = "true")
+    @Mapping(target = "prestador", ignore = true)
+    @Mapping(target = "categoria", ignore = true)
+    @Mapping(target = "midias", ignore = true)
+    ItemCatalogo toEntity(ItemCatalogoRequestDTO dto);
+
+    @AfterMapping
+    default void preencherDetalheLocal(ItemCatalogoRequestDTO dto, @MappingTarget ItemCatalogo item) {
+        if (item instanceof Local local && dto.localDetalhe() != null) {
+            local.setCapacidadeMaxima(dto.localDetalhe().capacidadeMaxima());
+            local.setMetragem(dto.localDetalhe().metragem());
+            local.setPermiteSom(dto.localDetalhe().permiteSom());
+            local.setTemEstacionamento(dto.localDetalhe().temEstacionamento());
+            local.setTipoEspaco(dto.localDetalhe().tipoEspaco());
+        }
+    }
+
+    default void atualizarItemDoDTO(ItemCatalogoRequestDTO dto, @MappingTarget ItemCatalogo item) {
         if (dto.titulo() != null) item.setTitulo(dto.titulo());
         if (dto.descricao() != null) item.setDescricao(dto.descricao());
         if (dto.precoBase() != null) item.setPrecoBase(dto.precoBase());

@@ -7,10 +7,24 @@ import com.gabriel.party.model.avaliacao.Avaliacao;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AvaliacaoMapper {
+
+    @Named("listaAtivasAvaliacoes")
+    default List<AvaliacaoResponseDTO> toDtoListAtivas(Collection<Avaliacao> avaliacoes) {
+        if (avaliacoes == null || avaliacoes.isEmpty()) return Collections.emptyList();
+        return avaliacoes.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getAtivo()))
+                .map(this::toDto)
+                .toList();
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
