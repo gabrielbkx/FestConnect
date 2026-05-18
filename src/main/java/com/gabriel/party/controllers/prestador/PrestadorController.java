@@ -4,6 +4,7 @@ package com.gabriel.party.controllers.prestador;
 
 
 
+import com.gabriel.party.dtos.prestador.PrestadorAdminDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
@@ -61,6 +62,21 @@ public class PrestadorController {
     @GetMapping("/{id}")
     public ResponseEntity<PrestadorResponseDTO> buscarPrestadorPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(prestadorService.buscarPrestadorPorId(id));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Detalhe administrativo do prestador retornado com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado — somente administradores"),
+            @ApiResponse(responseCode = "404", description = "Prestador não encontrado")
+    })
+    @Operation(summary = "[ADMIN] Detalhe completo do prestador",
+            description = "Retorna o perfil completo do prestador com dados sensíveis (CNPJ/CPF, " +
+                    "endereço completo, WhatsApp, data de criação). Acesso restrito a ROLE_ADMINISTRADOR. " +
+                    "Inclui prestadores inativos.")
+    @GetMapping("/{id}/admin")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
+    public ResponseEntity<PrestadorAdminDTO> buscarDetalheAdmin(@PathVariable UUID id) {
+        return ResponseEntity.ok(prestadorService.buscarDetalheAdmin(id));
     }
 
     @ApiResponses( value = {

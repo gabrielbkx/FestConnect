@@ -2,6 +2,7 @@ package com.gabriel.party.mapper.prestador;
 
 import com.gabriel.party.dtos.prestador
         .PrestadorRequestDTO;
+import com.gabriel.party.dtos.prestador.PrestadorAdminDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.mapper.avaliacao.AvaliacaoMapper;
@@ -52,6 +53,24 @@ public interface PrestadorMapper {
     PrestadorResumoDTO toSummaryDto(Prestador prestador);
 
     List<PrestadorResumoDTO> toSummaryList(List<Prestador> prestadores);
+
+    // Mapeamento administrativo — inclui PII (cnpjOuCpf, endereco completo).
+    // Usado SOMENTE em endpoints /prestadores/{id}/admin restritos a ROLE_ADMINISTRADOR.
+    @Mapping(target = "nome", source = "nomeCompleto")
+    @Mapping(target = "email", source = "usuario.email")
+    @Mapping(target = "dataCriacao", source = "usuario.dataCriacao")
+    @Mapping(target = "categoriaPrincipalId", source = "categoriaPrincipal.id")
+    @Mapping(target = "categoriaPrincipalNome", source = "categoriaPrincipal.nome")
+    @Mapping(target = "categorias", expression = "java(extrairNomesCategorias(prestador.getItensCatalogo()))")
+    @Mapping(target = "totalItens", expression = "java(contarItensAtivos(prestador.getItensCatalogo()))")
+    @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
+    @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
+    PrestadorAdminDTO toAdminDto(Prestador prestador);
+
+    default Integer contarItensAtivos(Collection<ItemCatalogo> itens) {
+        if (itens == null) return 0;
+        return (int) itens.stream().filter(i -> Boolean.TRUE.equals(i.getAtivo())).count();
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)

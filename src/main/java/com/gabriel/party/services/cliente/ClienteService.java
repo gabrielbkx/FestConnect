@@ -2,6 +2,7 @@ package com.gabriel.party.services.cliente;
 
 import com.gabriel.party.dtos.autenticacao.cadastro.cliente.CadastroClienteDTO;
 import com.gabriel.party.dtos.categoria.CategoriaReponseDTO;
+import com.gabriel.party.dtos.cliente.ClienteAdminDTO;
 import com.gabriel.party.dtos.cliente.ClienteRequestDTO;
 import com.gabriel.party.dtos.cliente.ClienteResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
@@ -75,6 +76,19 @@ public class ClienteService {
         Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
         return mapper.toDto(cliente);
+    }
+
+    /**
+     * Busca detalhe administrativo do cliente — inclui endereço completo,
+     * whatsapp e data de criação. Acesso restrito a ROLE_ADMINISTRADOR via
+     * /clientes/{id}/admin. Ignora o flag `ativo` propositalmente para que o
+     * admin possa visualizar contas desativadas.
+     */
+    @Transactional(readOnly = true)
+    public ClienteAdminDTO buscarDetalheAdmin(UUID id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+        return mapper.toAdminDto(cliente);
     }
 
     @Transactional(readOnly = true)

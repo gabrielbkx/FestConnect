@@ -1,6 +1,7 @@
 package com.gabriel.party.controllers.cliente;
 
 import com.gabriel.party.dtos.categoria.CategoriaReponseDTO;
+import com.gabriel.party.dtos.cliente.ClienteAdminDTO;
 import com.gabriel.party.dtos.cliente.ClienteRequestDTO;
 import com.gabriel.party.dtos.cliente.ClienteResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
@@ -41,6 +42,20 @@ public class ClienteController {
     @GetMapping("/{id}")
     public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(clienteService.buscarPorId(id));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Detalhe administrativo do cliente retornado com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado — somente administradores"),
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    })
+    @Operation(summary = "[ADMIN] Detalhe completo do cliente",
+            description = "Retorna o perfil completo do cliente com endereço completo, WhatsApp e data " +
+                    "de criação. Acesso restrito a ROLE_ADMINISTRADOR. Inclui clientes inativos.")
+    @GetMapping("/{id}/admin")
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
+    public ResponseEntity<ClienteAdminDTO> buscarDetalheAdmin(@PathVariable UUID id) {
+        return ResponseEntity.ok(clienteService.buscarDetalheAdmin(id));
     }
 
     @ApiResponses(value = {

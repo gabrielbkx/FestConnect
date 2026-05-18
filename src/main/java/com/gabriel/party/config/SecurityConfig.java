@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/prestadores/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/itens-catalogo/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/avaliacoes/**").permitAll()
 
                         .requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar

@@ -40,5 +40,20 @@ public record PrestadorResumoDTO(
         Double mediaAvaliacoes,
 
         @Schema(description = "Total de avaliações ativas recebidas", example = "27")
-        Integer quantidadeAvaliacoes
-) {}
+        Integer quantidadeAvaliacoes,
+
+        @Schema(description = "Distância em km até o cliente. Preenchido apenas em buscas por proximidade/raio. Null em listagens normais.", example = "3.2", nullable = true)
+        Double distanciaKm
+) {
+    /**
+     * Retorna uma nova instância do DTO com o valor de distanciaKm preenchido.
+     * Usado por endpoints geográficos após cálculo Haversine no service.
+     */
+    public PrestadorResumoDTO withDistancia(Double distancia) {
+        return new PrestadorResumoDTO(
+                id, nome, email, fotoPerfilUrl, descricao,
+                categoriaPrincipalNome, categorias, cidade, estado,
+                mediaAvaliacoes, quantidadeAvaliacoes, distancia
+        );
+    }
+}

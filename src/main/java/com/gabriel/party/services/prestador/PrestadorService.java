@@ -2,6 +2,7 @@ package com.gabriel.party.services.prestador;
 
 
 import com.gabriel.party.dtos.autenticacao.cadastro.prestador.CadastroPrestadorDTO;
+import com.gabriel.party.dtos.prestador.PrestadorAdminDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
@@ -165,11 +166,24 @@ public class PrestadorService {
         return urlNova;
     }
 
+    /**
+     * Busca detalhe administrativo do prestador — inclui CNPJ/CPF, endereço
+     * completo, whatsapp e data de criação. Acesso restrito a
+     * ROLE_ADMINISTRADOR via /prestadores/{id}/admin. Ignora `ativo` para
+     * que o admin possa ver perfis desativados.
+     */
+    @Transactional(readOnly = true)
+    public PrestadorAdminDTO buscarDetalheAdmin(UUID id) {
+        Prestador prestador = repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+        return mapper.toAdminDto(prestador);
+    }
+
     @Transactional(readOnly = true)
     public List<PrestadorResumoDTO> buscarPrestadoresProximos(Double lat, Double lon, Double raio) {
         return repository.buscarPorProximidade(lat, lon, raio)
                 .stream()
-                .map(mapper::toSummaryDto)
+                .map(p -> mapper.toSummaryDto(p).withDistancia(calcularDistanciaKm(lat, lon, p)))
                 .collect(Collectors.toList());
     }
 
@@ -178,7 +192,28 @@ public class PrestadorService {
         Double raioBusca = (raio != null) ? raio : 50.0;
         return repository.buscarPorCategoriaEProximidade(categoriaId, lat, lon, raioBusca)
                 .stream()
-                .map(mapper::toSummaryDto)
+                .map(p -> mapper.toSummaryDto(p).withDistancia(calcularDistanciaKm(lat, lon, p)))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Calcula distância Haversine em km entre o cliente (lat/lon) e o prestador.
+     * Retorna null se o prestador não tiver coordenadas cadastradas.
+     * Usa raio da Terra de 6371 km — mesmo valor usado nas queries SQL nativas.
+     */
+    private static Double calcularDistanciaKm(Double latCliente, Double lonCliente, Prestador prestador) {
+        if (prestador.getEndereco() == null) return null;
+        Double latP = prestador.getEndereco().getLatitude();
+        Double lonP = prestador.getEndereco().getLongitude();
+        if (latP == null || lonP == null || latCliente == null || lonCliente == null) return null;
+
+        final double R = 6371.0;
+        double dLat = Math.toRadians(latP - latCliente);
+        double dLon = Math.toRadians(lonP - lonCliente);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(latCliente)) * Math.cos(Math.toRadians(latP))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }
