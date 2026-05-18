@@ -28,13 +28,10 @@ public interface PrestadorMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
-    @Mapping(target = "categoriaPrincipal", ignore = true)
     Prestador toEntity(PrestadorRequestDTO dto);
 
     @Mapping(target = "nome", source = "nomeCompleto")
     @Mapping(target = "email", source = "usuario.email")
-    @Mapping(target = "categoriaPrincipalId", source = "categoriaPrincipal.id")
-    @Mapping(target = "categoriaPrincipalNome", source = "categoriaPrincipal.nome")
     @Mapping(target = "categorias", expression = "java(extrairCategorias(prestador.getItensCatalogo()))")
     @Mapping(target = "itensCatalogo", source = "itensCatalogo", qualifiedByName = "listaAtivosItens")
     @Mapping(target = "avaliacoes", source = "avaliacoes", qualifiedByName = "listaAtivasAvaliacoes")
@@ -44,7 +41,6 @@ public interface PrestadorMapper {
 
     @Mapping(target = "nome", source = "nomeCompleto")
     @Mapping(target = "email", source = "usuario.email")
-    @Mapping(target = "categoriaPrincipalNome", source = "categoriaPrincipal.nome")
     @Mapping(target = "categorias", expression = "java(extrairNomesCategorias(prestador.getItensCatalogo()))")
     @Mapping(target = "cidade", source = "endereco.cidade")
     @Mapping(target = "estado", source = "endereco.estado")
@@ -59,8 +55,6 @@ public interface PrestadorMapper {
     @Mapping(target = "nome", source = "nomeCompleto")
     @Mapping(target = "email", source = "usuario.email")
     @Mapping(target = "dataCriacao", source = "usuario.dataCriacao")
-    @Mapping(target = "categoriaPrincipalId", source = "categoriaPrincipal.id")
-    @Mapping(target = "categoriaPrincipalNome", source = "categoriaPrincipal.nome")
     @Mapping(target = "categorias", expression = "java(extrairNomesCategorias(prestador.getItensCatalogo()))")
     @Mapping(target = "totalItens", expression = "java(contarItensAtivos(prestador.getItensCatalogo()))")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
@@ -74,7 +68,6 @@ public interface PrestadorMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
-    @Mapping(target = "categoriaPrincipal", ignore = true)
     void atualizarPrestadorDoDTO(PrestadorRequestDTO dto, @MappingTarget Prestador prestador);
 
     default Double calcularMedia(Collection<Avaliacao> avaliacoes) {

@@ -24,9 +24,6 @@ public record PrestadorResumoDTO(
         @Schema(description = "Descrição resumida dos serviços", example = "Buffet especializado em casamentos e eventos corporativos.")
         String descricao,
 
-        @Schema(description = "Nome da categoria principal (opcional)", example = "Buffet")
-        String categoriaPrincipalNome,
-
         @Schema(description = "Nomes das categorias derivadas dos itens do catálogo", example = "[\"Buffet\", \"Doces e Bolos\"]")
         List<String> categorias,
 
@@ -52,7 +49,7 @@ public record PrestadorResumoDTO(
     public PrestadorResumoDTO withDistancia(Double distancia) {
         return new PrestadorResumoDTO(
                 id, nome, email, fotoPerfilUrl, descricao,
-                categoriaPrincipalNome, categorias, cidade, estado,
+                categorias, cidade, estado,
                 mediaAvaliacoes, quantidadeAvaliacoes, distancia
         );
     }

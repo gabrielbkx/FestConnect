@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Remove o conceito de "categoria principal" do prestador.
+        Categoria agora vive apenas no ItemCatalogo. As categorias do prestador
+        emergem como o conjunto distinto das categorias dos seus itens ativos —
+        sem mais um campo separado que podia divergir do catálogo.
+    -->
+
+    <changeSet author="GF" id="0.3.0-remove-categoria-principal">
+
+        <dropForeignKeyConstraint
+                baseTableName="tb_prestador"
+                constraintName="fk_prestador_categoria_principal"/>
+
+        <dropColumn tableName="tb_prestador" columnName="categoria_principal_id"/>
+
+    </changeSet>
+
+</databaseChangeLog>

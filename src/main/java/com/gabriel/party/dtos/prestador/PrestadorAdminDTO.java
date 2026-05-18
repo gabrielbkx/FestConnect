@@ -39,12 +39,6 @@ public record PrestadorAdminDTO(
         @Schema(description = "Endereço completo com CEP, logradouro, número, complemento, bairro e coordenadas")
         EnderecoDTO endereco,
 
-        @Schema(description = "ID da categoria principal (opcional)")
-        UUID categoriaPrincipalId,
-
-        @Schema(description = "Nome da categoria principal (opcional)")
-        String categoriaPrincipalNome,
-
         @Schema(description = "Categorias derivadas dos itens do catálogo")
         List<String> categorias,
 

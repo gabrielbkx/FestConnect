@@ -62,11 +62,6 @@ public class PrestadorService {
 
         var novoPrestador = usuarioMapper.toPrestador(dto);
         novoPrestador.setFotoPerfilUrl(fotoPerfil != null ? armazenamentoService.salvarMidias(fotoPerfil) : null);
-        if (dto.categoriaPrincipalId() != null) {
-            var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaPrincipalId())
-                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaPrincipalId().toString()));
-            novoPrestador.setCategoriaPrincipal(categoria);
-        }
         novoPrestador.setUsuario(usuario);
 
 
@@ -109,14 +104,6 @@ public class PrestadorService {
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
-
-        if (dto.categoriaPrincipalId() != null) {
-            var categoria = categoriaRepository.findByIdAndAtivoTrue(dto.categoriaPrincipalId())
-                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, dto.categoriaPrincipalId().toString()));
-            prestador.setCategoriaPrincipal(categoria);
-        } else {
-            prestador.setCategoriaPrincipal(null);
-        }
 
         if (dto.endereco() != null) {
             var coordenadas = geocodingService.buscarCoordenadas(

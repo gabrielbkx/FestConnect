@@ -23,12 +23,6 @@ public record PrestadorResponseDTO(
         @Schema(description = "Número de WhatsApp (somente dígitos)", example = "11987654321")
         String whatsapp,
 
-        @Schema(description = "ID da categoria principal (opcional)")
-        UUID categoriaPrincipalId,
-
-        @Schema(description = "Nome da categoria principal", example = "Buffet")
-        String categoriaPrincipalNome,
-
         @Schema(description = "Lista de categorias derivadas dos itens do catálogo")
         List<CategoriaResumoDTO> categorias,
 

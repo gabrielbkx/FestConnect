@@ -7,8 +7,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import java.util.UUID;
-
 public record CadastroPrestadorDTO(
         @NotBlank(message = "O nome da empresa ou profissional é obrigatório")
         String nomeCompleto,
@@ -27,8 +25,6 @@ public record CadastroPrestadorDTO(
         @Pattern(regexp = "(^\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$)|(^\\d{11}$)|(^\\d{2}\\.\\d{3}\\.\\d{3}/" +
                 "\\d{4}-\\d{2}$)|(^\\d{14}$)", message = "Formato de CPF ou CNPJ inválido")
         String cnpjOuCpf,
-
-        UUID categoriaPrincipalId,
 
         @NotNull(message = "O endereço é obrigatório")
         @Valid
