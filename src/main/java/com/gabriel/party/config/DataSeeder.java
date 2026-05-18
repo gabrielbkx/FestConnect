@@ -57,17 +57,89 @@ public class DataSeeder implements CommandLineRunner {
 
     // ─── Categorias ────────────────────────────────────────────────────────────
     private UUID[] seedCategorias() {
+        // IMPORTANTE: as 10 primeiras categorias devem ficar nas mesmas posições
+        // (índices 0-9) porque o array PROVIDERS abaixo aponta para elas via catIdx.
+        // Categorias novas vão SEMPRE no final pra não bagunçar o seed existente.
         String[][] data = {
-            {"DJ",                  "Disc Jóqueis profissionais para festas e eventos"},
-            {"Buffet",              "Serviços de buffet e gastronomia para eventos"},
-            {"Fotografia",          "Fotógrafos profissionais para registrar momentos especiais"},
-            {"Decoração",           "Decoração temática e personalizada para eventos"},
-            {"Espaço para Eventos", "Salões, sítios e espaços para celebrações"},
-            {"Segurança",           "Serviços de segurança e controle de acesso"},
-            {"Cerimonialista",      "Planejamento e coordenação profissional de eventos"},
-            {"Filmagem",            "Videografia e filmagem profissional"},
-            {"Iluminação e Som",    "Equipamentos e técnicos de iluminação e sonorização"},
-            {"Animação Infantil",   "Recreadores e animadores para festas infantis"},
+            // ── Originais (NÃO reordenar — PROVIDERS depende dos índices 0-9) ──
+            {"DJ",                          "Disc jóqueis profissionais para festas e eventos"},
+            {"Buffet",                      "Serviços de buffet e gastronomia para eventos"},
+            {"Fotografia",                  "Fotógrafos profissionais para registrar momentos especiais"},
+            {"Decoração",                   "Decoração temática e personalizada para eventos"},
+            {"Espaço para Eventos",         "Salões, sítios, chácaras e espaços para celebrações"},
+            {"Segurança",                   "Serviços de segurança e controle de acesso"},
+            {"Cerimonialista",              "Planejamento e coordenação profissional de eventos"},
+            {"Filmagem",                    "Videografia e filmagem profissional"},
+            {"Iluminação e Som",            "Equipamentos e técnicos de iluminação e sonorização"},
+            {"Animação Infantil",           "Recreadores e animadores para festas infantis"},
+
+            // ── Música e entretenimento ──
+            {"Banda",                       "Bandas musicais para casamentos, formaturas e eventos corporativos"},
+            {"Cantor / Cantora Solo",       "Cantores solistas para cerimônia, jantar e ambientação"},
+            {"Música ao Vivo (Sertanejo, MPB, Forró)", "Trios e grupos para ambientação musical ao vivo"},
+            {"Karaokê",                     "Locação de aparelhos e telões de karaokê para festas"},
+
+            // ── Gastronomia e bebidas ──
+            {"Confeitaria e Bolos",         "Bolos de festa, decorados e topo de bolo personalizado"},
+            {"Doceria (Bem-Casados, Brigadeiros Gourmet)", "Doces finos e mesa de doces personalizada"},
+            {"Food Truck",                  "Caminhões e carrinhos de comida para eventos ao ar livre"},
+            {"Churrasqueiro",               "Churrasqueiros profissionais com fornecimento de carnes e bebidas"},
+            {"Bartender e Bar Móvel",       "Bartenders profissionais, drinks autorais e estrutura de bar móvel"},
+            {"Mesa de Frios e Charcutaria", "Mesas de frios, queijos importados e tábuas de charcutaria"},
+            {"Chopeira e Cervejaria",       "Locação de chopeiras, cervejas especiais e estrutura"},
+
+            // ── Registro e imagem ──
+            {"Cabine de Fotos",             "Photobooths e cabines para registros instantâneos"},
+            {"Drone (Filmagem Aérea)",      "Filmagem e fotografia aérea com drones para eventos"},
+            {"Designer de Convites",        "Criação de convites digitais, impressos e papelaria do evento"},
+
+            // ── Decoração ──
+            {"Floricultura",                "Arranjos florais para cerimônia, mesa e decoração"},
+            {"Balões e Arcos",              "Decoração com balões, arcos e backdrops temáticos"},
+            {"Mobiliário e Mesa Posta",     "Aluguel de mesas, cadeiras, sousplats, louças e taças"},
+            {"Pirotecnia (Fogos)",          "Fogos de artifício e efeitos pirotécnicos para o grande momento"},
+
+            // ── Beleza e estética ──
+            {"Maquiagem",                   "Maquiadores profissionais para noiva, debutante e madrinhas"},
+            {"Cabelo e Penteado",           "Cabeleireiros e penteados para eventos"},
+            {"Manicure",                    "Manicures e nail designers atendendo no local"},
+            {"Day of Bride / Estética",     "Pacotes de relaxamento e beleza pré-cerimônia"},
+
+            // ── Cerimonial ──
+            {"Mestre de Cerimônia",         "Apresentadores e mestres de cerimônia para casamentos e eventos"},
+            {"Celebrante (Religioso e Civil)", "Padres, pastores e celebrantes para cerimônias formais"},
+            {"Wedding Planner",             "Planejamento completo de casamentos de A a Z"},
+            {"Assessoria de Eventos Corporativos", "Planejamento e produção de eventos empresariais"},
+
+            // ── Infraestrutura ──
+            {"Tendas e Coberturas",         "Tendas, gazebos e coberturas para eventos ao ar livre"},
+            {"Gerador de Energia",          "Locação de geradores para eventos sem rede elétrica disponível"},
+            {"Banheiros Químicos",          "Locação de banheiros químicos para eventos ao ar livre"},
+            {"Telão e Projeção",            "Telões, projetores e equipamentos audiovisuais"},
+            {"Climatização (Ar e Ventilação)", "Ar-condicionado portátil, climatizadores e ventiladores"},
+
+            // ── Animação e entretenimento ──
+            {"Pula-Pula e Brinquedos Infláveis", "Brinquedos infláveis, escorregadores e camas elásticas"},
+            {"Personagens e Mágicos",       "Personagens vivos, mágicos, palhaços e artistas circenses"},
+            {"Pintura Facial",              "Maquiadores infantis e oficinas de pintura"},
+            {"Algodão Doce e Pipoca",       "Carrinhos e estandes de guloseimas para festas infantis"},
+
+            // ── Transporte ──
+            {"Transporte e Vans",           "Vans e ônibus fretados para convidados"},
+            {"Carro de Noivos",             "Carros clássicos, esportivos e personalizados para os noivos"},
+            {"Valet / Manobrista",          "Serviço de manobristas profissionais uniformizados"},
+            {"Limousine",                   "Locação de limusines para eventos especiais"},
+
+            // ── Vestuário ──
+            {"Trajes e Vestidos (Aluguel)", "Aluguel de vestidos de noiva, trajes a rigor e smoking"},
+            {"Sapatos e Acessórios",        "Sapatos e acessórios para noivas, padrinhos e convidados"},
+
+            // ── Serviços auxiliares ──
+            {"Lembrancinhas e Brindes",     "Lembrancinhas personalizadas e brindes para convidados"},
+            {"Limpeza Pós-Evento",          "Equipes especializadas em limpeza pós-festa"},
+            {"Garçom e Copeiro",            "Garçons, copeiros e equipe de atendimento por hora"},
+            {"Recepcionista / Hostess",     "Recepcionistas e hostesses para receber convidados"},
+            {"Bombeiro Civil / Brigadista", "Brigadistas e bombeiros civis para eventos de grande porte"},
         };
         UUID[] ids = new UUID[data.length];
         for (int i = 0; i < data.length; i++) {
@@ -220,14 +292,14 @@ public class DataSeeder implements CommandLineRunner {
             jdbc.update("""
                 INSERT INTO tb_prestador
                   (id, nome_completo, cnpj_ou_cpf, descricao, whatsapp, foto_perfil_url,
-                   cidade, estado, latitude, longitude, ativo, categoria_principal_id, usuario_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,true,?,?)
+                   cidade, estado, latitude, longitude, ativo, usuario_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,true,?)
             """,
                 prestadorId, nome, doc, descricao,
                 "11" + String.format("%09d", i + 1),
                 fotoUrl,
                 CIDADES[cidadeIdx][0], CIDADES[cidadeIdx][1], lat, lon,
-                cats[catIdx], userId
+                userId
             );
 
             // Itens do catálogo

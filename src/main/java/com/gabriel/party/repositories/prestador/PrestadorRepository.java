@@ -64,6 +64,7 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
             JOIN FETCH p.usuario
             WHERE p.ativo = true
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(COALESCE(p.descricao, '')) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
                                           AND LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
@@ -72,6 +73,7 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
             SELECT COUNT(DISTINCT p) FROM Prestador p
             WHERE p.ativo = true
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(COALESCE(p.descricao, '')) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
                                           AND LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
@@ -91,6 +93,7 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
               AND EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
                           AND i.categoria.id IN :categoriaIds)
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(COALESCE(p.descricao, '')) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR EXISTS (SELECT 1 FROM ItemCatalogo i2 WHERE i2.prestador = p AND i2.ativo = true
                                           AND LOWER(i2.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
@@ -101,6 +104,7 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
               AND EXISTS (SELECT 1 FROM ItemCatalogo i WHERE i.prestador = p AND i.ativo = true
                           AND i.categoria.id IN :categoriaIds)
               AND (:busca = '' OR LOWER(p.nomeCompleto) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(COALESCE(p.descricao, '')) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR EXISTS (SELECT 1 FROM ItemCatalogo i2 WHERE i2.prestador = p AND i2.ativo = true
                                           AND LOWER(i2.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%'))))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
