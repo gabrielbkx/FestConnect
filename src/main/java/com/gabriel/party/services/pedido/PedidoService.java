@@ -7,11 +7,13 @@ import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.pedido.PedidoMapper;
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.repositories.evento.EventoRepository;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.pedido.PedidoRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
@@ -31,6 +33,7 @@ public class PedidoService {
     private final ClienteRepository clienteRepository;
     private final PrestadorRepository prestadorRepository;
     private final ItemCatalogoRepository itemCatalogoRepository;
+    private final EventoRepository eventoRepository;
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
 
@@ -38,12 +41,14 @@ public class PedidoService {
                          ClienteRepository clienteRepository,
                          PrestadorRepository prestadorRepository,
                          ItemCatalogoRepository itemCatalogoRepository,
+                         EventoRepository eventoRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService) {
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.prestadorRepository = prestadorRepository;
         this.itemCatalogoRepository = itemCatalogoRepository;
+        this.eventoRepository = eventoRepository;
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
     }
@@ -64,7 +69,16 @@ public class PedidoService {
                     "O item solicitado não pertence ao prestador informado.");
         }
 
-        Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item);
+        Evento evento = null;
+        if (dto.eventoId() != null) {
+            evento = eventoRepository.findById(dto.eventoId())
+                    .orElseThrow(() -> new AppException(ErrorCode.EVENTO_NAO_ENCONTRADO, dto.eventoId().toString()));
+            if (!evento.getCliente().getId().equals(cliente.getId())) {
+                throw new AppException(ErrorCode.EVENTO_SEM_PERMISSAO);
+            }
+        }
+
+        Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(

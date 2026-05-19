@@ -1,6 +1,7 @@
 package com.gabriel.party.model.pedido;
 
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
@@ -61,6 +62,10 @@ public class Pedido {
     @ManyToOne(optional = false)
     @JoinColumn(name = "item_catalogo_id", nullable = false)
     private ItemCatalogo itemCatalogo;
+
+    @ManyToOne
+    @JoinColumn(name = "evento_id")
+    private Evento evento;
 
     @CreationTimestamp
     private LocalDateTime dataHoraCriacao;

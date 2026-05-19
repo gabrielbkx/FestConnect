@@ -4,6 +4,7 @@ import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.model.cliente.Cliente;
+import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.prestador.Prestador;
@@ -26,8 +27,13 @@ public interface PedidoMapper {
     @Mapping(source = "cliente", target = "cliente")
     @Mapping(source = "prestador", target = "prestador")
     @Mapping(source = "itemCatalogo", target = "itemCatalogo")
+    @Mapping(source = "evento", target = "evento")
     @Mapping(source = "dto.descricao", target = "descricao")
-    Pedido toEntity(PedidoRequestDTO dto, Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo);
+    @Mapping(source = "dto.dataEvento", target = "dataEvento")
+    @Mapping(source = "dto.tipoEvento", target = "tipoEvento")
+    @Mapping(source = "dto.numeroConvidados", target = "numeroConvidados")
+    @Mapping(source = "dto.localEvento", target = "localEvento")
+    Pedido toEntity(PedidoRequestDTO dto, Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo, Evento evento);
 
     @Mapping(source = "cliente.nomeCompleto", target = "nomeCliente")
     @Mapping(source = "cliente.fotoPerfilUrl", target = "fotoClienteUrl")
@@ -37,6 +43,8 @@ public interface PedidoMapper {
     @Mapping(source = "itemCatalogo.id", target = "itemCatalogoId")
     @Mapping(source = "itemCatalogo.titulo", target = "itemCatalogoTitulo")
     @Mapping(source = "statusPedido", target = "status")
+    @Mapping(source = "evento.id", target = "eventoId")
+    @Mapping(source = "evento.nome", target = "eventoNome")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
 
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);

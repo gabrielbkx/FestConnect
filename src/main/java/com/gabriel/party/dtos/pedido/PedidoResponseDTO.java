@@ -65,5 +65,11 @@ public record PedidoResponseDTO(
         LocalDateTime validadeOrcamento,
 
         @Schema(description = "Data e hora de criação do pedido")
-        LocalDateTime dataHoraCriacao
+        LocalDateTime dataHoraCriacao,
+
+        @Schema(description = "ID do evento ao qual este pedido pertence (null para pedido avulso)")
+        UUID eventoId,
+
+        @Schema(description = "Nome do evento ao qual este pedido pertence (null para pedido avulso)")
+        String eventoNome
 ) {}

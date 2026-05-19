@@ -40,5 +40,10 @@ public record PedidoRequestDTO(
 
         @Schema(description = "Descrição detalhada do que o cliente precisa do prestador", example = "Preciso de um buffet completo com coquetel de boas-vindas, jantar e mesa de doces.")
         @NotBlank(message = "A descrição do pedido é obrigatória")
-        String descricao
+        String descricao,
+
+        @Schema(description = "ID do evento ao qual este pedido pertence (opcional). " +
+                "Se enviado, o pedido é agrupado sob o evento; caso contrário, é um pedido avulso.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6", nullable = true)
+        UUID eventoId
 ) {}

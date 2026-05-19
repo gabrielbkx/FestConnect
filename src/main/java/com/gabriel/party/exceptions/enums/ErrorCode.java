@@ -72,7 +72,11 @@ public enum ErrorCode {
     USUARIO_JA_EXISTE_POR_EMAIL("usuario_ja_existe_por_email", HttpStatus.CONFLICT, "Já existe um usuário cadastrado com esse email '%email%'"),
     USUARIO_SEM_PERMISSAO("usuario_sem_permissao", HttpStatus.FORBIDDEN, "O usuário '%usuarioId%' não tem permissão para realizar esta ação."),
     CODIGO_INVALIDO_OU_EXPIRADO("codigo_invalido_ou_expirado", HttpStatus.BAD_REQUEST, "O código de recuperação é inválido ou expirou"),
-    USUARIO_NAO_ENCONTRADO_POR_EMAIL("usuario_nao_encontrado_por_email", HttpStatus.NOT_FOUND, "Usuário não encontrado para o email '%email%'")
+    USUARIO_NAO_ENCONTRADO_POR_EMAIL("usuario_nao_encontrado_por_email", HttpStatus.NOT_FOUND, "Usuário não encontrado para o email '%email%'"),
+
+    // Erros de Evento
+    EVENTO_NAO_ENCONTRADO("evento_nao_encontrado", HttpStatus.NOT_FOUND, "Evento '%id%' não encontrado."),
+    EVENTO_SEM_PERMISSAO("evento_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este evento.")
 
     ;
 

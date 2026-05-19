@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Feature: Evento como agrupador opcional de pedidos.
+        - Cria tb_evento com FK para tb_cliente.
+        - Adiciona evento_id (nullable) em tb_pedidos.
+        - Pedido avulso continua válido (evento_id null).
+    -->
+
+    <changeSet author="GF" id="0.4.0-criar-tb-evento">
+
+        <createTable tableName="tb_evento">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_evento" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_evento" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cidade" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bairro" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="endereco" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero_convidados" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="observacoes" type="TEXT"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="PLANEJANDO">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cliente_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_criacao" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_atualizacao" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="tb_evento"
+                                 baseColumnNames="cliente_id"
+                                 constraintName="fk_evento_cliente"
+                                 referencedTableName="tb_cliente"
+                                 referencedColumnNames="id"/>
+
+        <createIndex tableName="tb_evento" indexName="idx_evento_cliente">
+            <column name="cliente_id"/>
+        </createIndex>
+
+        <createIndex tableName="tb_evento" indexName="idx_evento_status">
+            <column name="status"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet author="GF" id="0.4.0-pedido-evento-id">
+
+        <addColumn tableName="tb_pedidos">
+            <column name="evento_id" type="UUID" remarks="Vínculo opcional do pedido com um evento (agrupador)."/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="tb_pedidos"
+                                 baseColumnNames="evento_id"
+                                 constraintName="fk_pedidos_evento"
+                                 referencedTableName="tb_evento"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="tb_pedidos" indexName="idx_pedidos_evento">
+            <column name="evento_id"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>
