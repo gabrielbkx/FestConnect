@@ -19,10 +19,14 @@ public class TokenService {
     private String segredo;
 
     public String gerarToken(Usuario usuario) {
-        return gerarToken(usuario, null);
+        return gerarToken(usuario, null, null);
     }
 
     public String gerarToken(Usuario usuario, UUID profileId) {
+        return gerarToken(usuario, profileId, null);
+    }
+
+    public String gerarToken(Usuario usuario, UUID profileId, String nome) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(segredo);
 
@@ -35,6 +39,9 @@ public class TokenService {
 
             if (profileId != null) {
                 builder = builder.withClaim("profileId", profileId.toString());
+            }
+            if (nome != null && !nome.isBlank()) {
+                builder = builder.withClaim("nome", nome);
             }
 
             return builder.sign(algorithm);

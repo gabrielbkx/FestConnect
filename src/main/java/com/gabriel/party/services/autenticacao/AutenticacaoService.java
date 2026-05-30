@@ -75,7 +75,7 @@ public class AutenticacaoService implements UserDetailsService {
         usuario = usuarioRepository.save(usuario);
 
         var cliente = clienteService.criarPerfilCliente(dto, usuario, null);
-        String tokenJwt = tokenService.gerarToken(usuario, cliente.getId());
+        String tokenJwt = tokenService.gerarToken(usuario, cliente.getId(), dto.nomeCompleto());
 
         return new CadastroResponseDTO(
                 usuario.getId(),
@@ -98,7 +98,7 @@ public class AutenticacaoService implements UserDetailsService {
 
         var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
         UUID profileId = prestador != null ? prestador.getId() : null;
-        String tokenJwt = tokenService.gerarToken(usuario, profileId);
+        String tokenJwt = tokenService.gerarToken(usuario, profileId, dto.nomeCompleto());
 
         return new CadastroResponseDTO(
                 usuario.getId(),

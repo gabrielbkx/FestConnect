@@ -77,14 +77,15 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         }
 
         UUID profileId = null;
+        String nomeCompleto = null;
         if (usuario.getRole() == Role.ROLE_CLIENTE) {
             var cliente = clienteRepository.findByUsuarioId(usuario.getId()).orElse(null);
-            profileId = cliente != null ? cliente.getId() : null;
+            if (cliente != null) { profileId = cliente.getId(); nomeCompleto = cliente.getNomeCompleto(); }
         } else if (usuario.getRole() == Role.ROLE_PRESTADOR) {
             var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
-            profileId = prestador != null ? prestador.getId() : null;
+            if (prestador != null) { profileId = prestador.getId(); nomeCompleto = prestador.getNomeCompleto(); }
         }
-        String tokenJwt = tokenService.gerarToken(usuario, profileId);
+        String tokenJwt = tokenService.gerarToken(usuario, profileId, nomeCompleto);
         response.sendRedirect(frontendUrl + "/oauth2/callback?token=" + tokenJwt);
     }
 }
