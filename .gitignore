@@ -35,4 +35,8 @@ build/
 # Ignorar variáveis de ambiente
 .env
 
+# Scripts de deploy com dados de infraestrutura
+deploy.sh
+
 opentelemetry-javaagent.jar
+
