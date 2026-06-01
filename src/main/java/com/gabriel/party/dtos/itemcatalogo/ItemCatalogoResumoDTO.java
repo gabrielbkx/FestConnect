@@ -39,5 +39,11 @@ public record ItemCatalogoResumoDTO(
         String estado,
 
         @Schema(description = "URL da primeira foto do item — null se nenhuma cadastrada")
-        String fotoPrincipalUrl
+        String fotoPrincipalUrl,
+
+        @Schema(description = "Média das avaliações do item (1 a 5) — null se nenhuma avaliação")
+        Double mediaAvaliacao,
+
+        @Schema(description = "Total de avaliações do item", example = "25")
+        Long totalAvaliacoes
 ) {}
