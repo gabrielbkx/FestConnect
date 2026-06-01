@@ -8,6 +8,8 @@ import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.itemcatalogo.ItemCatalogoMapper;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.prestador.Prestador;
+import com.gabriel.party.repositories.avaliacao.AvaliacaoRepository;
+import com.gabriel.party.repositories.avaliacao.EstatisticasItemAvaliacao;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
@@ -17,7 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemCatalogoService {
@@ -26,15 +30,18 @@ public class ItemCatalogoService {
     private final PrestadorRepository prestadorRepository;
     private final CategoriaRepository categoriaRepository;
     private final ItemCatalogoMapper itemCatalogoMapper;
+    private final AvaliacaoRepository avaliacaoRepository;
 
     public ItemCatalogoService(ItemCatalogoRepository itemCatalogoRepository,
             PrestadorRepository prestadorRepository,
             CategoriaRepository categoriaRepository,
-            ItemCatalogoMapper itemCatalogoMapper) {
+            ItemCatalogoMapper itemCatalogoMapper,
+            AvaliacaoRepository avaliacaoRepository) {
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.prestadorRepository = prestadorRepository;
         this.categoriaRepository = categoriaRepository;
         this.itemCatalogoMapper = itemCatalogoMapper;
+        this.avaliacaoRepository = avaliacaoRepository;
     }
 
     @Transactional
@@ -78,7 +85,25 @@ public class ItemCatalogoService {
                 ? itemCatalogoRepository.buscarSemCategoria(buscaTratada, cidadeTratada, pageable)
                 : itemCatalogoRepository.buscarComCategorias(categoriaIds, buscaTratada, cidadeTratada, pageable);
 
-        return resultado.map(itemCatalogoMapper::toResumoDto);
+        List<UUID> idsItens = resultado.getContent().stream().map(ItemCatalogo::getId).toList();
+
+        Map<UUID, EstatisticasItemAvaliacao> estatisticasPorItem = idsItens.isEmpty() ? Map.of()
+                : avaliacaoRepository.buscarEstatisticasPorItens(idsItens)
+                        .stream()
+                        .collect(Collectors.toMap(EstatisticasItemAvaliacao::getIdItem, e -> e));
+
+        return resultado.map(item -> {
+            ItemCatalogoResumoDTO resumo = itemCatalogoMapper.toResumoDto(item);
+            EstatisticasItemAvaliacao estatisticas = estatisticasPorItem.get(item.getId());
+            if (estatisticas == null) return resumo;
+            return new ItemCatalogoResumoDTO(
+                    resumo.id(), resumo.titulo(), resumo.precoBase(), resumo.tipo(),
+                    resumo.categoriaId(), resumo.categoriaNome(),
+                    resumo.prestadorId(), resumo.prestadorNome(),
+                    resumo.cidade(), resumo.estado(), resumo.fotoPrincipalUrl(),
+                    estatisticas.getMedia(), estatisticas.getTotal()
+            );
+        });
     }
 
     @Transactional(readOnly = true)
