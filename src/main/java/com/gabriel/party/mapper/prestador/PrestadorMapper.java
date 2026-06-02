@@ -37,6 +37,7 @@ public interface PrestadorMapper {
     @Mapping(target = "avaliacoes", source = "avaliacoes", qualifiedByName = "listaAtivasAvaliacoes")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
     @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
+    @Mapping(target = "dataCriacao", source = "usuario.dataCriacao")
     PrestadorResponseDTO toDto(Prestador prestador);
 
     @Mapping(target = "nome", source = "nomeCompleto")

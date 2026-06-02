@@ -5,6 +5,7 @@ import com.gabriel.party.dtos.itemcatalogo.ItemCatalogoResponseDTO;
 import com.gabriel.party.dtos.prestador.endereco.EnderecoDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,7 +46,10 @@ public record PrestadorResponseDTO(
         Double mediaAvaliacoes,
 
         @Schema(description = "Total de avaliações ativas recebidas", example = "27")
-        Integer quantidadeAvaliacoes
+        Integer quantidadeAvaliacoes,
+
+        @Schema(description = "Data em que o usuário foi criado (tb_usuarios.data_criacao)", example = "2024-05-01T14:30:00")
+        LocalDateTime dataCriacao
 ) {
 
     @Schema(description = "Resumo de categoria — id e nome")
