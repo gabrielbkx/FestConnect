@@ -30,7 +30,7 @@ public abstract class ItemCatalogo {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
-    @Column(name = "preco_base")
+    @Column(name = "preco_base",precision = 10, scale = 2, nullable = false)
     private BigDecimal precoBase;
 
     @Column(nullable = false)
