@@ -48,7 +48,7 @@ public record PrestadorResponseDTO(
         @Schema(description = "Total de avaliações ativas recebidas", example = "27")
         Integer quantidadeAvaliacoes,
 
-        @Schema(description = "Data da criação do prestador/usuário", example = "2024-05-01T14:30:00")
+        @Schema(description = "Data em que o usuário foi criado (tb_usuarios.data_criacao)", example = "2024-05-01T14:30:00")
         LocalDateTime dataCriacao
 ) {
 
