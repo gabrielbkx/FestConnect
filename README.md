@@ -1,12 +1,12 @@
 # FestConnect API
 
-API REST de marketplace que conecta organizadores de eventos a prestadores de serviços — DJs, buffets, aluguel de equipamentos e espaços para eventos.
+API REST de marketplace que conecta organizadores de eventos a prestadores de serviços DJs, buffets, aluguel de equipamentos e espaços para eventos.
 
 ---
 
 ## Sobre o projeto
 
-O FestConnect resolve um problema concreto: encontrar prestadores confiáveis para um evento sem depender de indicação boca a boca. Clientes descrevem o evento, buscam prestadores por categoria ou proximidade, solicitam orçamentos e fecham negócio diretamente via WhatsApp — sem intermediação de pagamento.
+O FestConnect resolve um problema concreto: encontrar prestadores confiáveis para um evento sem depender de indicação boca a boca. Clientes descrevem o evento, buscam prestadores por categoria ou proximidade, solicitam orçamentos e fecham negócio diretamente via WhatsApp  sem intermediação de pagamento.
 
 O backend gerencia dois perfis distintos: **clientes** (que buscam e solicitam) e **prestadores** (que cadastram serviços e respondem orçamentos).
 
