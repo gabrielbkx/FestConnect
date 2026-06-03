@@ -4,6 +4,7 @@ import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.midia.Midia;
 import com.gabriel.party.model.prestador.Prestador;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -44,6 +45,7 @@ public abstract class ItemCatalogo {
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
+    @BatchSize(size = 30)
     @OneToMany(mappedBy = "itemCatalogo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Midia> midias;
 }
