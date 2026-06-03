@@ -101,7 +101,8 @@ public class ItemCatalogoService {
                     resumo.categoriaId(), resumo.categoriaNome(),
                     resumo.prestadorId(), resumo.prestadorNome(),
                     resumo.cidade(), resumo.estado(), resumo.fotoPrincipalUrl(),
-                    estatisticas.getMedia(), estatisticas.getTotal()
+                    estatisticas.getMedia(), estatisticas.getTotal(),
+                    resumo.latitude(), resumo.longitude()
             );
         });
     }
