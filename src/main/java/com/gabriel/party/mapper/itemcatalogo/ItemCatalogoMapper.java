@@ -53,6 +53,9 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
     @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
+    @Mapping(target = "prestadorLogradouro", source = "prestador.endereco.logradouro")
+    @Mapping(target = "prestadorNumero", source = "prestador.endereco.numero")
+    @Mapping(target = "prestadorBairro", source = "prestador.endereco.bairro")
     @Mapping(target = "midias", source = "midias")
     ItemCatalogoResponseDTO toDto(Local local);
 
@@ -65,6 +68,9 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
     @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
+    @Mapping(target = "prestadorLogradouro", ignore = true)
+    @Mapping(target = "prestadorNumero", ignore = true)
+    @Mapping(target = "prestadorBairro", ignore = true)
     @Mapping(target = "midias", source = "midias")
     ItemCatalogoResponseDTO toDto(Servico servico);
 
@@ -77,6 +83,9 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
     @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
+    @Mapping(target = "prestadorLogradouro", ignore = true)
+    @Mapping(target = "prestadorNumero", ignore = true)
+    @Mapping(target = "prestadorBairro", ignore = true)
     @Mapping(target = "midias", source = "midias")
     ItemCatalogoResponseDTO toDto(Produto produto);
 

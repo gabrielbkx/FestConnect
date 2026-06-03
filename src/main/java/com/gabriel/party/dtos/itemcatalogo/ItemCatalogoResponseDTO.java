@@ -53,5 +53,14 @@ public record ItemCatalogoResponseDTO(
         String prestadorCidade,
 
         @Schema(description = "Estado do prestador (UF)", example = "SP")
-        String prestadorEstado
+        String prestadorEstado,
+
+        @Schema(description = "Logradouro do prestador (rua/avenida)", example = "Avenida Paulista")
+        String prestadorLogradouro,
+
+        @Schema(description = "Número do imóvel do prestador", example = "1578")
+        Integer prestadorNumero,
+
+        @Schema(description = "Bairro do prestador", example = "Bela Vista")
+        String prestadorBairro
 ) {}
