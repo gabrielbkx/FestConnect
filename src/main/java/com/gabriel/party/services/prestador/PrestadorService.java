@@ -154,6 +154,27 @@ public class PrestadorService {
         return urlNova;
     }
 
+    @Transactional
+    public String atualizarFotoBanner(UUID id, MultipartFile arquivo) {
+        var prestador = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+
+        String contentType = arquivo.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new AppException(ErrorCode.FORMATO_INVALIDO, contentType == null ? "desconhecido" : contentType);
+        }
+
+        String urlAntiga = prestador.getFotoBannerUrl();
+        String urlNova = armazenamentoService.salvarMidias(arquivo);
+        prestador.setFotoBannerUrl(urlNova);
+        repository.save(prestador);
+
+        if (urlAntiga != null && !urlAntiga.isBlank()) {
+            try { armazenamentoService.deletaMidia(urlAntiga); } catch (Exception ignored) {}
+        }
+        return urlNova;
+    }
+
     /**
      * Busca detalhe administrativo do prestador — inclui CNPJ/CPF, endereço
      * completo, whatsapp e data de criação. Acesso restrito a

@@ -105,6 +105,20 @@ public class PrestadorController {
         return ResponseEntity.ok(Map.of("fotoPerfilUrl", url));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto de capa atualizada"),
+            @ApiResponse(responseCode = "400", description = "Arquivo inválido ou formato não suportado"),
+            @ApiResponse(responseCode = "404", description = "Prestador não encontrado")
+    })
+    @Operation(summary = "Atualizar foto de capa", description = "Faz upload de uma nova foto de capa. A foto anterior é removida do storage.")
+    @PutMapping(value = "/{id}/foto-banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
+    public ResponseEntity<Map<String, String>> atualizarFotoBanner(@PathVariable UUID id,
+                                                                   @RequestPart("arquivo") MultipartFile arquivo) {
+        String url = prestadorService.atualizarFotoBanner(id, arquivo);
+        return ResponseEntity.ok(Map.of("fotoBannerUrl", url));
+    }
+
     @ApiResponses( value = {
             @ApiResponse(responseCode = "204", description = "Prestador inativado com sucesso"),
             @ApiResponse(responseCode = "404", description = "Prestador não encontrado")

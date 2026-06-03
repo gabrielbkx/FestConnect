@@ -33,6 +33,9 @@ public record PrestadorResponseDTO(
         @Schema(description = "URL da foto de perfil")
         String fotoPerfilUrl,
 
+        @Schema(description = "URL da foto de capa do perfil público — null se não definida")
+        String fotoBannerUrl,
+
         @Schema(description = "Endereço do prestador")
         EnderecoDTO endereco,
 
