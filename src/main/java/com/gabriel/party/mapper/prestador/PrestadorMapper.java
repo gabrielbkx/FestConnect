@@ -30,15 +30,16 @@ public interface PrestadorMapper {
     @Mapping(target = "ativo", ignore = true)
     Prestador toEntity(PrestadorRequestDTO dto);
 
-    @Mapping(target = "nome", source = "nomeCompleto")
-    @Mapping(target = "email", source = "usuario.email")
+    @Mapping(target = "nome", source = "prestador.nomeCompleto")
+    @Mapping(target = "email", source = "prestador.usuario.email")
     @Mapping(target = "categorias", expression = "java(extrairCategorias(prestador.getItensCatalogo()))")
-    @Mapping(target = "itensCatalogo", source = "itensCatalogo", qualifiedByName = "listaAtivosItens")
-    @Mapping(target = "avaliacoes", source = "avaliacoes", qualifiedByName = "listaAtivasAvaliacoes")
+    @Mapping(target = "itensCatalogo", source = "prestador.itensCatalogo", qualifiedByName = "listaAtivosItens")
+    @Mapping(target = "avaliacoes", source = "prestador.avaliacoes", qualifiedByName = "listaAtivasAvaliacoes")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
     @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
-    @Mapping(target = "dataCriacao", source = "usuario.dataCriacao")
-    PrestadorResponseDTO toDto(Prestador prestador);
+    @Mapping(target = "dataCriacao", source = "prestador.usuario.dataCriacao")
+    @Mapping(target = "pedidosConcluidos", source = "pedidosConcluidos")
+    PrestadorResponseDTO toDto(Prestador prestador, Long pedidosConcluidos);
 
     @Mapping(target = "nome", source = "nomeCompleto")
     @Mapping(target = "email", source = "usuario.email")
