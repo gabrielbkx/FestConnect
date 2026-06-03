@@ -51,7 +51,7 @@ public record PrestadorResponseDTO(
         @Schema(description = "Data em que o usuário foi criado (tb_usuarios.data_criacao)", example = "2024-05-01T14:30:00")
         LocalDateTime dataCriacao,
 
-        @Schema(description = "Total de pedidos com status CONCLUIDO para este prestador", example = "42")
+        @Schema(description = "Total de pedidos aceitos (concluídos) recebidos pelo prestador", example = "42")
         Long pedidosConcluidos
 ) {
 
