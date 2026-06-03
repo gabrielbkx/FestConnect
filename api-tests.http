@@ -1,0 +1,631 @@
+### ============================================================
+### FestConnect API - Testes de Endpoints
+### Compatível com: IntelliJ HTTP Client / VS Code REST Client
+###
+### ORDEM DE EXECUÇÃO:
+### 1. Preencha @baseUrl com o endereço do servidor
+### 2. Execute na ordem numérica das seções
+### 3. Tokens e IDs são capturados automaticamente (IntelliJ)
+###    ou precisam ser copiados manualmente (VS Code)
+### ============================================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### ── TOKENS (preenchidos automaticamente ou cole manualmente) ──
+@tokenAdmin = SEU_TOKEN_ADMIN_AQUI
+@tokenCliente = SEU_TOKEN_CLIENTE_AQUI
+@tokenPrestador = SEU_TOKEN_PRESTADOR_AQUI
+
+### ── IDs (preencha conforme as respostas) ──
+@clienteId = 19563f60-3ada-40cd-8ebb-bc1432d9d883
+@prestadorId = SEU_PRESTADOR_ID_AQUI
+@categoriaId = SEU_CATEGORIA_ID_AQUI
+@itemCatalogoId = SEU_ITEM_CATALOGO_ID_AQUI
+@midiaId = SEU_MIDIA_ID_AQUI
+@pedidoId = SEU_PEDIDO_ID_AQUI
+@avaliacaoId = SEU_AVALIACAO_ID_AQUI
+
+
+### ==============================================================
+### 1. AUTENTICAÇÃO
+### ==============================================================
+
+### 1.1 Cadastrar Cliente
+# @name cadastroCliente
+POST {{baseUrl}}/api/v1/auth/cadastro/cliente
+Content-Type: {{contentType}}
+
+{
+  "nomeCompleto": "João Silva",
+  "email": "joao.cliente@email.com",
+  "senha": "senha123",
+  "whatsapp": "11999990001",
+  "endereco": {
+    "logradouro": "Rua das Flores",
+    "bairro": "Centro",
+    "cep": "01310100",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "complemento": "Apto 42",
+    "numero": 100
+  }
+}
+
+### 1.2 Cadastrar Prestador
+# @name cadastroPrestador
+POST {{baseUrl}}/api/v1/auth/cadastro/prestador
+Content-Type: {{contentType}}
+
+{
+  "nomeCompleto": "Buffet Silva & Cia",
+  "email": "buffet.silva@email.com",
+  "senha": "senha123",
+  "whatsapp": "11999990002",
+  "cnpjOuCpf": "12345678000195",
+  "categoriaId": "{{categoriaId}}",
+  "descricao": "Buffet especializado em casamentos e eventos corporativos.",
+  "endereco": {
+    "logradouro": "Av. Paulista",
+    "bairro": "Bela Vista",
+    "cep": "01311200",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "numero": 1000
+  }
+}
+
+### 1.3 Login como Cliente
+# @name loginCliente
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "joao.cliente@email.com",
+  "senha": "senha123"
+}
+
+### 1.4 Login como Prestador
+# @name loginPrestador
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "buffet.silva@email.com",
+  "senha": "senha123"
+}
+
+### 1.5 Login como Admin (usuário precisa existir no banco)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@festconnect.com",
+  "senha": "admin123"
+}
+
+### 1.6 Solicitar recuperação de senha
+POST {{baseUrl}}/api/v1/auth/recuperacao-senha
+Content-Type: {{contentType}}
+
+{
+  "email": "joao.cliente@email.com"
+}
+
+### 1.7 Validar código de recuperação (substituir código pelo recebido por email)
+POST {{baseUrl}}/api/v1/auth/validar-codigo
+Content-Type: {{contentType}}
+
+{
+  "email": "joao.cliente@email.com",
+  "codigoPin": "123456"
+}
+
+### 1.8 Redefinir senha (usar token retornado em 1.7)
+POST {{baseUrl}}/api/v1/auth/redefinir-senha
+Content-Type: {{contentType}}
+
+{
+  "token": "TOKEN_RETORNADO_EM_1.7",
+  "novaSenha": "novaSenha456"
+}
+
+
+### ==============================================================
+### 2. CATEGORIAS (requer ROLE_ADMINISTRADOR)
+### ==============================================================
+
+### 2.1 Criar categoria - Buffet
+# @name criarCategoria
+POST {{baseUrl}}/api/v1/categorias
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "nome": "Buffet",
+  "descricao": "Serviços de buffet para eventos",
+  "iconeUrl": "https://exemplo.com/icones/buffet.png"
+}
+
+### 2.2 Criar categoria - Fotografia
+POST {{baseUrl}}/api/v1/categorias
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "nome": "Fotografia",
+  "descricao": "Fotógrafos e cinegrafistas para eventos",
+  "iconeUrl": "https://exemplo.com/icones/foto.png"
+}
+
+### 2.3 Criar categoria - DJ
+POST {{baseUrl}}/api/v1/categorias
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "nome": "DJ",
+  "descricao": "Serviços de DJ e sonorização",
+  "iconeUrl": null
+}
+
+### 2.4 Listar categorias (público)
+GET {{baseUrl}}/api/v1/categorias
+
+### 2.5 Listar categorias com paginação
+GET {{baseUrl}}/api/v1/categorias?page=0&size=5&sort=nome,asc
+
+### 2.6 Buscar categoria por ID
+GET {{baseUrl}}/api/v1/categorias/{{categoriaId}}
+
+### 2.7 Atualizar categoria
+PUT {{baseUrl}}/api/v1/categorias/{{categoriaId}}
+Content-Type: {{contentType}}
+
+{
+  "nome": "Buffet Premium",
+  "descricao": "Serviços de buffet premium para eventos exclusivos",
+  "iconeUrl": "https://exemplo.com/icones/buffet-premium.png"
+}
+
+### 2.8 Deletar categoria (requer ROLE_ADMINISTRADOR)
+DELETE {{baseUrl}}/api/v1/categorias/{{categoriaId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### ── [ERRO ESPERADO] ──
+
+### 2.9 Criar categoria duplicada → 409 Conflict
+POST {{baseUrl}}/api/v1/categorias
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenAdmin}}
+
+{
+  "nome": "Buffet",
+  "descricao": "Duplicado"
+}
+
+### 2.10 Criar categoria sem autenticação → 403 Forbidden
+POST {{baseUrl}}/api/v1/categorias
+Content-Type: {{contentType}}
+
+{
+  "nome": "Sem Auth"
+}
+
+
+### ==============================================================
+### 3. PRESTADORES
+### ==============================================================
+
+### 3.1 Listar todos os prestadores (público, paginado)
+GET {{baseUrl}}/api/v1/prestadores
+
+### 3.2 Listar com paginação
+GET {{baseUrl}}/api/v1/prestadores?page=0&size=5&sort=nomeCompleto,asc
+
+### 3.3 Buscar prestador por ID (público)
+GET {{baseUrl}}/api/v1/prestadores/{{prestadorId}}
+
+### 3.4 Buscar prestadores por proximidade (público)
+GET {{baseUrl}}/api/v1/prestadores/proximidade?lat=-23.5505&lon=-46.6333&raio=10.0
+
+### 3.5 Filtrar prestadores por categoria e proximidade (público)
+GET {{baseUrl}}/api/v1/prestadores/filtro-radar?categoriaId={{categoriaId}}&lat=-23.5505&lon=-46.6333&raio=20.0
+
+### 3.6 Atualizar perfil do prestador (requer ROLE_PRESTADOR)
+PUT {{baseUrl}}/api/v1/prestadores/{{prestadorId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "nomeCompleto": "Buffet Silva & Cia Atualizado",
+  "email": "buffet.silva@email.com",
+  "descricao": "Buffet especializado em casamentos, aniversários e eventos corporativos.",
+  "whatsapp": "11999990002",
+  "categoriaId": "{{categoriaId}}",
+  "endereco": {
+    "logradouro": "Av. Paulista",
+    "bairro": "Bela Vista",
+    "cep": "01311200",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "numero": 1500
+  }
+}
+
+### ── [ERRO ESPERADO] ──
+
+### 3.7 Buscar prestador inexistente → 404 Not Found
+GET {{baseUrl}}/api/v1/prestadores/00000000-0000-0000-0000-000000000000
+
+
+### ==============================================================
+### 4. ITENS DE CATÁLOGO (requer ROLE_PRESTADOR)
+### ==============================================================
+
+### 4.1 Criar item de catálogo - serviço
+# @name criarItem
+POST {{baseUrl}}/api/v1/itens-catalogo
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "titulo": "Buffet Completo para Casamento",
+  "descricao": "Cardápio completo com entrada, prato principal e sobremesa para até 200 convidados.",
+  "precoBase": 8500.00,
+  "tipo": "SERVICO"
+}
+
+### 4.2 Criar item de catálogo - local (com detalhes do espaço)
+POST {{baseUrl}}/api/v1/itens-catalogo
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "titulo": "Salão de Festas Premium",
+  "descricao": "Espaço climatizado com capacidade para 300 pessoas.",
+  "precoBase": 5000.00,
+  "tipo": "LOCAL",
+  "localDetalhe": {
+    "capacidadeMaxima": 300,
+    "metragem": 450.00,
+    "permiteSom": true,
+    "temEstacionamento": true,
+    "tipoEspaco": "Salão coberto"
+  }
+}
+
+### 4.3 Listar todos os itens (público, paginado)
+GET {{baseUrl}}/api/v1/itens-catalogo
+
+### 4.4 Listar vitrine do prestador (público)
+GET {{baseUrl}}/api/v1/itens-catalogo/prestador/{{prestadorId}}
+
+### 4.5 Buscar item por ID (público)
+GET {{baseUrl}}/api/v1/itens-catalogo/{{itemCatalogoId}}
+
+### 4.6 Buscar itens no radar (público)
+GET {{baseUrl}}/api/v1/itens-catalogo/filtro-radar?lat=-23.5505&lon=-46.6333&raio=5.0
+
+### 4.7 Buscar com filtros de texto e tipo
+GET {{baseUrl}}/api/v1/itens-catalogo/filtro-radar?busca=buffet&tipo=SERVICO&lat=-23.5505&lon=-46.6333&raio=10.0
+
+### 4.8 Atualizar item (requer ROLE_PRESTADOR)
+PUT {{baseUrl}}/api/v1/itens-catalogo/{{itemCatalogoId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "titulo": "Buffet Completo para Casamento - Atualizado",
+  "descricao": "Cardápio completo com entrada, prato principal, sobremesa e open bar.",
+  "precoBase": 9500.00,
+  "tipo": "SERVICO"
+}
+
+### 4.9 Deletar item (requer ROLE_PRESTADOR)
+DELETE {{baseUrl}}/api/v1/itens-catalogo/{{itemCatalogoId}}
+Authorization: Bearer {{tokenPrestador}}
+
+
+### ==============================================================
+### 5. MÍDIAS (requer ROLE_PRESTADOR para envio)
+### ==============================================================
+
+### 5.1 Enviar mídia (multipart - use ferramenta específica para arquivo)
+### Substitua o path do arquivo pelo caminho real
+POST {{baseUrl}}/api/v1/midias
+Authorization: Bearer {{tokenPrestador}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="arquivo"; filename="foto.jpg"
+Content-Type: image/jpeg
+
+< ./foto.jpg
+--boundary
+Content-Disposition: form-data; name="dto"
+Content-Type: application/json
+
+{
+  "tipo": "IMAGEM",
+  "ordem": 1,
+  "itemCatalogoId": null
+}
+--boundary--
+
+### 5.2 Listar mídias do prestador (público)
+GET {{baseUrl}}/api/v1/midias/{{prestadorId}}/prestador
+
+### 5.3 Listar mídias filtrando por tipo
+GET {{baseUrl}}/api/v1/midias/{{prestadorId}}/prestador?tipoMidia=IMAGEM
+
+### 5.4 Buscar mídia por ID (público)
+GET {{baseUrl}}/api/v1/midias/{{midiaId}}
+
+### 5.5 Atualizar mídia (requer ROLE_PRESTADOR ou ROLE_ADMINISTRADOR)
+PUT {{baseUrl}}/api/v1/midias/{{midiaId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "tipo": "IMAGEM",
+  "ordem": 2,
+  "itemCatalogoId": "{{itemCatalogoId}}"
+}
+
+### 5.6 Deletar mídia (requer ROLE_PRESTADOR ou ROLE_ADMINISTRADOR)
+DELETE {{baseUrl}}/api/v1/midias/{{midiaId}}
+Authorization: Bearer {{tokenPrestador}}
+
+
+### ==============================================================
+### 6. CLIENTES
+### ==============================================================
+
+### 6.1 Buscar cliente por ID (público)
+GET {{baseUrl}}/api/v1/clientes/{{clienteId}}
+
+### 6.2 Listar todos os clientes (público, paginado)
+GET {{baseUrl}}/api/v1/clientes
+
+### 6.3 Atualizar cliente (requer ROLE_CLIENTE)
+PUT {{baseUrl}}/api/v1/clientes/{{clienteId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nome": "João Silva Atualizado",
+  "email": "joao.cliente@email.com",
+  "whatsapp": "11999990001",
+  "endereco": {
+    "logradouro": "Rua das Flores",
+    "bairro": "Jardins",
+    "cep": "01310100",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "complemento": "Apto 42",
+    "numero": 200
+  }
+}
+
+
+### ==============================================================
+### 7. FAVORITOS (requer ROLE_CLIENTE)
+### ==============================================================
+
+### 7.1 Adicionar prestador aos favoritos
+POST {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/prestadores/{{prestadorId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 7.2 Listar prestadores favoritos
+GET {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/prestadores
+Authorization: Bearer {{tokenCliente}}
+
+### 7.3 Adicionar categoria aos favoritos
+POST {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/categorias/{{categoriaId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 7.4 Listar categorias favoritas
+GET {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/categorias
+Authorization: Bearer {{tokenCliente}}
+
+### 7.5 Remover prestador dos favoritos
+DELETE {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/prestadores/{{prestadorId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 7.6 Remover categoria dos favoritos
+DELETE {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/categorias/{{categoriaId}}
+Authorization: Bearer {{tokenCliente}}
+
+### ── [ERROS ESPERADOS] ──
+
+### 7.7 Adicionar prestador já favoritado → 409 Conflict
+### (execute 7.1 antes, depois execute este)
+POST {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/prestadores/{{prestadorId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 7.8 Remover prestador que não está nos favoritos → 404 Not Found
+DELETE {{baseUrl}}/api/v1/clientes/{{clienteId}}/favoritos/prestadores/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{tokenCliente}}
+
+
+### ==============================================================
+### 8. PEDIDOS - FLUXO COMPLETO
+### ==============================================================
+
+### 8.1 Solicitar orçamento (requer ROLE_CLIENTE)
+# @name criarPedido
+POST {{baseUrl}}/api/v1/pedidos
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "prestadorId": "{{prestadorId}}",
+  "dataEvento": "2026-12-15T18:00:00",
+  "localEvento": "Buffet Silva - Av. Paulista, 1000",
+  "tipoEvento": "Casamento",
+  "numeroConvidados": 150,
+  "descricao": "Casamento com jantar completo, mesa de frios e bolo."
+}
+
+### 8.2 Listar pedidos do cliente (requer ROLE_CLIENTE)
+GET {{baseUrl}}/api/v1/pedidos/cliente
+Authorization: Bearer {{tokenCliente}}
+
+### 8.3 Listar pedidos pendentes do prestador (requer ROLE_PRESTADOR)
+GET {{baseUrl}}/api/v1/pedidos/prestador/pendentes
+Authorization: Bearer {{tokenPrestador}}
+
+### 8.4 Listar histórico do prestador (requer ROLE_PRESTADOR)
+GET {{baseUrl}}/api/v1/pedidos/prestador/historico
+Authorization: Bearer {{tokenPrestador}}
+
+### 8.5 Prestador envia orçamento (requer ROLE_PRESTADOR)
+PUT {{baseUrl}}/api/v1/pedidos/{{pedidoId}}/orcar
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "valor": 9500.00,
+  "detalhesOrcamento": "Inclui buffet completo, garçons, louças e decoração de mesa. Pagamento: 50% na confirmação e 50% no dia.",
+  "validadeOrcamento": "2026-06-30T23:59:59"
+}
+
+### 8.6 Cliente aceita o orçamento (requer ROLE_CLIENTE)
+PUT {{baseUrl}}/api/v1/pedidos/{{pedidoId}}/aceitar
+Authorization: Bearer {{tokenCliente}}
+
+### ── FLUXO ALTERNATIVO: Recusa/Cancelamento ──
+
+### 8.7 Prestador recusa pedido (requer ROLE_PRESTADOR)
+### Use um pedidoId diferente no status PENDENTE
+PUT {{baseUrl}}/api/v1/pedidos/{{pedidoId}}/recusar
+Authorization: Bearer {{tokenPrestador}}
+
+### 8.8 Cliente cancela pedido (requer ROLE_CLIENTE)
+### Use um pedidoId diferente no status PENDENTE ou ORCADO
+PUT {{baseUrl}}/api/v1/pedidos/{{pedidoId}}/cancelar
+Authorization: Bearer {{tokenCliente}}
+
+### ── [ERROS ESPERADOS] ──
+
+### 8.9 Transição de status inválida → 400 Bad Request
+### (tente orçar um pedido já ACEITO)
+PUT {{baseUrl}}/api/v1/pedidos/{{pedidoId}}/orcar
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenPrestador}}
+
+{
+  "valor": 100.00,
+  "detalhesOrcamento": "Tentativa inválida",
+  "validadeOrcamento": "2026-12-31T23:59:59"
+}
+
+### 8.10 Data de evento no passado → 400 Bad Request
+POST {{baseUrl}}/api/v1/pedidos
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "prestadorId": "{{prestadorId}}",
+  "dataEvento": "2020-01-01T18:00:00",
+  "localEvento": "Local Teste",
+  "tipoEvento": "Teste",
+  "numeroConvidados": 10,
+  "descricao": "Data no passado"
+}
+
+
+### ==============================================================
+### 9. AVALIAÇÕES (requer pedido ACEITO)
+### ==============================================================
+
+### 9.1 Criar avaliação (requer ROLE_CLIENTE e pedido ACEITO com o prestador)
+# @name criarAvaliacao
+POST {{baseUrl}}/api/v1/avaliacoes
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nota": 5,
+  "comentario": "Excelente serviço! O buffet estava impecável e a equipe muito atenciosa.",
+  "prestadorId": "{{prestadorId}}"
+}
+
+### 9.2 Listar todas as avaliações (público, paginado)
+GET {{baseUrl}}/api/v1/avaliacoes
+
+### 9.3 Listar avaliações de um prestador (público)
+GET {{baseUrl}}/api/v1/avaliacoes/prestador/{{prestadorId}}
+
+### 9.4 Buscar avaliação por ID (público)
+GET {{baseUrl}}/api/v1/avaliacoes/{{avaliacaoId}}
+
+### 9.5 Atualizar avaliação (requer ROLE_CLIENTE, deve ser o autor)
+PUT {{baseUrl}}/api/v1/avaliacoes/{{avaliacaoId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nota": 4,
+  "comentario": "Ótimo serviço, mas o bolo poderia ter sido maior."
+}
+
+### 9.6 Deletar avaliação (requer ROLE_CLIENTE ou ROLE_ADMINISTRADOR)
+DELETE {{baseUrl}}/api/v1/avaliacoes/{{avaliacaoId}}
+Authorization: Bearer {{tokenCliente}}
+
+### ── [ERROS ESPERADOS] ──
+
+### 9.7 Nota fora do intervalo → 400 Bad Request
+POST {{baseUrl}}/api/v1/avaliacoes
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nota": 6,
+  "comentario": "Nota inválida",
+  "prestadorId": "{{prestadorId}}"
+}
+
+### 9.8 Avaliar sem pedido aceito → 403 Forbidden
+POST {{baseUrl}}/api/v1/avaliacoes
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nota": 5,
+  "comentario": "Sem contrato",
+  "prestadorId": "00000000-0000-0000-0000-000000000000"
+}
+
+### 9.9 Avaliar duas vezes o mesmo prestador → 409 Conflict
+### (execute 9.1 antes e depois execute este)
+POST {{baseUrl}}/api/v1/avaliacoes
+Content-Type: {{contentType}}
+Authorization: Bearer {{tokenCliente}}
+
+{
+  "nota": 3,
+  "comentario": "Segunda avaliação duplicada",
+  "prestadorId": "{{prestadorId}}"
+}
+
+
+### ==============================================================
+### 10. EXCLUSÃO LÓGICA (limpeza / fim do ciclo)
+### ==============================================================
+
+### 10.1 Inativar prestador (requer ROLE_PRESTADOR ou ROLE_ADMINISTRADOR)
+DELETE {{baseUrl}}/api/v1/prestadores/{{prestadorId}}
+Authorization: Bearer {{tokenPrestador}}
+
+### 10.2 Inativar cliente (requer ROLE_CLIENTE ou ROLE_ADMINISTRADOR)
+DELETE {{baseUrl}}/api/v1/clientes/{{clienteId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 10.3 Deletar categoria (requer ROLE_ADMINISTRADOR)
+### Atenção: falhará se houver prestadores vinculados → 409 Conflict
+DELETE {{baseUrl}}/api/v1/categorias/{{categoriaId}}
+Authorization: Bearer {{tokenAdmin}}
