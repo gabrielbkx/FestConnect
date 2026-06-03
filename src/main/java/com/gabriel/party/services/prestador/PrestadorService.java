@@ -100,7 +100,8 @@ public class PrestadorService {
 
     @Transactional
     public PrestadorResponseDTO atualizarPrestador(@Valid PrestadorRequestDTO dto, UUID id) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
+
+        var prestador = repository.findByIdComMidias(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
