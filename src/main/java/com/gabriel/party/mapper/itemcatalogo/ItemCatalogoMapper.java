@@ -125,6 +125,8 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorNome", source = "prestador.nomeCompleto")
     @Mapping(target = "cidade", source = "prestador.endereco.cidade")
     @Mapping(target = "estado", source = "prestador.endereco.estado")
+    @Mapping(target = "latitude", source = "prestador.endereco.latitude")
+    @Mapping(target = "longitude", source = "prestador.endereco.longitude")
     @Mapping(target = "fotoPrincipalUrl", expression = "java(primeiraFotoUrl(item))")
     ItemCatalogoResumoDTO toResumoDto(ItemCatalogo item);
 
