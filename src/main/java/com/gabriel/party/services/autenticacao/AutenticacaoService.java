@@ -55,6 +55,8 @@ public class AutenticacaoService implements UserDetailsService {
     CodigoRecuperacaoRepository codigoRecuperacaoRepository;
     @Autowired
     EmailService emailService;
+    @Autowired
+    EmailVerificacaoService emailVerificacaoService;
 
 
     @Override
@@ -73,6 +75,7 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setRole(Role.ROLE_CLIENTE);
 
         usuario = usuarioRepository.save(usuario);
+        emailVerificacaoService.enviarVerificacaoEmail(usuario);
 
         var cliente = clienteService.criarPerfilCliente(dto, usuario, null);
         String tokenJwt = tokenService.gerarToken(usuario, cliente.getId(), dto.nomeCompleto());
@@ -95,6 +98,7 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setRole(Role.ROLE_PRESTADOR);
 
         prestadorService.criarPerfilPrestador(dto, usuario, null);
+        emailVerificacaoService.enviarVerificacaoEmail(usuario);
 
         var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
         UUID profileId = prestador != null ? prestador.getId() : null;
@@ -159,6 +163,16 @@ public class AutenticacaoService implements UserDetailsService {
         codigoRecuperacaoRepository.delete(codigo);
 
         return tokenService.gerarTokenParaRecuperacaoDeSenha(codigo.getUsuario());
+    }
+
+    public void verificarEmail(String token) {
+        emailVerificacaoService.verificarToken(token);
+    }
+
+    public void reenviarVerificacaoEmail(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL, email));
+        emailVerificacaoService.enviarVerificacaoEmail(usuario);
     }
 
     @Transactional

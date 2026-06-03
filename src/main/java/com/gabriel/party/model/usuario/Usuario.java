@@ -76,6 +76,15 @@ public class Usuario implements UserDetails {
     @Column(name = "ativo")
     private Boolean ativo = true;
 
+    @Column(name = "email_verificado")
+    private Boolean emailVerificado = false;
+
+    @Column(name = "token_verificacao")
+    private String  tokenVerificacao;
+
+    @Column(name = "token_expiracao")
+    private LocalDateTime tokenExpiracao;
+
     @Override
     public boolean isEnabled() {
         return this.ativo;
