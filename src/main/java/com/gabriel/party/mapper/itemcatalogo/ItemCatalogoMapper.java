@@ -65,6 +65,7 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
     @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
+    @Mapping(target = "midias", source = "midias")
     ItemCatalogoResponseDTO toDto(Servico servico);
 
     @Mapping(target = "tipo", constant = "produto")
@@ -76,6 +77,7 @@ public interface ItemCatalogoMapper {
     @Mapping(target = "prestadorFotoUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "prestadorCidade", source = "prestador.endereco.cidade")
     @Mapping(target = "prestadorEstado", source = "prestador.endereco.estado")
+    @Mapping(target = "midias", source = "midias")
     ItemCatalogoResponseDTO toDto(Produto produto);
 
     default LocalDetalheDTO montarDetalhe(Local l) {
