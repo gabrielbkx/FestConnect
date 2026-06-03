@@ -47,7 +47,6 @@ public interface PedidoMapper {
     @Mapping(source = "evento.nome", target = "eventoNome")
     @Mapping(target = "fotoPrestadorUrl", source = "prestador.fotoPerfilUrl")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
-
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
 
     void updatePedidoFromOrcamento(OrcamentoRequestDTO dto, @MappingTarget Pedido pedido);
