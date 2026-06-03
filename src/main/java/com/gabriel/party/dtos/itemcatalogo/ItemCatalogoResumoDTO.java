@@ -45,5 +45,11 @@ public record ItemCatalogoResumoDTO(
         Double mediaAvaliacao,
 
         @Schema(description = "Total de avaliações do item", example = "25")
-        Long totalAvaliacoes
+        Long totalAvaliacoes,
+
+        @Schema(description = "Latitude do prestador — usado para posicionar o pin no mapa", example = "-23.5505")
+        Double latitude,
+
+        @Schema(description = "Longitude do prestador — usado para posicionar o pin no mapa", example = "-46.6333")
+        Double longitude
 ) {}
