@@ -45,6 +45,7 @@ public interface PedidoMapper {
     @Mapping(source = "statusPedido", target = "status")
     @Mapping(source = "evento.id", target = "eventoId")
     @Mapping(source = "evento.nome", target = "eventoNome")
+    @Mapping(target = "fotoPrestadorUrl", source = "prestador.fotoPerfilUrl")
     PedidoResponseDTO toResponseDTO(Pedido pedido);
 
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);

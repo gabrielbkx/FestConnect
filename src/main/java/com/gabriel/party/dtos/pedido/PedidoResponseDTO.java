@@ -25,6 +25,9 @@ public record PedidoResponseDTO(
         @Schema(description = "Nome do prestador vinculado ao pedido", example = "Buffet Silva & Cia")
         String nomePrestador,
 
+        @Schema(description = "URL da foto de perfil do prestador")
+        String fotoPrestadorUrl,
+
         @Schema(description = "WhatsApp do prestador (disponível após aceite)", example = "11987654321")
         String whatsappPrestador,
 
