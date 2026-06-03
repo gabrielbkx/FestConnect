@@ -93,7 +93,8 @@ public class PrestadorService {
 
     @Transactional(readOnly = true)
     public PrestadorResponseDTO buscarPrestadorPorId(UUID id) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
+
+        var prestador = repository.findByIdComMidias(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
         return mapper.toDto(prestador);
     }

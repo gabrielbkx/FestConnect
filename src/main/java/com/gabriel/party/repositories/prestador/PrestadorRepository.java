@@ -124,4 +124,13 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
 
     Optional<Prestador> findByUsuarioId(UUID usuarioId);
 
+    @Query("""                                                                                                                                                                                                                        
+      SELECT DISTINCT p FROM Prestador p                                                                                                                                                                                            
+      JOIN FETCH p.usuario                                                                                                                                                                                                          
+      LEFT JOIN FETCH p.itensCatalogo i                                                                                                                                                                                             
+      LEFT JOIN FETCH i.midias                                                                                                                                                                                                      
+      WHERE p.id = :id AND p.ativo = true                                                                                                                                                                                           
+      """)
+    Optional<Prestador> findByIdComMidias(@Param("id") UUID id);
+
 }
