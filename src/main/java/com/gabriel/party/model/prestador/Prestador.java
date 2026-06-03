@@ -41,6 +41,9 @@ public class Prestador {
     @Column(name = "foto_perfil_url", nullable = true)
     private String fotoPerfilUrl;
 
+    @Column(name = "foto_banner_url", nullable = true)
+    private String fotoBannerUrl;
+
     @Embedded
     private Endereco endereco;
 
