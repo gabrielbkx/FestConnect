@@ -9,6 +9,7 @@ public record ClienteResponseDTO(
         String email,
         String whatsapp,
         EnderecoDTO endereco,
-        Boolean ativo
+        Boolean ativo,
+        String fotoPerfilUrl
 ) {}
 
