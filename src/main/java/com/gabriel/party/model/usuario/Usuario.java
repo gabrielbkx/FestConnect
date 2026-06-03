@@ -87,6 +87,6 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.ativo;
+        return this.ativo && Boolean.TRUE.equals(this.emailVerificado);
     }
 }

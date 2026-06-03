@@ -75,10 +75,10 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setRole(Role.ROLE_CLIENTE);
 
         usuario = usuarioRepository.save(usuario);
-        emailVerificacaoService.enviarVerificacaoEmail(usuario);
 
         var cliente = clienteService.criarPerfilCliente(dto, usuario, null);
         String tokenJwt = tokenService.gerarToken(usuario, cliente.getId(), dto.nomeCompleto());
+        emailVerificacaoService.enviarVerificacaoEmail(usuario);
 
         return new CadastroResponseDTO(
                 usuario.getId(),
@@ -172,6 +172,7 @@ public class AutenticacaoService implements UserDetailsService {
     public void reenviarVerificacaoEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL, email));
+        if (Boolean.TRUE.equals(usuario.getEmailVerificado())) return;
         emailVerificacaoService.enviarVerificacaoEmail(usuario);
     }
 

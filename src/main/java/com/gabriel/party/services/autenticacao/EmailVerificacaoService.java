@@ -8,6 +8,9 @@ import com.gabriel.party.services.email.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -35,9 +38,20 @@ public class EmailVerificacaoService {
                 + "<p>Confirme seu endereço de e-mail clicando no link abaixo:</p>"
                 + "<p><a href=\"" + link + "\">Verificar e-mail</a></p>"
                 + "<p>Este link expira em 24 horas.</p>";
-        emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — FestConnect", corpo);
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — FestConnect", corpo);
+                }
+            });
+        } else {
+            emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — FestConnect", corpo);
+        }
     }
 
+    @Transactional
     public void verificarToken(String token) {
         Usuario usuario = usuarioRepository.findByTokenVerificacao(token)
                 .orElseThrow(() -> new AppException(ErrorCode.TOKEN_DE_VERIFICACAO_NAO_ENCONTRADO, token));

@@ -128,8 +128,8 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/reenviar-verificacao")
-    public ResponseEntity<Void> reenviarVerificacao(@RequestParam String email) {
-        autenticacaoService.reenviarVerificacaoEmail(email);
+    public ResponseEntity<Void> reenviarVerificacao(@RequestBody DadosRecuperacaoDTO dados) {
+        autenticacaoService.reenviarVerificacaoEmail(dados.email());
         return ResponseEntity.ok().build();
     }
 }
