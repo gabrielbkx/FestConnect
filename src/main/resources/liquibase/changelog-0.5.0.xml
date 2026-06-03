@@ -10,4 +10,17 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="0.5.0-verificar-email-ao-cadastrar" author="GF">
+
+        <addColumn tableName="tb_usuarios">
+
+        <column name="email_verificado" type="BOOLEAN" defaultValueBoolean="false">
+            <constraints nullable="false"/>
+        </column>
+
+        <column name="token_verificacao" type="VARCHAR(100)"/>
+        <column name="token_expiracao"   type="TIMESTAMP"/>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

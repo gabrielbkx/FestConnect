@@ -120,4 +120,16 @@ public class AutenticacaoController {
         autenticacaoService.redefinirSenha(dados);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/verificar-email")
+    public ResponseEntity<Void> verificarEmail(@RequestParam String token) {
+        autenticacaoService.verificarEmail(token);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reenviar-verificacao")
+    public ResponseEntity<Void> reenviarVerificacao(@RequestBody DadosRecuperacaoDTO dados) {
+        autenticacaoService.reenviarVerificacaoEmail(dados.email());
+        return ResponseEntity.ok().build();
+    }
 }

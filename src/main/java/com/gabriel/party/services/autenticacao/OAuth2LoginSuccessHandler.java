@@ -65,6 +65,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             String senhaAleatoria = UUID.randomUUID().toString();
             usuario.setSenha(passwordEncoder.encode(senhaAleatoria));
+            usuario.setEmailVerificado(true);
 
             Cliente cliente = new Cliente();
             cliente.setNomeCompleto(nome);
