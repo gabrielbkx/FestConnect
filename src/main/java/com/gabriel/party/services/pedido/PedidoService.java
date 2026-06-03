@@ -139,6 +139,10 @@ public class PedidoService {
     public PedidoResponseDTO enviarOrcamento(UUID pedidoId, OrcamentoRequestDTO dto, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoPrestador(pedidoId, usuarioLogado);
 
+        if (pedido.getStatusPedido() != StatusPedido.PENDENTE) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
         pedidoMapper.updatePedidoFromOrcamento(dto, pedido);
         pedido.setStatusPedido(StatusPedido.ORCADO);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
@@ -193,6 +197,11 @@ public class PedidoService {
     @Transactional
     public void cancelarPedidoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
+
+        if (pedido.getStatusPedido() == StatusPedido.ACEITO) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
         pedido.setStatusPedido(StatusPedido.CANCELADO);
         pedidoRepository.save(pedido);
 
