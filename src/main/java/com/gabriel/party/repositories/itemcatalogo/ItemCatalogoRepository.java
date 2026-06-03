@@ -30,7 +30,8 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
             WHERE i.ativo = true
               AND p.ativo = true
               AND (:busca = '' OR LOWER(i.titulo) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """,
         countQuery = """
@@ -38,7 +39,8 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
             WHERE i.ativo = true
               AND i.prestador.ativo = true
               AND (:busca = '' OR LOWER(i.titulo) LIKE LOWER(CONCAT('%', :busca, '%'))
-                               OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%')))
+                               OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
+                               OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(i.prestador.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
             """
     )
