@@ -14,6 +14,8 @@ import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
+import com.gabriel.party.model.pedido.enums.StatusPedido;
+import com.gabriel.party.repositories.pedido.PedidoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import com.gabriel.party.services.integracoes.geocoding.GeocodingService;
@@ -40,6 +42,7 @@ public class PrestadorService {
     private final GeocodingService geocodingService;
     private final UsuarioRepository usuarioRepository;
     private final ArmazenamentoService armazenamentoService;
+    private final PedidoRepository pedidoRepository;
     private final Logger logger = Logger.getLogger(PrestadorService.class.getName());
 
     public PrestadorService(PrestadorRepository repository,
@@ -47,7 +50,9 @@ public class PrestadorService {
                             CategoriaRepository categoriaRepository,
                             PrestadorMapper mapper,
                             GeocodingService geocodingService,
-                            UsuarioRepository usuarioRepository, ArmazenamentoService armazenamentoService) {
+                            UsuarioRepository usuarioRepository,
+                            ArmazenamentoService armazenamentoService,
+                            PedidoRepository pedidoRepository) {
         this.repository = repository;
         this.usuarioMapper = usuarioMapper;
         this.categoriaRepository = categoriaRepository;
@@ -55,6 +60,7 @@ public class PrestadorService {
         this.geocodingService = geocodingService;
         this.usuarioRepository = usuarioRepository;
         this.armazenamentoService = armazenamentoService;
+        this.pedidoRepository = pedidoRepository;
     }
 
     @Transactional
@@ -93,10 +99,10 @@ public class PrestadorService {
 
     @Transactional(readOnly = true)
     public PrestadorResponseDTO buscarPrestadorPorId(UUID id) {
-
         var prestador = repository.findByIdComMidias(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
-        return mapper.toDto(prestador);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.CONCLUIDO);
+        return mapper.toDto(prestador, pedidosConcluidos);
     }
 
     @Transactional
@@ -119,7 +125,8 @@ public class PrestadorService {
         }
 
         repository.save(prestador);
-        return mapper.toDto(prestador);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.CONCLUIDO);
+        return mapper.toDto(prestador, pedidosConcluidos);
     }
 
     @Transactional
