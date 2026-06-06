@@ -27,6 +27,10 @@ public class TokenService {
     }
 
     public String gerarToken(Usuario usuario, UUID profileId, String nome) {
+        return gerarToken(usuario, profileId, nome, null);
+    }
+
+    public String gerarToken(Usuario usuario, UUID profileId, String nome, String fotoPerfilUrl) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(segredo);
 
@@ -42,6 +46,9 @@ public class TokenService {
             }
             if (nome != null && !nome.isBlank()) {
                 builder = builder.withClaim("nome", nome);
+            }
+            if (fotoPerfilUrl != null && !fotoPerfilUrl.isBlank()) {
+                builder = builder.withClaim("fotoPerfilUrl", fotoPerfilUrl);
             }
 
             return builder.sign(algorithm);
