@@ -113,8 +113,7 @@ public class AutenticacaoService implements UserDetailsService {
 
     private void validarEmailExistente(String email) {
         if (usuarioRepository.existsByEmail(email)) {
-            throw new AppException(ErrorCode.USUARIO_JA_EXISTE_POR_EMAIL,
-                    "Já existe um usuário cadastrado com esse email", email);
+            throw new AppException(ErrorCode.USUARIO_JA_EXISTE_POR_EMAIL, email);
         }
     }
 

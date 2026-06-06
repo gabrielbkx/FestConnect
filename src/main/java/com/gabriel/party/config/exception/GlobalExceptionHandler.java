@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 errorCode.getStatus().value(),
                 errorCode.getStatus().getReasonPhrase(),
-                errorCode.getMessage(),
+                e.getMessage(),
                 request.getRequestURI(),
                 errorCode.getCode()
         );
