@@ -193,6 +193,27 @@ public class EmailTemplates {
                 rodape
         );
     }
+    public static String orcamentoRecusadoPeloClienteParaPrestador(Pedido pedido) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Valor orçado", "R$ " + pedido.getValor());
+
+        String rodape = caixa("aviso",
+                "A data voltou a ficar disponível na sua agenda. Continue enviando orçamentos para novos pedidos.");
+
+        return construir(
+                "Orçamento recusado",
+                "Olá, " + nomePrestador + ".",
+                "<strong>" + nomeCliente + "</strong> recusou o orçamento enviado para o evento abaixo.",
+                detalhes,
+                rodape
+        );
+    }
+
     public static String midiaRemovidaPorModeracao(String nomePrestador, String tipoMidia, String tituloItem) {
         String detalhes =
                 linha("Tipo de mídia", tipoMidia) +

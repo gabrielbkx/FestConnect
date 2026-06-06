@@ -206,6 +206,24 @@ public class PedidoService {
     }
 
     @Transactional
+    public void recusarOrcamentoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
+        Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
+
+        if (pedido.getStatusPedido() != StatusPedido.ORCADO) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
+        pedido.setStatusPedido(StatusPedido.RECUSADO);
+        pedidoRepository.save(pedido);
+
+        emailService.enviarAposCommit(
+                pedido.getPrestador().getUsuario().getEmail(),
+                "FestConnect - Orçamento recusado",
+                EmailTemplates.orcamentoRecusadoPeloClienteParaPrestador(pedido)
+        );
+    }
+
+    @Transactional
     public void cancelarPedidoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
 

@@ -151,4 +151,19 @@ public class PedidoController {
         pedidoService.cancelarPedidoPeloCliente(id, usuario);
         return ResponseEntity.noContent().build();
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Orçamento recusado e prestador notificado por e-mail"),
+            @ApiResponse(responseCode = "400", description = "Pedido não está com status ORCADO"),
+            @ApiResponse(responseCode = "403", description = "Pedido não pertence a este cliente"),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    @Operation(summary = "Recusar orçamento", description = "O cliente recusa o orçamento enviado pelo prestador. Status muda para RECUSADO. Exige status atual = ORCADO.")
+    @PutMapping("/{id}/recusar-orcamento")
+    @PreAuthorize("hasRole('ROLE_CLIENTE')")
+    public ResponseEntity<Void> recusarOrcamento(@PathVariable UUID id,
+                                                 @AuthenticationPrincipal Usuario usuario) {
+        pedidoService.recusarOrcamentoPeloCliente(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
 }
