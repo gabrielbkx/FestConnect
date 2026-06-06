@@ -193,6 +193,41 @@ public class EmailTemplates {
                 rodape
         );
     }
+    public static String midiaRemovidaPorModeracao(String nomePrestador, String tipoMidia, String tituloItem) {
+        String detalhes =
+                linha("Tipo de mídia", tipoMidia) +
+                linha("Item associado", tituloItem);
+
+        String rodape = caixa("aviso",
+                "A remoção foi feita por nossa equipe de moderação por não estar de acordo com as diretrizes da plataforma. " +
+                "Em caso de dúvidas, entre em contato com o suporte do FestConnect.");
+
+        return construir(
+                "Conteúdo removido por moderação",
+                "Olá, " + nomePrestador + ".",
+                "Uma mídia da sua vitrine foi removida pela equipe de moderação do FestConnect.",
+                detalhes,
+                rodape
+        );
+    }
+
+    public static String itemRemovidoPorModeracao(String nomePrestador, String tituloItem) {
+        String detalhes =
+                linha("Item removido", tituloItem);
+
+        String rodape = caixa("aviso",
+                "A remoção foi feita por nossa equipe de moderação por não estar de acordo com as diretrizes da plataforma. " +
+                "Em caso de dúvidas, entre em contato com o suporte do FestConnect.");
+
+        return construir(
+                "Item removido por moderação",
+                "Olá, " + nomePrestador + ".",
+                "Um item do seu catálogo foi removido pela equipe de moderação do FestConnect.",
+                detalhes,
+                rodape
+        );
+    }
+
     // --- Construtores internos ---
 
     private static String construir(String titulo, String saudacao, String mensagem, String linhasDetalhes, String rodapeExtra) {
