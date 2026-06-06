@@ -40,12 +40,12 @@ public class PedidoExpiracaoJob {
             pedido.setStatusPedido(StatusPedido.EXPIRADO);
             pedidoRepository.save(pedido);
 
-            emailService.enviarEmail(
+            emailService.enviarAposCommit(
                     pedido.getCliente().getUsuario().getEmail(),
                     "FestConnect - Pedido encerrado",
                     EmailTemplates.prestadorNaoRespondeuParaCliente(pedido)
             );
-            emailService.enviarEmail(
+            emailService.enviarAposCommit(
                     pedido.getPrestador().getUsuario().getEmail(),
                     "FestConnect - Prazo de resposta expirado",
                     EmailTemplates.prazoPerdidoParaPrestador(pedido)
@@ -64,13 +64,13 @@ public class PedidoExpiracaoJob {
             pedido.setStatusPedido(StatusPedido.EXPIRADO);
             pedidoRepository.save(pedido);
 
-            emailService.enviarEmail(
+            emailService.enviarAposCommit(
                     pedido.getCliente().getUsuario().getEmail(),
                     "FestConnect - Orçamento expirado",
                     EmailTemplates.orcamentoExpiradoParaCliente(pedido)
             );
 
-            emailService.enviarEmail(
+            emailService.enviarAposCommit(
                     pedido.getPrestador().getUsuario().getEmail(),
                     "FestConnect - Reserva liberada",
                     EmailTemplates.reservaLiberadaParaPrestador(pedido)
