@@ -74,7 +74,7 @@ class PedidoExpiracaoJobTest {
         when(pedidoRepository.findByStatusPedidoAndValidadeOrcamentoBefore(eq(StatusPedido.ORCADO), any()))
                 .thenReturn(List.of(pedido));
 
-        scheduler.expirarOrcamentosVencidos();
+        scheduler.expirarPedidosVencidos();
 
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         verify(pedidoRepository).save(pedido);
@@ -87,7 +87,7 @@ class PedidoExpiracaoJobTest {
         when(pedidoRepository.findByStatusPedidoAndValidadeOrcamentoBefore(eq(StatusPedido.ORCADO), any()))
                 .thenReturn(List.of());
 
-        scheduler.expirarOrcamentosVencidos();
+        scheduler.expirarPedidosVencidos();
 
         verify(pedidoRepository, never()).save(any());
         verify(emailService, never()).enviarEmail(any(), any(), any());
@@ -111,11 +111,29 @@ class PedidoExpiracaoJobTest {
         when(pedidoRepository.findByStatusPedidoAndValidadeOrcamentoBefore(eq(StatusPedido.ORCADO), any()))
                 .thenReturn(List.of(pedido, segundoPedido));
 
-        scheduler.expirarOrcamentosVencidos();
+        scheduler.expirarPedidosVencidos();
 
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         assertThat(segundoPedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         verify(pedidoRepository, times(2)).save(any());
-        verify(emailService, times(2)).enviarEmail(any(), any(), any());
+        verify(emailService, times(4)).enviarEmail(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve expirar pedidos PENDENTE sem resposta e notificar cliente e prestador")
+    void deveExpirarPendentesSemResposta() {
+        pedido.setStatusPedido(StatusPedido.PENDENTE);
+        pedido.setValidadeOrcamento(null);
+        pedido.setPrazoResposta(LocalDateTime.now().minusHours(1));
+
+        when(pedidoRepository.findByStatusPedidoAndPrazoRespostaBefore(eq(StatusPedido.PENDENTE), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
+        verify(pedidoRepository).save(pedido);
+        verify(emailService).enviarEmail(eq("cliente@test.com"), any(), any());
+        verify(emailService).enviarEmail(eq("prestador@test.com"), any(), any());
     }
 }

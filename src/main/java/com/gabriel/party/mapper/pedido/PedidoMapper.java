@@ -23,6 +23,7 @@ public interface PedidoMapper {
     @Mapping(target = "validadeOrcamento", ignore = true)
     @Mapping(target = "dataHoraCriacao", ignore = true)
     @Mapping(target = "dataHoraAtualizacao", ignore = true)
+    @Mapping(target = "prazoResposta", ignore = true)
     @Mapping(target = "statusPedido", constant = "PENDENTE")
     @Mapping(source = "cliente", target = "cliente")
     @Mapping(source = "prestador", target = "prestador")

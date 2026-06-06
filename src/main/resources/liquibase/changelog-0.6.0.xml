@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.6.0-pedido-prazo-resposta" author="GF">
+        <addColumn tableName="tb_pedidos">
+            <column name="prazo_resposta" type="TIMESTAMP"
+                    remarks="Prazo limite para o prestador responder ao pedido PENDENTE. Calculado pelo sistema: min(criacao + Nh, dataEvento). Nulo em pedidos legados."/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

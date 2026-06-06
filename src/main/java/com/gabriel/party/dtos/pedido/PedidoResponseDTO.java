@@ -67,6 +67,9 @@ public record PedidoResponseDTO(
         @Schema(description = "Data limite para aceitar o orçamento. Após esta data o pedido é automaticamente EXPIRADO.")
         LocalDateTime validadeOrcamento,
 
+        @Schema(description = "Prazo limite para o prestador responder ao pedido PENDENTE. Após esta data o pedido é automaticamente EXPIRADO. Nulo em pedidos legados.")
+        LocalDateTime prazoResposta,
+
         @Schema(description = "Data e hora de criação do pedido")
         LocalDateTime dataHoraCriacao,
 

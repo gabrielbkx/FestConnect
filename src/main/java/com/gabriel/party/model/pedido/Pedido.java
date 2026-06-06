@@ -50,6 +50,9 @@ public class Pedido {
     @Column(name = "validade_orcamento")
     private LocalDateTime validadeOrcamento;
 
+    @Column(name = "prazo_resposta")
+    private LocalDateTime prazoResposta;
+
     @Column(name = "status_pedido", nullable = false)
     @Enumerated(EnumType.STRING)
     private StatusPedido statusPedido;

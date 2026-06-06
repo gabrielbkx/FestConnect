@@ -20,9 +20,11 @@ import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.email.EmailService;
 import com.gabriel.party.services.email.EmailTemplates;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,6 +38,7 @@ public class PedidoService {
     private final EventoRepository eventoRepository;
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
+    private final long prazoRespostaHoras;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ClienteRepository clienteRepository,
@@ -43,7 +46,9 @@ public class PedidoService {
                          ItemCatalogoRepository itemCatalogoRepository,
                          EventoRepository eventoRepository,
                          PedidoMapper pedidoMapper,
-                         EmailService emailService) {
+                         EmailService emailService,
+                         @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras) {
+
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
         this.prestadorRepository = prestadorRepository;
@@ -51,6 +56,7 @@ public class PedidoService {
         this.eventoRepository = eventoRepository;
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
+        this.prazoRespostaHoras = prazoRespostaHoras;
     }
 
     @Transactional
@@ -79,6 +85,7 @@ public class PedidoService {
         }
 
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
+        pedido.setPrazoResposta(calcularPrazo(pedido.getDataEvento()));
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(
@@ -142,8 +149,12 @@ public class PedidoService {
         if (pedido.getStatusPedido() != StatusPedido.PENDENTE) {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
+        if (pedido.getPrazoResposta() != null && pedido.getPrazoResposta().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.PEDIDO_PRAZO_EXPIRADO);
+        }
 
         pedidoMapper.updatePedidoFromOrcamento(dto, pedido);
+        pedido.setValidadeOrcamento(calcularPrazo(pedido.getDataEvento()));
         pedido.setStatusPedido(StatusPedido.ORCADO);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
 
@@ -237,4 +248,10 @@ public class PedidoService {
         }
         return pedido;
     }
+
+    private LocalDateTime calcularPrazo(LocalDateTime dataEvento) {
+        LocalDateTime prazoPadrao = LocalDateTime.now().plusHours(prazoRespostaHoras);
+        return prazoPadrao.isBefore(dataEvento) ? prazoPadrao : dataEvento;
+    }
+
 }

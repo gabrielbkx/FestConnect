@@ -134,7 +134,65 @@ public class EmailTemplates {
                 rodape
         );
     }
+    public static String prestadorNaoRespondeuParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                        linha("Tipo de evento", pedido.getTipoEvento()) +
+                        linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
 
+        String rodape = caixa("aviso",
+                "Não desanime! Você pode enviar o pedido para outros prestadores disponíveis na plataforma FestConnect.");
+
+        return construir(
+                "Prestador não respondeu a tempo",
+                "Olá, " + nomeCliente + ".",
+                "Infelizmente <strong>" + nomePrestador + "</strong> não respondeu ao seu pedido dentro do prazo, e ele foi encerrado automaticamente.",
+                detalhes,
+                rodape
+        );
+    }
+    public static String prazoPerdidoParaPrestador(Pedido pedido) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                        linha("Tipo de evento", pedido.getTipoEvento()) +
+                        linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                        linha("Local", pedido.getLocalEvento());
+
+        String rodape = caixa("aviso",
+                "Responder rápido aumenta suas chances de fechar negócio. Fique de olho nos novos pedidos.");
+
+        return construir(
+                "Você perdeu o prazo de um pedido",
+                "Olá, " + nomePrestador + ".",
+                "O prazo para responder ao pedido de <strong>" + nomeCliente + "</strong> expirou, e ele foi encerrado automaticamente.",
+                detalhes,
+                rodape
+        );
+    }
+    public static String reservaLiberadaParaPrestador(Pedido pedido) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                        linha("Tipo de evento", pedido.getTipoEvento()) +
+                        linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                        linha("Valor orçado", "R$ " + pedido.getValor());
+
+        String rodape = caixa("aviso",
+                "A data voltou a ficar disponível na sua agenda. Continue enviando orçamentos para novos pedidos.");
+
+        return construir(
+                "Orçamento não aceito no prazo",
+                "Olá, " + nomePrestador + ".",
+                "<strong>" + nomeCliente + "</strong> não aceitou o seu orçamento dentro do prazo de validade, e a data foi liberada na sua agenda.",
+                detalhes,
+                rodape
+        );
+    }
     // --- Construtores internos ---
 
     private static String construir(String titulo, String saudacao, String mensagem, String linhasDetalhes, String rodapeExtra) {
