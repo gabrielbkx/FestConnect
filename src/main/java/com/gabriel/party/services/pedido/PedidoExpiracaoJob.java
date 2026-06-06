@@ -26,10 +26,38 @@ public class PedidoExpiracaoJob {
 
     @Scheduled(fixedRate = 3_600_000)
     @Transactional
-    public void expirarOrcamentosVencidos() {
+    public void expirarPedidosVencidos() {
         var agora = LocalDateTime.now();
-        var aExpirar = pedidoRepository.findByStatusPedidoAndValidadeOrcamentoBefore(StatusPedido.ORCADO, agora);
+        expirarPendentesSemResposta(agora);
+        expirarOrcamentosNaoAceitos(agora);
+    }
 
+    private void expirarPendentesSemResposta(LocalDateTime agora) {
+        var aExpirar = pedidoRepository.findByStatusPedidoAndPrazoRespostaBefore(StatusPedido.PENDENTE, agora);
+        if (aExpirar.isEmpty()) return;
+
+        aExpirar.forEach(pedido -> {
+            pedido.setStatusPedido(StatusPedido.EXPIRADO);
+            pedidoRepository.save(pedido);
+
+            emailService.enviarEmail(
+                    pedido.getCliente().getUsuario().getEmail(),
+                    "FestConnect - Pedido encerrado",
+                    EmailTemplates.prestadorNaoRespondeuParaCliente(pedido)
+            );
+            emailService.enviarEmail(
+                    pedido.getPrestador().getUsuario().getEmail(),
+                    "FestConnect - Prazo de resposta expirado",
+                    EmailTemplates.prazoPerdidoParaPrestador(pedido)
+            );
+        });
+
+
+        logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " pedido(s) PENDENTE expirado(s) por falta de resposta.");
+    }
+
+    private void expirarOrcamentosNaoAceitos(LocalDateTime agora) {
+        var aExpirar = pedidoRepository.findByStatusPedidoAndValidadeOrcamentoBefore(StatusPedido.ORCADO, agora);
         if (aExpirar.isEmpty()) return;
 
         aExpirar.forEach(pedido -> {
@@ -41,8 +69,14 @@ public class PedidoExpiracaoJob {
                     "FestConnect - Orçamento expirado",
                     EmailTemplates.orcamentoExpiradoParaCliente(pedido)
             );
+
+            emailService.enviarEmail(
+                    pedido.getPrestador().getUsuario().getEmail(),
+                    "FestConnect - Reserva liberada",
+                    EmailTemplates.reservaLiberadaParaPrestador(pedido)
+            );
         });
 
-        logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " orcamento(s) expirado(s) e notificados.");
+        logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " orcamento(s) ORCADO expirado(s) por falta de aceite.");
     }
 }
