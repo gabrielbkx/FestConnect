@@ -78,7 +78,7 @@ class PedidoExpiracaoJobTest {
 
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         verify(pedidoRepository).save(pedido);
-        verify(emailService).enviarEmail(eq("cliente@test.com"), any(), any());
+        verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
     }
 
     @Test
@@ -90,7 +90,7 @@ class PedidoExpiracaoJobTest {
         scheduler.expirarPedidosVencidos();
 
         verify(pedidoRepository, never()).save(any());
-        verify(emailService, never()).enviarEmail(any(), any(), any());
+        verify(emailService, never()).enviarAposCommit(any(), any(), any());
     }
 
     @Test
@@ -116,7 +116,7 @@ class PedidoExpiracaoJobTest {
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         assertThat(segundoPedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         verify(pedidoRepository, times(2)).save(any());
-        verify(emailService, times(4)).enviarEmail(any(), any(), any());
+        verify(emailService, times(4)).enviarAposCommit(any(), any(), any());
     }
 
     @Test
@@ -133,7 +133,7 @@ class PedidoExpiracaoJobTest {
 
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
         verify(pedidoRepository).save(pedido);
-        verify(emailService).enviarEmail(eq("cliente@test.com"), any(), any());
-        verify(emailService).enviarEmail(eq("prestador@test.com"), any(), any());
+        verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
+        verify(emailService).enviarAposCommit(eq("prestador@test.com"), any(), any());
     }
 }
