@@ -10,6 +10,8 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.logging.Logger;
 
@@ -43,6 +45,24 @@ public class EmailService {
             logger.info("Email enviado para: " + destinatario + " | " + assunto);
         } catch (MessagingException | MailException e) {
             logger.severe("Falha ao enviar email para " + destinatario + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envia o e-mail somente após o commit da transação atual, evitando notificar
+     * o destinatário caso a transação sofra rollback. Fora de uma transação ativa,
+     * envia imediatamente.
+     */
+    public void enviarAposCommit(String destinatario, String assunto, String corpoHtml) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    enviarEmail(destinatario, assunto, corpoHtml);
+                }
+            });
+        } else {
+            enviarEmail(destinatario, assunto, corpoHtml);
         }
     }
 }

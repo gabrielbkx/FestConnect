@@ -13,6 +13,8 @@ import com.gabriel.party.repositories.avaliacao.EstatisticasItemAvaliacao;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
+import com.gabriel.party.services.email.EmailService;
+import com.gabriel.party.services.email.EmailTemplates;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,17 +33,20 @@ public class ItemCatalogoService {
     private final CategoriaRepository categoriaRepository;
     private final ItemCatalogoMapper itemCatalogoMapper;
     private final AvaliacaoRepository avaliacaoRepository;
+    private final EmailService emailService;
 
     public ItemCatalogoService(ItemCatalogoRepository itemCatalogoRepository,
             PrestadorRepository prestadorRepository,
             CategoriaRepository categoriaRepository,
             ItemCatalogoMapper itemCatalogoMapper,
-            AvaliacaoRepository avaliacaoRepository) {
+            AvaliacaoRepository avaliacaoRepository,
+            EmailService emailService) {
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.prestadorRepository = prestadorRepository;
         this.categoriaRepository = categoriaRepository;
         this.itemCatalogoMapper = itemCatalogoMapper;
         this.avaliacaoRepository = avaliacaoRepository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -150,6 +155,25 @@ public class ItemCatalogoService {
                 .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, id.toString()));
         itemCatalogo.setAtivo(false);
         itemCatalogoRepository.save(itemCatalogo);
+    }
+
+    /**
+     * Remoção por moderação: o admin inativa (soft-delete) o item de qualquer
+     * prestador, sem checagem de dono. Notifica o prestador dono por e-mail após o commit.
+     */
+    @Transactional
+    public void removerComoModerador(UUID id) {
+        var itemCatalogo = itemCatalogoRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, id.toString()));
+
+        itemCatalogo.setAtivo(false);
+        itemCatalogoRepository.save(itemCatalogo);
+
+        Prestador prestador = itemCatalogo.getPrestador();
+        emailService.enviarAposCommit(
+                prestador.getUsuario().getEmail(),
+                "Item removido por moderação — FestConnect",
+                EmailTemplates.itemRemovidoPorModeracao(prestador.getNomeCompleto(), itemCatalogo.getTitulo()));
     }
 
     @Transactional(readOnly = true)

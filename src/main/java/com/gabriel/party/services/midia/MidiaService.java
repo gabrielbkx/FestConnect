@@ -10,6 +10,8 @@ import com.gabriel.party.model.midia.enums.TipoMidia;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.midia.MidiaRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
+import com.gabriel.party.services.email.EmailService;
+import com.gabriel.party.services.email.EmailTemplates;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -28,17 +30,20 @@ public class MidiaService {
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final MidiaMapper mapper;
     private final ArmazenamentoService armazenamentoService;
+    private final EmailService emailService;
 
     public MidiaService(MidiaRepository repository,
                         PrestadorRepository prestadorRepository,
                         ItemCatalogoRepository itemCatalogoRepository,
                         MidiaMapper mapper,
-                        ArmazenamentoService armazenamentoService) {
+                        ArmazenamentoService armazenamentoService,
+                        EmailService emailService) {
         this.repository = repository;
         this.prestadorRepository = prestadorRepository;
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.mapper = mapper;
         this.armazenamentoService = armazenamentoService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -134,5 +139,27 @@ public class MidiaService {
 
         armazenamentoService.deletaMidia(midia.getUrl());
         repository.delete(midia);
+    }
+
+    /**
+     * Remoção por moderação: o admin deleta a mídia de qualquer prestador,
+     * sem checagem de dono. Notifica o prestador dono por e-mail após o commit.
+     */
+    @Transactional
+    public void deletarComoModerador(UUID id) {
+        var midia = repository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.MIDIA_NAO_ENCONTRADA, id.toString()));
+
+        var prestador = midia.getItemCatalogo().getPrestador();
+        var tituloItem = midia.getItemCatalogo().getTitulo();
+        var tipoMidia = midia.getTipo() != null ? midia.getTipo().name() : "Mídia";
+
+        armazenamentoService.deletaMidia(midia.getUrl());
+        repository.delete(midia);
+
+        emailService.enviarAposCommit(
+                prestador.getUsuario().getEmail(),
+                "Conteúdo removido por moderação — FestConnect",
+                EmailTemplates.midiaRemovidaPorModeracao(prestador.getNomeCompleto(), tipoMidia, tituloItem));
     }
 }
