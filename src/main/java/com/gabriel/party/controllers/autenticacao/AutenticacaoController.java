@@ -60,15 +60,16 @@ public class AutenticacaoController {
 
             UUID profileId = null;
             String nomeCompleto = null;
+            String fotoPerfilUrl = null;
             if (usuario.getRole() == Role.ROLE_CLIENTE) {
                 var cliente = clienteRepository.findByUsuarioId(usuario.getId()).orElse(null);
-                if (cliente != null) { profileId = cliente.getId(); nomeCompleto = cliente.getNomeCompleto(); }
+                if (cliente != null) { profileId = cliente.getId(); nomeCompleto = cliente.getNomeCompleto(); fotoPerfilUrl = cliente.getFotoPerfilUrl(); }
             } else if (usuario.getRole() == Role.ROLE_PRESTADOR) {
                 var prestador = prestadorRepository.findByUsuarioId(usuario.getId()).orElse(null);
-                if (prestador != null) { profileId = prestador.getId(); nomeCompleto = prestador.getNomeCompleto(); }
+                if (prestador != null) { profileId = prestador.getId(); nomeCompleto = prestador.getNomeCompleto(); fotoPerfilUrl = prestador.getFotoPerfilUrl(); }
             }
 
-            var tokenJwt = tokenService.gerarToken(usuario, profileId, nomeCompleto);
+            var tokenJwt = tokenService.gerarToken(usuario, profileId, nomeCompleto, fotoPerfilUrl);
             return ResponseEntity.ok(new TokenResponseDTO(tokenJwt));
 
         } catch (BadCredentialsException e) {
