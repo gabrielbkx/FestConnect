@@ -6,9 +6,11 @@ import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.evento.EventoMapper;
 import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.evento.Evento;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
+import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,16 +33,19 @@ public class SugestaoService {
     private final EventoService eventoService;
     private final CategoriaRepository categoriaRepository;
     private final PrestadorRepository prestadorRepository;
+    private final ItemCatalogoRepository itemCatalogoRepository;
     private final EventoMapper eventoMapper;
     private final Random random = new Random();
 
     public SugestaoService(EventoService eventoService,
                            CategoriaRepository categoriaRepository,
                            PrestadorRepository prestadorRepository,
+                           ItemCatalogoRepository itemCatalogoRepository,
                            EventoMapper eventoMapper) {
         this.eventoService = eventoService;
         this.categoriaRepository = categoriaRepository;
         this.prestadorRepository = prestadorRepository;
+        this.itemCatalogoRepository = itemCatalogoRepository;
         this.eventoMapper = eventoMapper;
     }
 
@@ -91,7 +96,15 @@ public class SugestaoService {
         Collections.shuffle(topJanela, random);
 
         List<Prestador> selecionados = topJanela.stream().limit(limiteFinal).toList();
-        return eventoMapper.toSugestaoList(selecionados);
+
+        return selecionados.stream()
+                .map(p -> {
+                    ItemCatalogo item = itemCatalogoRepository
+                            .findFirstByPrestadorIdAndCategoriaIdAndAtivoTrue(p.getId(), categoria.getId())
+                            .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, p.getId().toString()));
+                    return eventoMapper.toSugestaoDTO(p, item);
+                })
+                .toList();
     }
 
     private double mediaAvaliacao(Prestador prestador) {

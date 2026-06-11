@@ -11,6 +11,9 @@ public record PrestadorSugestaoDTO(
         @Schema(description = "ID do prestador")
         UUID id,
 
+        @Schema(description = "ID do item do catálogo desta categoria (usado para orçamento em lote)")
+        UUID itemCatalogoId,
+
         @Schema(description = "Nome do prestador")
         String nomeCompleto,
 

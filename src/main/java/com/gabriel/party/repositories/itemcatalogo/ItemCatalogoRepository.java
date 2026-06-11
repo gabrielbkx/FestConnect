@@ -20,6 +20,8 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
 
     Optional<ItemCatalogo> findByIdAndAtivoTrue(UUID id);
 
+    Optional<ItemCatalogo> findFirstByPrestadorIdAndCategoriaIdAndAtivoTrue(UUID prestadorId, UUID categoriaId);
+
     boolean existsByCategoriaIdAndAtivoTrue(UUID categoriaId);
 
 

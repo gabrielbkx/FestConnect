@@ -6,6 +6,7 @@ import com.gabriel.party.dtos.evento.PrestadorSugestaoDTO;
 import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.evento.Evento;
+import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.prestador.Prestador;
 import org.mapstruct.Mapper;
@@ -58,13 +59,16 @@ public interface EventoMapper {
 
     List<EventoResponseDTO> toResponseList(List<Evento> eventos);
 
-    @Mapping(target = "cidade", source = "endereco.cidade")
-    @Mapping(target = "bairro", source = "endereco.bairro")
+    @Mapping(target = "cidade", source = "prestador.endereco.cidade")
+    @Mapping(target = "bairro", source = "prestador.endereco.bairro")
+    @Mapping(target = "id", source = "prestador.id")
+    @Mapping(target = "nomeCompleto", source = "prestador.nomeCompleto")
+    @Mapping(target = "fotoPerfilUrl", source = "prestador.fotoPerfilUrl")
+    @Mapping(target = "descricao", source = "prestador.descricao")
+    @Mapping(target = "itemCatalogoId", source = "itemCatalogo.id")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
     @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
-    PrestadorSugestaoDTO toSugestaoDTO(Prestador prestador);
-
-    List<PrestadorSugestaoDTO> toSugestaoList(List<Prestador> prestadores);
+    PrestadorSugestaoDTO toSugestaoDTO(Prestador prestador, ItemCatalogo itemCatalogo);
 
     default Integer contarPedidos(Collection<Pedido> pedidos) {
         return pedidos == null ? 0 : pedidos.size();
