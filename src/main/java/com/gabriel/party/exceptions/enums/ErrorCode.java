@@ -79,7 +79,9 @@ public enum ErrorCode {
 
     // Erros de Evento
     EVENTO_NAO_ENCONTRADO("evento_nao_encontrado", HttpStatus.NOT_FOUND, "Evento '%id%' não encontrado."),
-    EVENTO_SEM_PERMISSAO("evento_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este evento.")
+    EVENTO_SEM_PERMISSAO("evento_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este evento."),
+    PEDIDO_LOTE_LIMITE_CATEGORIA("pedido_lote_limite_categoria", HttpStatus.BAD_REQUEST, "A categoria '%categoria%' ultrapassou o limite de 3 prestadores por lote."),
+    PEDIDO_LOTE_DUPLICADO("pedido_lote_duplicado", HttpStatus.CONFLICT, "Já existe um pedido pendente ou orçado para o prestador '%prestador%' com este item neste evento.")
 
     ;
 

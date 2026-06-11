@@ -5,6 +5,9 @@ import com.gabriel.party.dtos.evento.EventoResponseDTO;
 import com.gabriel.party.dtos.evento.EventoStatusUpdateDTO;
 import com.gabriel.party.dtos.evento.PrestadorSugestaoDTO;
 import com.gabriel.party.dtos.evento.TipoEventoDTO;
+import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
+import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
+import com.gabriel.party.services.pedido.PedidoService;
 import com.gabriel.party.model.evento.enums.StatusEvento;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.evento.EventoService;
@@ -34,13 +37,16 @@ public class EventoController {
     private final EventoService eventoService;
     private final EventoTemplateService eventoTemplateService;
     private final SugestaoService sugestaoService;
+    private final PedidoService pedidoService;
 
     public EventoController(EventoService eventoService,
                             EventoTemplateService eventoTemplateService,
-                            SugestaoService sugestaoService) {
+                            SugestaoService sugestaoService,
+                            PedidoService pedidoService) {
         this.eventoService = eventoService;
         this.eventoTemplateService = eventoTemplateService;
         this.sugestaoService = sugestaoService;
+        this.pedidoService = pedidoService;
     }
 
     @ApiResponses(value = {
@@ -138,6 +144,25 @@ public class EventoController {
                                         @AuthenticationPrincipal Usuario usuario) {
         eventoService.deletar(id, usuario);
         return ResponseEntity.noContent().build();
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Pedidos criados com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Limite de 3 prestadores por categoria excedido"),
+            @ApiResponse(responseCode = "409", description = "Pedido duplicado para algum dos itens"),
+            @ApiResponse(responseCode = "403", description = "Evento não pertence ao cliente autenticado"),
+            @ApiResponse(responseCode = "404", description = "Evento, prestador ou item não encontrado")
+    })
+    @Operation(summary = "Orçar evento em lote",
+            description = "Cria pedidos para todos os prestadores selecionados de uma só vez. " +
+                    "Máximo de 3 prestadores por categoria. Transação única: se um item falhar, nenhum pedido é criado.")
+    @PostMapping("/{id}/orcar")
+    @PreAuthorize("hasRole('ROLE_CLIENTE')")
+    public ResponseEntity<List<PedidoResponseDTO>> orcarEmLote(@PathVariable UUID id,
+                                                               @RequestBody @Valid OrcamentoLoteRequestDTO dto,
+                                                               @AuthenticationPrincipal Usuario usuario) {
+        List<PedidoResponseDTO> pedidos = pedidoService.criarPedidosEmLote(id, dto, usuario);
+        return ResponseEntity.status(HttpStatus.CREATED).body(pedidos);
     }
 
     @ApiResponses(value = {

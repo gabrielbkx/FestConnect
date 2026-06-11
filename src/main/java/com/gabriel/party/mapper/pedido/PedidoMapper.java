@@ -13,6 +13,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
+import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public interface PedidoMapper {
@@ -51,4 +52,19 @@ public interface PedidoMapper {
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
 
     void updatePedidoFromOrcamento(OrcamentoRequestDTO dto, @MappingTarget Pedido pedido);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "valor", ignore = true)
+    @Mapping(target = "detalhesOrcamento", ignore = true)
+    @Mapping(target = "validadeOrcamento", ignore = true)
+    @Mapping(target = "dataHoraCriacao", ignore = true)
+    @Mapping(target = "dataHoraAtualizacao", ignore = true)
+    @Mapping(target = "prazoResposta", ignore = true)
+    @Mapping(target = "statusPedido", constant = "PENDENTE")
+    @Mapping(source = "evento.dataEvento", target = "dataEvento")
+    @Mapping(source = "evento.numeroConvidados", target = "numeroConvidados")
+    @Mapping(target = "localEvento",  expression = "java(evento.getEndereco() + \", \" + evento.getBairro() + \" - \" + evento.getCidade())")
+    @Mapping(target = "tipoEvento",   expression = "java(evento.getTipoEvento().name())")
+    @Mapping(target = "descricao",    expression = "java(evento.getObservacoes() != null ? evento.getObservacoes() : \"\")")
+    Pedido toEntityFromEvento(Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo, Evento evento);
 }

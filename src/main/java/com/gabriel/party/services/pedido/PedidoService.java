@@ -1,5 +1,7 @@
 package com.gabriel.party.services.pedido;
 
+import com.gabriel.party.dtos.pedido.OrcamentoLoteItemDTO;
+import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
@@ -25,8 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
@@ -239,6 +244,73 @@ public class PedidoService {
                 "FestConnect - Pedido cancelado",
                 EmailTemplates.pedidoCanceladoParaPrestador(pedido)
         );
+    }
+
+    @Transactional
+    public List<PedidoResponseDTO> criarPedidosEmLote(UUID eventoId, OrcamentoLoteRequestDTO dto, Usuario usuarioLogado) {
+        Cliente cliente = clienteRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioLogado.getId().toString()));
+
+        Evento evento = eventoRepository.findById(eventoId)
+                .orElseThrow(() -> new AppException(ErrorCode.EVENTO_NAO_ENCONTRADO, eventoId.toString()));
+
+        if (!evento.getCliente().getId().equals(cliente.getId())) {
+            throw new AppException(ErrorCode.EVENTO_SEM_PERMISSAO);
+        }
+
+        List<StatusPedido> statusAtivos = List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO);
+
+        // carrega e valida cada item antes de salvar qualquer um
+        record ItemResolvido(Prestador prestador, com.gabriel.party.model.itemcatalogo.ItemCatalogo item) {}
+        List<ItemResolvido> resolvidos = new ArrayList<>();
+
+        for (OrcamentoLoteItemDTO itemDTO : dto.itens()) {
+            Prestador prestador = prestadorRepository.findById(itemDTO.prestadorId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, itemDTO.prestadorId().toString()));
+
+            com.gabriel.party.model.itemcatalogo.ItemCatalogo item = itemCatalogoRepository.findByIdAndAtivoTrue(itemDTO.itemCatalogoId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, itemDTO.itemCatalogoId().toString()));
+
+            if (!item.getPrestador().getId().equals(prestador.getId())) {
+                throw new AppException(ErrorCode.REGRA_NEGOCIO_VIOLADA, "O item solicitado não pertence ao prestador informado.");
+            }
+
+            if (pedidoRepository.existsByPrestadorIdAndItemCatalogoIdAndEventoIdAndStatusPedidoIn(
+                    prestador.getId(), item.getId(), eventoId, statusAtivos)) {
+                throw new AppException(ErrorCode.PEDIDO_LOTE_DUPLICADO, prestador.getNomeCompleto());
+            }
+
+            resolvidos.add(new ItemResolvido(prestador, item));
+        }
+
+        // valida max 3 por categoria
+        Map<String, Long> porCategoria = resolvidos.stream()
+                .collect(Collectors.groupingBy(r -> r.item().getCategoria().getNome(), Collectors.counting()));
+
+        porCategoria.forEach((categoria, qtd) -> {
+            if (qtd > 3) {
+                throw new AppException(ErrorCode.PEDIDO_LOTE_LIMITE_CATEGORIA, categoria);
+            }
+        });
+
+        LocalDateTime prazo = calcularPrazo(evento.getDataEvento());
+
+        List<Pedido> pedidosSalvos = new ArrayList<>();
+        for (ItemResolvido r : resolvidos) {
+            Pedido pedido = pedidoMapper.toEntityFromEvento(cliente, r.prestador(), r.item(), evento);
+            pedido.setPrazoResposta(prazo);
+            pedidosSalvos.add(pedidoRepository.save(pedido));
+        }
+
+        pedidosSalvos.forEach(p ->
+                emailService.enviarAposCommit(
+                        p.getPrestador().getUsuario().getEmail(),
+                        "FestConnect - Novo pedido de orçamento",
+                        EmailTemplates.novoPedidoParaPrestador(p)
+                )
+        );
+
+        return pedidoMapper.toResponseList(pedidosSalvos);
     }
 
     private Pedido buscarPedidoComPermissaoPrestador(UUID pedidoId, Usuario usuarioLogado) {
