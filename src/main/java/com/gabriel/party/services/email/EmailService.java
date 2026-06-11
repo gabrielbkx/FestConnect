@@ -13,12 +13,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 @Service
 public class EmailService {
 
     private static final Logger logger = Logger.getLogger(EmailService.class.getName());
+
+    private final Executor emailExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
@@ -58,11 +62,11 @@ public class EmailService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    enviarEmail(destinatario, assunto, corpoHtml);
+                    emailExecutor.execute(() -> enviarEmail(destinatario, assunto, corpoHtml));
                 }
             });
         } else {
-            enviarEmail(destinatario, assunto, corpoHtml);
+            emailExecutor.execute(() -> enviarEmail(destinatario, assunto, corpoHtml));
         }
     }
 }
