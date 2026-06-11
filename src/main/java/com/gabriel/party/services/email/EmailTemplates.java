@@ -114,6 +114,24 @@ public class EmailTemplates {
         );
     }
 
+    public static String eventoCanceladoParaPrestador(Pedido pedido) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento());
+
+        return construir(
+                "Evento cancelado",
+                "Olá, " + nomePrestador + ".",
+                "<strong>" + nomeCliente + "</strong> cancelou o evento. O pedido vinculado foi encerrado automaticamente:",
+                detalhes,
+                ""
+        );
+    }
+
     public static String orcamentoExpiradoParaCliente(Pedido pedido) {
         String nomeCliente = pedido.getCliente().getNomeCompleto();
         String nomePrestador = pedido.getPrestador().getNomeCompleto();

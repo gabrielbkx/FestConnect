@@ -10,9 +10,13 @@ import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.evento.enums.StatusEvento;
 import com.gabriel.party.model.pedido.Pedido;
+import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.evento.EventoRepository;
+import com.gabriel.party.repositories.pedido.PedidoRepository;
+import com.gabriel.party.services.email.EmailService;
+import com.gabriel.party.services.email.EmailTemplates;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +28,19 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final ClienteRepository clienteRepository;
+    private final PedidoRepository pedidoRepository;
+    private final EmailService emailService;
     private final EventoMapper eventoMapper;
 
     public EventoService(EventoRepository eventoRepository,
                          ClienteRepository clienteRepository,
+                         PedidoRepository pedidoRepository,
+                         EmailService emailService,
                          EventoMapper eventoMapper) {
         this.eventoRepository = eventoRepository;
         this.clienteRepository = clienteRepository;
+        this.pedidoRepository = pedidoRepository;
+        this.emailService = emailService;
         this.eventoMapper = eventoMapper;
     }
 
@@ -67,7 +77,22 @@ public class EventoService {
     public EventoResponseDTO atualizarStatus(UUID eventoId, EventoStatusUpdateDTO dto, Usuario usuarioLogado) {
         Evento evento = buscarEventoDoCliente(eventoId, usuarioLogado);
         evento.setStatus(dto.status());
-        return eventoMapper.toResponseDTO(eventoRepository.save(evento));
+        eventoRepository.save(evento);
+
+        if (dto.status() == StatusEvento.CANCELADO) {
+            List<Pedido> pedidosAtivos = pedidoRepository.findByEventoIdAndStatusPedidoIn(
+                    eventoId, List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO));
+            pedidosAtivos.forEach(p -> {
+                p.setStatusPedido(StatusPedido.CANCELADO);
+                emailService.enviarAposCommit(
+                        p.getPrestador().getUsuario().getEmail(),
+                        "FestConnect - Evento cancelado",
+                        EmailTemplates.eventoCanceladoParaPrestador(p)
+                );
+            });
+        }
+
+        return eventoMapper.toResponseDTO(evento);
     }
 
     @Transactional

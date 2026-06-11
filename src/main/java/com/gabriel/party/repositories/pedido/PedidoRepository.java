@@ -33,4 +33,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     boolean existsByPrestadorIdAndItemCatalogoIdAndEventoIdAndStatusPedidoIn(
             UUID prestadorId, UUID itemCatalogoId, UUID eventoId, List<StatusPedido> statuses);
+
+    List<Pedido> findByEventoIdAndStatusPedidoIn(UUID eventoId, List<StatusPedido> statuses);
 }
