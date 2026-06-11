@@ -99,10 +99,12 @@ public class SugestaoService {
 
         return selecionados.stream()
                 .map(p -> {
-                    ItemCatalogo item = itemCatalogoRepository
-                            .findFirstByPrestadorIdAndCategoriaIdAndAtivoTrue(p.getId(), categoria.getId())
-                            .orElseThrow(() -> new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, p.getId().toString()));
-                    return eventoMapper.toSugestaoDTO(p, item);
+                    List<ItemCatalogo> itens = itemCatalogoRepository
+                            .findByPrestadorIdAndCategoriaIdAndAtivoTrue(p.getId(), categoria.getId());
+                    if (itens.isEmpty()) {
+                        throw new AppException(ErrorCode.ITEM_CATALOGO_NAO_ENCONTRADO, p.getId().toString());
+                    }
+                    return eventoMapper.toSugestaoDTO(p, itens);
                 })
                 .toList();
     }

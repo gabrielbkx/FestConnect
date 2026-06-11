@@ -2,6 +2,7 @@ package com.gabriel.party.mapper.evento;
 
 import com.gabriel.party.dtos.evento.EventoRequestDTO;
 import com.gabriel.party.dtos.evento.EventoResponseDTO;
+import com.gabriel.party.dtos.evento.ItemSugestaoDTO;
 import com.gabriel.party.dtos.evento.PrestadorSugestaoDTO;
 import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.cliente.Cliente;
@@ -65,13 +66,20 @@ public interface EventoMapper {
     @Mapping(target = "nomeCompleto", source = "prestador.nomeCompleto")
     @Mapping(target = "fotoPerfilUrl", source = "prestador.fotoPerfilUrl")
     @Mapping(target = "descricao", source = "prestador.descricao")
-    @Mapping(target = "itemCatalogoId", source = "itemCatalogo.id")
+    @Mapping(target = "itens", expression = "java(toItensSugestao(itens))")
     @Mapping(target = "mediaAvaliacoes", expression = "java(calcularMedia(prestador.getAvaliacoes()))")
     @Mapping(target = "quantidadeAvaliacoes", expression = "java(calcularQuantidade(prestador.getAvaliacoes()))")
-    PrestadorSugestaoDTO toSugestaoDTO(Prestador prestador, ItemCatalogo itemCatalogo);
+    PrestadorSugestaoDTO toSugestaoDTO(Prestador prestador, List<ItemCatalogo> itens);
 
     default Integer contarPedidos(Collection<Pedido> pedidos) {
         return pedidos == null ? 0 : pedidos.size();
+    }
+
+    default List<ItemSugestaoDTO> toItensSugestao(List<ItemCatalogo> itens) {
+        if (itens == null) return List.of();
+        return itens.stream()
+                .map(i -> new ItemSugestaoDTO(i.getId(), i.getTitulo(), i.getPrecoBase()))
+                .toList();
     }
 
     default BigDecimal calcularMedia(Collection<Avaliacao> avaliacoes) {

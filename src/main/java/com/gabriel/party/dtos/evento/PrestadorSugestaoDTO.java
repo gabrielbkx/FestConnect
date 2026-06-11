@@ -3,6 +3,7 @@ package com.gabriel.party.dtos.evento;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(description = "Prestador sugerido para um evento")
@@ -10,9 +11,6 @@ public record PrestadorSugestaoDTO(
 
         @Schema(description = "ID do prestador")
         UUID id,
-
-        @Schema(description = "ID do item do catálogo desta categoria (usado para orçamento em lote)")
-        UUID itemCatalogoId,
 
         @Schema(description = "Nome do prestador")
         String nomeCompleto,
@@ -33,5 +31,8 @@ public record PrestadorSugestaoDTO(
         BigDecimal mediaAvaliacoes,
 
         @Schema(description = "Quantidade total de avaliações")
-        Integer quantidadeAvaliacoes
+        Integer quantidadeAvaliacoes,
+
+        @Schema(description = "Serviços disponíveis nesta categoria")
+        List<ItemSugestaoDTO> itens
 ) {}
