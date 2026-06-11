@@ -9,5 +9,6 @@ import java.util.UUID;
 public record ItemSugestaoDTO(
         @Schema(description = "ID do item do catálogo") UUID id,
         @Schema(description = "Título do serviço") String titulo,
-        @Schema(description = "Preço base") BigDecimal precoBase
+        @Schema(description = "Preço base") BigDecimal precoBase,
+        @Schema(description = "URL da foto de capa (primeira foto por ordem)") String capaUrl
 ) {}

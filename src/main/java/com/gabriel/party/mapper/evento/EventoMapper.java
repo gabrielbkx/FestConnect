@@ -8,6 +8,8 @@ import com.gabriel.party.model.avaliacao.Avaliacao;
 import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
+import com.gabriel.party.model.midia.Midia;
+import com.gabriel.party.model.midia.enums.TipoMidia;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.prestador.Prestador;
 import org.mapstruct.Mapper;
@@ -18,6 +20,7 @@ import org.mapstruct.ReportingPolicy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -78,8 +81,21 @@ public interface EventoMapper {
     default List<ItemSugestaoDTO> toItensSugestao(List<ItemCatalogo> itens) {
         if (itens == null) return List.of();
         return itens.stream()
-                .map(i -> new ItemSugestaoDTO(i.getId(), i.getTitulo(), i.getPrecoBase()))
+                .map(i -> new ItemSugestaoDTO(i.getId(), i.getTitulo(), i.getPrecoBase(), resolverCapaUrl(i.getMidias())))
                 .toList();
+    }
+
+    default String resolverCapaUrl(List<Midia> midias) {
+        if (midias == null || midias.isEmpty()) return null;
+        return midias.stream()
+                .sorted(Comparator.comparingInt(m -> m.getOrdem() != null ? m.getOrdem() : 999))
+                .filter(m -> TipoMidia.FOTO.equals(m.getTipo()))
+                .findFirst()
+                .map(Midia::getUrl)
+                .orElseGet(() -> midias.stream()
+                        .min(Comparator.comparingInt(m -> m.getOrdem() != null ? m.getOrdem() : 999))
+                        .map(Midia::getUrl)
+                        .orElse(null));
     }
 
     default BigDecimal calcularMedia(Collection<Avaliacao> avaliacoes) {
