@@ -73,9 +73,8 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
-    public ClienteResponseDTO buscarPorId(UUID id) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+    public ClienteResponseDTO buscarPorId(UUID id, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(id, usuarioLogado);
         return mapper.toDto(cliente);
     }
 

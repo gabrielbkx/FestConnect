@@ -211,6 +211,16 @@ public class ClienteServiceTest {
         verifyNoInteractions(categoriaMapper);
     }
 
+    @Test
+    @DisplayName("cliente B não consegue ver os dados pessoais do cliente A")
+    void buscarPorId_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.buscarPorId(clienteA.getId(), usuarioB));
+
+        verify(mapper, never()).toDto(any());
+    }
+
     private void assertSemPermissao(ThrowingCallable acao) {
         assertThatThrownBy(acao)
                 .isInstanceOf(AppException.class)

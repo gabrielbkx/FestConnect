@@ -38,12 +38,14 @@ public class ClienteController {
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cliente retornado com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Sem permissão para ver este cliente"),
             @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
     })
-    @Operation(summary = "Buscar cliente por ID", description = "Retorna os dados de um cliente ativo pelo ID.")
+    @Operation(summary = "Buscar cliente por ID", description = "Retorna os dados de um cliente ativo pelo ID. Somente o próprio cliente ou um administrador.")
     @GetMapping("/{id}")
-    public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(clienteService.buscarPorId(id));
+    public ResponseEntity<ClienteResponseDTO> buscarPorId(@PathVariable UUID id,
+                                                          @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(clienteService.buscarPorId(id, usuarioLogado));
     }
 
     @ApiResponses(value = {
@@ -61,10 +63,12 @@ public class ClienteController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista de clientes retornada com sucesso")
+            @ApiResponse(responseCode = "200", description = "Lista de clientes retornada com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado — somente administradores")
     })
-    @Operation(summary = "Listar clientes", description = "Retorna uma lista paginada de todos os clientes ativos.")
+    @Operation(summary = "[ADMIN] Listar clientes", description = "Retorna uma lista paginada de todos os clientes ativos. Acesso restrito a ROLE_ADMINISTRADOR.")
     @GetMapping
+    @PreAuthorize("hasRole('ROLE_ADMINISTRADOR')")
     public ResponseEntity<Page<ClienteResponseDTO>> listarTodos(Pageable pageable) {
         return ResponseEntity.ok(clienteService.listarTodos(pageable));
     }
