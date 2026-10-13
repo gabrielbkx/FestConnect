@@ -8,6 +8,7 @@ import com.gabriel.party.dtos.prestador.PrestadorAdminDTO;
 import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
+import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.prestador.PrestadorService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,6 +20,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
@@ -87,8 +89,9 @@ public class PrestadorController {
     @Operation(summary = "Atualizar prestador", description = "Atualiza os dados de um prestador existente pelo ID.")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<PrestadorResponseDTO> atualizarPrestador(@Valid @RequestBody PrestadorRequestDTO dto, @PathVariable UUID id) {
-        return ResponseEntity.ok(prestadorService.atualizarPrestador(dto, id));
+    public ResponseEntity<PrestadorResponseDTO> atualizarPrestador(@Valid @RequestBody PrestadorRequestDTO dto, @PathVariable UUID id,
+                                                                   @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(prestadorService.atualizarPrestador(dto, id, usuarioLogado));
     }
 
     @ApiResponses(value = {
@@ -100,8 +103,9 @@ public class PrestadorController {
     @PutMapping(value = "/{id}/foto-perfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Map<String, String>> atualizarFotoPerfil(@PathVariable UUID id,
-                                                                    @RequestPart("arquivo") MultipartFile arquivo) {
-        String url = prestadorService.atualizarFotoPerfil(id, arquivo);
+                                                                    @RequestPart("arquivo") MultipartFile arquivo,
+                                                                    @AuthenticationPrincipal Usuario usuarioLogado) {
+        String url = prestadorService.atualizarFotoPerfil(id, arquivo, usuarioLogado);
         return ResponseEntity.ok(Map.of("fotoPerfilUrl", url));
     }
 
@@ -114,8 +118,9 @@ public class PrestadorController {
     @PutMapping(value = "/{id}/foto-banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Map<String, String>> atualizarFotoBanner(@PathVariable UUID id,
-                                                                   @RequestPart("arquivo") MultipartFile arquivo) {
-        String url = prestadorService.atualizarFotoBanner(id, arquivo);
+                                                                   @RequestPart("arquivo") MultipartFile arquivo,
+                                                                   @AuthenticationPrincipal Usuario usuarioLogado) {
+        String url = prestadorService.atualizarFotoBanner(id, arquivo, usuarioLogado);
         return ResponseEntity.ok(Map.of("fotoBannerUrl", url));
     }
 
@@ -126,8 +131,9 @@ public class PrestadorController {
     @Operation(summary = "Deletar prestador", description = "Realiza a exclusão lógica (inativação) de um prestador pelo ID.")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_PRESTADOR', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<Void> deletarPrestador(@PathVariable UUID id) {
-        prestadorService.deletar(id);
+    public ResponseEntity<Void> deletarPrestador(@PathVariable UUID id,
+                                                 @AuthenticationPrincipal Usuario usuarioLogado) {
+        prestadorService.deletar(id, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
