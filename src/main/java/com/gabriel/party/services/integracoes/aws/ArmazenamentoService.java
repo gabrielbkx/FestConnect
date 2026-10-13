@@ -19,16 +19,21 @@ import java.util.UUID;
 @Service
 public class ArmazenamentoService {
 
-    private S3Client s3Client;
-    private static final String URL_PREFIXO = "https://";
-    private static final String URL_SUFIXO = ".s3.amazonaws.com/";
+    private final S3Client s3Client;
 
-     public ArmazenamentoService(S3Client s3Client) {
+    private final String nomeBucket;
+
+    // Endereço de onde o navegador lê as mídias (ex.: http://localhost:8333/festconnect-midias em dev,
+    // https://<bucket>.s3.amazonaws.com na AWS). Antes era fixo no código, preso à AWS.
+    private final String urlPublica;
+
+    public ArmazenamentoService(S3Client s3Client,
+                                @Value("${storage.s3.bucket}") String nomeBucket,
+                                @Value("${storage.url-publica}") String urlPublica) {
         this.s3Client = s3Client;
+        this.nomeBucket = nomeBucket;
+        this.urlPublica = urlPublica.endsWith("/") ? urlPublica.substring(0, urlPublica.length() - 1) : urlPublica;
     }
-
-    @Value("${aws.s3.bucket-name}")
-    private String nomeBucket;
 
     @WithSpan("s3.salvarMidia")
     public String salvarMidias(@SpanAttribute("arquivo.contentType") MultipartFile arquivo) {
@@ -40,23 +45,34 @@ public class ArmazenamentoService {
             throw new AppException(ErrorCode.FORMATO_INVALIDO, "Tipo de arquivo desconhecido");
         }
 
-        //se dois prestadores diferentes enviarem uma imagem chamada foto-perfil.jpg,
-        // o S3 vai sobrescrever a primeira foto com a segunda, pois os nomes são idênticos.
-        //Para isso, vamos gerar um nome único para cada arquivo usando UUID,
-        // garantindo que mesmo que os arquivos tenham o mesmo nome original, eles serão armazenados com nomes únicos no S3.
-        String nomeArquivoCompleto = UUID.randomUUID() + "-" + arquivo.getOriginalFilename();
-
-
+        // Nome único (UUID) para dois arquivos "foto-perfil.jpg" não se sobrescreverem. O nome original
+        // do usuário não entra na URL: espaço, acento, "#" ou "?" quebrariam o link da imagem.
+        String nomeArquivoCompleto;
 
         if (tipoArquivo.startsWith("image/")) {
+            nomeArquivoCompleto = UUID.randomUUID() + ".jpg"; // toda imagem é convertida para JPG
             salvarImagem(arquivo, nomeArquivoCompleto);
         } else if (tipoArquivo.startsWith("video/")) {
+            nomeArquivoCompleto = UUID.randomUUID() + extensaoDoVideo(arquivo.getOriginalFilename());
             salvarVideo(arquivo, nomeArquivoCompleto);
         } else {
             throw new AppException(ErrorCode.FORMATO_INVALIDO, "Formato não suportado: " + tipoArquivo);
         }
 
-        return URL_PREFIXO + nomeBucket + URL_SUFIXO + nomeArquivoCompleto;
+        return urlPublica + "/" + nomeArquivoCompleto;
+    }
+
+    // Mantém a extensão do vídeo (.mp4, .webm...) só se ela for "limpa"; senão, fica sem extensão.
+    private static String extensaoDoVideo(String nomeOriginal) {
+        if (nomeOriginal == null) {
+            return "";
+        }
+        int ponto = nomeOriginal.lastIndexOf('.');
+        if (ponto < 0) {
+            return "";
+        }
+        String extensao = nomeOriginal.substring(ponto + 1).toLowerCase();
+        return extensao.matches("[a-z0-9]{1,5}") ? "." + extensao : "";
     }
 
 

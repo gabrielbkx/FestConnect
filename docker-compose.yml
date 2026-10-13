@@ -54,9 +54,29 @@ services:
     networks:
       - fest_connect_network
 
+  # Storage de fotos e vídeos compatível com S3 (substitui o S3 da AWS em dev).
+  # Subir só ele: docker compose up -d seaweedfs
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    container_name: seaweedfs
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/festconnect/entrypoint.sh"]
+    ports:
+      - "8333:8333" # API S3 (a aplicação grava aqui e o navegador lê as mídias daqui)
+    environment:
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-festconnect-midias}
+    volumes:
+      - seaweedfs_data:/data
+      - ./infra/seaweedfs/entrypoint.sh:/festconnect/entrypoint.sh:ro
+    networks:
+      - fest_connect_network
+
 networks:
   fest_connect_network:
     driver: bridge
 
 volumes:
   postgres_data:
+  seaweedfs_data:

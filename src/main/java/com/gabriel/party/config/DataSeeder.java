@@ -210,8 +210,8 @@ public class DataSeeder implements CommandLineRunner {
             UUID userId = UUID.randomUUID();
             String email = "prestador" + (i + 1) + "@festconnect.com";
             jdbc.update("""
-                INSERT INTO tb_usuarios (id_usuario, email, senha, role, ativo, data_criacao)
-                VALUES (?, ?, ?, 'ROLE_PRESTADOR', true, ?)
+                INSERT INTO tb_usuarios (id_usuario, email, senha, role, ativo, email_verificado, data_criacao)
+                VALUES (?, ?, ?, 'ROLE_PRESTADOR', true, true, ?)
             """, userId, email, senhaHash, LocalDateTime.now());
 
             // Prestador
@@ -456,8 +456,8 @@ public class DataSeeder implements CommandLineRunner {
             UUID userId = UUID.randomUUID();
             String email = "cliente" + (i + 1) + "@festconnect.com";
             jdbc.update("""
-                INSERT INTO tb_usuarios (id_usuario, email, senha, role, ativo, data_criacao)
-                VALUES (?, ?, ?, 'ROLE_CLIENTE', true, ?)
+                INSERT INTO tb_usuarios (id_usuario, email, senha, role, ativo, email_verificado, data_criacao)
+                VALUES (?, ?, ?, 'ROLE_CLIENTE', true, true, ?)
             """, userId, email, senhaHash, LocalDateTime.now());
 
             UUID clienteId = UUID.randomUUID();
