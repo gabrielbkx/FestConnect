@@ -27,7 +27,7 @@ public class EmailService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    @Value("${spring.mail.from:noreply@festconnect.com}")
+    @Value("${spring.mail.from:noreply@resenha.app}")
     private String from;
 
     @WithSpan("email.enviar")

@@ -159,7 +159,7 @@ public class MidiaService {
 
         emailService.enviarAposCommit(
                 prestador.getUsuario().getEmail(),
-                "Conteúdo removido por moderação — FestConnect",
+                "Conteúdo removido por moderação — Resenha",
                 EmailTemplates.midiaRemovidaPorModeracao(prestador.getNomeCompleto(), tipoMidia, tituloItem));
     }
 }

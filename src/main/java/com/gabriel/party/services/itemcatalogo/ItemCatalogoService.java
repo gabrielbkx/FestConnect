@@ -172,7 +172,7 @@ public class ItemCatalogoService {
         Prestador prestador = itemCatalogo.getPrestador();
         emailService.enviarAposCommit(
                 prestador.getUsuario().getEmail(),
-                "Item removido por moderação — FestConnect",
+                "Item removido por moderação — Resenha",
                 EmailTemplates.itemRemovidoPorModeracao(prestador.getNomeCompleto(), itemCatalogo.getTitulo()));
     }
 

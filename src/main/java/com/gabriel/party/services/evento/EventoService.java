@@ -86,7 +86,7 @@ public class EventoService {
                 p.setStatusPedido(StatusPedido.CANCELADO);
                 emailService.enviarAposCommit(
                         p.getPrestador().getUsuario().getEmail(),
-                        "FestConnect - Evento cancelado",
+                        "Resenha - Evento cancelado",
                         EmailTemplates.eventoCanceladoParaPrestador(p)
                 );
             });

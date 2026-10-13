@@ -39,7 +39,7 @@ public class EmailTemplates {
                 linha("Válido até", pedido.getValidadeOrcamento().format(FORMATO_DATA));
 
         String rodape = caixa("info",
-                "Para aceitar ou recusar o orçamento, acesse a plataforma FestConnect. " +
+                "Para aceitar ou recusar o orçamento, acesse a Resenha. " +
                 "Este orçamento expira em <strong>" + pedido.getValidadeOrcamento().format(FORMATO_DATA) + "</strong>.");
 
         return construir(
@@ -60,7 +60,7 @@ public class EmailTemplates {
                 linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
 
         String rodape = caixa("aviso",
-                "Não desanime! Explore outros prestadores disponíveis na plataforma FestConnect para o seu evento.");
+                "Não desanime! Explore outros prestadores disponíveis na Resenha para o seu evento.");
 
         return construir(
                 "Prestador não disponível",
@@ -142,7 +142,7 @@ public class EmailTemplates {
                 linha("Orçamento expirou em", pedido.getValidadeOrcamento().format(FORMATO_DATA));
 
         String rodape = caixa("aviso",
-                "Você pode solicitar um novo orçamento a este ou a outros prestadores diretamente na plataforma FestConnect.");
+                "Você pode solicitar um novo orçamento a este ou a outros prestadores diretamente na Resenha.");
 
         return construir(
                 "Orçamento expirado",
@@ -161,7 +161,7 @@ public class EmailTemplates {
                         linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
 
         String rodape = caixa("aviso",
-                "Não desanime! Você pode enviar o pedido para outros prestadores disponíveis na plataforma FestConnect.");
+                "Não desanime! Você pode enviar o pedido para outros prestadores disponíveis na Resenha.");
 
         return construir(
                 "Prestador não respondeu a tempo",
@@ -239,12 +239,12 @@ public class EmailTemplates {
 
         String rodape = caixa("aviso",
                 "A remoção foi feita por nossa equipe de moderação por não estar de acordo com as diretrizes da plataforma. " +
-                "Em caso de dúvidas, entre em contato com o suporte do FestConnect.");
+                "Em caso de dúvidas, entre em contato com o suporte da Resenha.");
 
         return construir(
                 "Conteúdo removido por moderação",
                 "Olá, " + nomePrestador + ".",
-                "Uma mídia da sua vitrine foi removida pela equipe de moderação do FestConnect.",
+                "Uma mídia da sua vitrine foi removida pela equipe de moderação da Resenha.",
                 detalhes,
                 rodape
         );
@@ -256,12 +256,12 @@ public class EmailTemplates {
 
         String rodape = caixa("aviso",
                 "A remoção foi feita por nossa equipe de moderação por não estar de acordo com as diretrizes da plataforma. " +
-                "Em caso de dúvidas, entre em contato com o suporte do FestConnect.");
+                "Em caso de dúvidas, entre em contato com o suporte da Resenha.");
 
         return construir(
                 "Item removido por moderação",
                 "Olá, " + nomePrestador + ".",
-                "Um item do seu catálogo foi removido pela equipe de moderação do FestConnect.",
+                "Um item do seu catálogo foi removido pela equipe de moderação da Resenha.",
                 detalhes,
                 rodape
         );
@@ -273,16 +273,16 @@ public class EmailTemplates {
         return "<!DOCTYPE html>" +
                 "<html lang='pt-BR'><head><meta charset='UTF-8'>" +
                 "<meta name='viewport' content='width=device-width,initial-scale=1.0'>" +
-                "<title>FestConnect</title></head>" +
-                "<body style='margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;'>" +
-                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f3f4f6;padding:40px 16px;'>" +
+                "<title>Resenha</title></head>" +
+                // Identidade Resenha: papel creme, card branco com borda preta (sem sombra), cabeçalho rosa
+                "<body style='margin:0;padding:0;background-color:#f4f4f0;font-family:Arial,Helvetica,sans-serif;'>" +
+                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f4f0;padding:40px 16px;'>" +
                 "<tr><td align='center'>" +
-                "<table width='600' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);'>" +
+                "<table width='600' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border:2px solid #000000;border-radius:16px;overflow:hidden;'>" +
 
                 // Header
-                "<tr><td style='background-color:#7c3aed;padding:28px 32px;text-align:center;'>" +
-                "<span style='color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;'>Fest</span>" +
-                "<span style='color:#ddd6fe;font-size:26px;font-weight:300;letter-spacing:-0.5px;'>Connect</span>" +
+                "<tr><td style='background-color:#ff90e8;border-bottom:2px solid #000000;padding:24px 32px;text-align:center;'>" +
+                "<span style='color:#000000;font-size:30px;font-weight:800;letter-spacing:-1px;'>resenha</span>" +
                 "</td></tr>" +
 
                 // Título
@@ -305,7 +305,7 @@ public class EmailTemplates {
                 // Footer
                 "<tr><td style='background-color:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 32px;text-align:center;'>" +
                 "<p style='margin:0;color:#9ca3af;font-size:12px;line-height:1.5;'>" +
-                "Este e-mail foi enviado automaticamente pela plataforma FestConnect.<br>Por favor, não responda a esta mensagem." +
+                "Este e-mail foi enviado automaticamente pela Resenha.<br>Por favor, não responda a esta mensagem." +
                 "</p></td></tr>" +
 
                 "</table></td></tr></table></body></html>";
