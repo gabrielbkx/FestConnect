@@ -22,9 +22,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import java.util.Optional;
 import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -116,6 +119,102 @@ public class ClienteServiceTest {
         // Assert
         verify(mapper).updateEntityFromDto(dto, clienteA);
         verify(clienteRepository).save(clienteA);
+    }
+
+    // ── Demais operações: a regra já foi testada acima; aqui só provamos que cada
+    //    método CHAMA a regra (um teste de ataque por método).
+
+    @Test
+    @DisplayName("cliente B não consegue excluir o perfil do cliente A")
+    void deletar_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.deletar(clienteA.getId(), usuarioB));
+
+        assertThat(clienteA.getAtivo()).isTrue();
+        assertThat(usuarioA.getAtivo()).isTrue();
+        verify(clienteRepository, never()).save(any());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue trocar a foto de perfil do cliente A")
+    void atualizarFotoPerfil_outroCliente_lancaSemPermissao() {
+        var arquivo = new MockMultipartFile("arquivo", "foto.png", "image/png", new byte[]{1});
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.atualizarFotoPerfil(clienteA.getId(), arquivo, usuarioB));
+
+        verifyNoInteractions(armazenamentoService);
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue adicionar prestador aos favoritos do cliente A")
+    void adicionarPrestadorFavorito_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.adicionarPrestadorFavorito(clienteA.getId(), UUID.randomUUID(), usuarioB));
+
+        verifyNoInteractions(prestadorRepository);
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue remover prestador dos favoritos do cliente A")
+    void removerPrestadorFavorito_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.removerPrestadorFavorito(clienteA.getId(), UUID.randomUUID(), usuarioB));
+
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue ver os prestadores favoritos do cliente A")
+    void listarPrestadoresFavoritos_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.listarPrestadoresFavoritos(clienteA.getId(), usuarioB));
+
+        verifyNoInteractions(prestadorMapper);
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue adicionar categoria aos favoritos do cliente A")
+    void adicionarCategoriaFavorita_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.adicionarCategoriaFavorita(clienteA.getId(), UUID.randomUUID(), usuarioB));
+
+        verifyNoInteractions(categoriaRepository);
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue remover categoria dos favoritos do cliente A")
+    void removerCategoriaFavorita_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.removerCategoriaFavorita(clienteA.getId(), UUID.randomUUID(), usuarioB));
+
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("cliente B não consegue ver as categorias favoritas do cliente A")
+    void listarCategoriasFavoritas_outroCliente_lancaSemPermissao() {
+        when(clienteRepository.findByIdAndAtivoTrue(clienteA.getId())).thenReturn(Optional.of(clienteA));
+
+        assertSemPermissao(() -> service.listarCategoriasFavoritas(clienteA.getId(), usuarioB));
+
+        verifyNoInteractions(categoriaMapper);
+    }
+
+    private void assertSemPermissao(ThrowingCallable acao) {
+        assertThatThrownBy(acao)
+                .isInstanceOf(AppException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USUARIO_SEM_PERMISSAO);
     }
 }
 

@@ -81,7 +81,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDTO> atualizar(@PathVariable UUID id,
                                                         @RequestBody @Valid ClienteRequestDTO dto,
                                                         @AuthenticationPrincipal Usuario usuarioLogado) {
-        return ResponseEntity.ok(clienteService.atualizar(id, dto,usuarioLogado));
+        return ResponseEntity.ok(clienteService.atualizar(id, dto, usuarioLogado));
     }
 
     @ApiResponses(value = {
@@ -93,8 +93,9 @@ public class ClienteController {
     @PutMapping(value = "/{id}/foto-perfil", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Map<String, String>> atualizarFotoPerfil(@PathVariable UUID id,
-                                                                    @RequestPart("arquivo") MultipartFile arquivo) {
-        String url = clienteService.atualizarFotoPerfil(id, arquivo);
+                                                                    @RequestPart("arquivo") MultipartFile arquivo,
+                                                                    @AuthenticationPrincipal Usuario usuarioLogado) {
+        String url = clienteService.atualizarFotoPerfil(id, arquivo, usuarioLogado);
         return ResponseEntity.ok(Map.of("fotoPerfilUrl", url));
     }
 
@@ -106,8 +107,9 @@ public class ClienteController {
     @Operation(summary = "Excluir cliente", description = "Realiza a exclusão lógica (inativação) do perfil de um cliente.")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
-        clienteService.deletar(id);
+    public ResponseEntity<Void> deletar(@PathVariable UUID id,
+                                        @AuthenticationPrincipal Usuario usuarioLogado) {
+        clienteService.deletar(id, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
@@ -122,8 +124,9 @@ public class ClienteController {
     @PostMapping("/{clienteId}/favoritos/prestadores/{prestadorId}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> adicionarPrestadorFavorito(@PathVariable UUID clienteId,
-                                                            @PathVariable UUID prestadorId) {
-        clienteService.adicionarPrestadorFavorito(clienteId, prestadorId);
+                                                            @PathVariable UUID prestadorId,
+                                                            @AuthenticationPrincipal Usuario usuarioLogado) {
+        clienteService.adicionarPrestadorFavorito(clienteId, prestadorId, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
@@ -135,8 +138,9 @@ public class ClienteController {
     @DeleteMapping("/{clienteId}/favoritos/prestadores/{prestadorId}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> removerPrestadorFavorito(@PathVariable UUID clienteId,
-                                                          @PathVariable UUID prestadorId) {
-        clienteService.removerPrestadorFavorito(clienteId, prestadorId);
+                                                          @PathVariable UUID prestadorId,
+                                                          @AuthenticationPrincipal Usuario usuarioLogado) {
+        clienteService.removerPrestadorFavorito(clienteId, prestadorId, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
@@ -147,8 +151,9 @@ public class ClienteController {
     @Operation(summary = "Listar prestadores favoritos do cliente")
     @GetMapping("/{clienteId}/favoritos/prestadores")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<List<PrestadorResumoDTO>> listarPrestadoresFavoritos(@PathVariable UUID clienteId) {
-        return ResponseEntity.ok(clienteService.listarPrestadoresFavoritos(clienteId));
+    public ResponseEntity<List<PrestadorResumoDTO>> listarPrestadoresFavoritos(@PathVariable UUID clienteId,
+                                                                               @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(clienteService.listarPrestadoresFavoritos(clienteId, usuarioLogado));
     }
 
     // ── Favoritos: Categorias
@@ -162,8 +167,9 @@ public class ClienteController {
     @PostMapping("/{clienteId}/favoritos/categorias/{categoriaId}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> adicionarCategoriaFavorita(@PathVariable UUID clienteId,
-                                                            @PathVariable UUID categoriaId) {
-        clienteService.adicionarCategoriaFavorita(clienteId, categoriaId);
+                                                            @PathVariable UUID categoriaId,
+                                                            @AuthenticationPrincipal Usuario usuarioLogado) {
+        clienteService.adicionarCategoriaFavorita(clienteId, categoriaId, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
@@ -175,8 +181,9 @@ public class ClienteController {
     @DeleteMapping("/{clienteId}/favoritos/categorias/{categoriaId}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<Void> removerCategoriaFavorita(@PathVariable UUID clienteId,
-                                                          @PathVariable UUID categoriaId) {
-        clienteService.removerCategoriaFavorita(clienteId, categoriaId);
+                                                          @PathVariable UUID categoriaId,
+                                                          @AuthenticationPrincipal Usuario usuarioLogado) {
+        clienteService.removerCategoriaFavorita(clienteId, categoriaId, usuarioLogado);
         return ResponseEntity.noContent().build();
     }
 
@@ -187,7 +194,8 @@ public class ClienteController {
     @Operation(summary = "Listar categorias favoritas do cliente")
     @GetMapping("/{clienteId}/favoritos/categorias")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
-    public ResponseEntity<List<CategoriaReponseDTO>> listarCategoriasFavoritas(@PathVariable UUID clienteId) {
-        return ResponseEntity.ok(clienteService.listarCategoriasFavoritas(clienteId));
+    public ResponseEntity<List<CategoriaReponseDTO>> listarCategoriasFavoritas(@PathVariable UUID clienteId,
+                                                                               @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(clienteService.listarCategoriasFavoritas(clienteId, usuarioLogado));
     }
 }
