@@ -3,14 +3,21 @@ package com.gabriel.party.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Popula o banco de DESENVOLVIMENTO com prestadores e clientes falsos (senha 123456).
+ * Só roda no perfil dev: em produção, essas contas seriam contas reais com senha conhecida.
+ * As categorias não são criadas aqui: elas são dado de referência e vêm da migration 0.8.0.
+ */
 @Slf4j
 @Component
+@Profile("dev")
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -30,10 +37,17 @@ public class DataSeeder implements CommandLineRunner {
         {"Campinas",        "SP", -22.9056, -47.0608},
     };
 
+    // Categorias usadas pelo array PROVIDERS (via catIdx). A ordem importa: o índice
+    // de cada nome aqui é o catIdx usado em PROVIDERS e em seedItens.
+    private static final String[] CATEGORIAS_DO_SEED = {
+        "DJ", "Buffet", "Fotografia", "Decoração", "Espaço para Eventos",
+        "Segurança", "Cerimonialista", "Filmagem", "Iluminação e Som", "Animação Infantil",
+    };
+
     @Override
     public void run(String... args) {
         try {
-            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM tb_categorias", Integer.class);
+            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM tb_prestador", Integer.class);
             if (count != null && count > 0) {
                 log.info("DataSeeder: banco já populado, pulando.");
                 return;
@@ -46,7 +60,7 @@ public class DataSeeder implements CommandLineRunner {
         log.info("DataSeeder: iniciando seed de dados...");
         try {
             String hash = new BCryptPasswordEncoder().encode("123456");
-            UUID[] cats = seedCategorias();
+            UUID[] cats = buscarCategoriasDoSeed();
             seedPrestadores(cats, hash);
             seedClientes(hash);
             log.info("DataSeeder: seed concluído com sucesso!");
@@ -55,99 +69,13 @@ public class DataSeeder implements CommandLineRunner {
         }
     }
 
-    // ─── Categorias ────────────────────────────────────────────────────────────
-    private UUID[] seedCategorias() {
-        // IMPORTANTE: as 10 primeiras categorias devem ficar nas mesmas posições
-        // (índices 0-9) porque o array PROVIDERS abaixo aponta para elas via catIdx.
-        // Categorias novas vão SEMPRE no final pra não bagunçar o seed existente.
-        String[][] data = {
-            // ── Originais (NÃO reordenar — PROVIDERS depende dos índices 0-9) ──
-            {"DJ",                          "Disc jóqueis profissionais para festas e eventos"},
-            {"Buffet",                      "Serviços de buffet e gastronomia para eventos"},
-            {"Fotografia",                  "Fotógrafos profissionais para registrar momentos especiais"},
-            {"Decoração",                   "Decoração temática e personalizada para eventos"},
-            {"Espaço para Eventos",         "Salões, sítios, chácaras e espaços para celebrações"},
-            {"Segurança",                   "Serviços de segurança e controle de acesso"},
-            {"Cerimonialista",              "Planejamento e coordenação profissional de eventos"},
-            {"Filmagem",                    "Videografia e filmagem profissional"},
-            {"Iluminação e Som",            "Equipamentos e técnicos de iluminação e sonorização"},
-            {"Animação Infantil",           "Recreadores e animadores para festas infantis"},
-
-            // ── Música e entretenimento ──
-            {"Banda",                       "Bandas musicais para casamentos, formaturas e eventos corporativos"},
-            {"Cantor / Cantora Solo",       "Cantores solistas para cerimônia, jantar e ambientação"},
-            {"Música ao Vivo (Sertanejo, MPB, Forró)", "Trios e grupos para ambientação musical ao vivo"},
-            {"Karaokê",                     "Locação de aparelhos e telões de karaokê para festas"},
-
-            // ── Gastronomia e bebidas ──
-            {"Confeitaria e Bolos",         "Bolos de festa, decorados e topo de bolo personalizado"},
-            {"Doceria (Bem-Casados, Brigadeiros Gourmet)", "Doces finos e mesa de doces personalizada"},
-            {"Food Truck",                  "Caminhões e carrinhos de comida para eventos ao ar livre"},
-            {"Churrasqueiro",               "Churrasqueiros profissionais com fornecimento de carnes e bebidas"},
-            {"Bartender e Bar Móvel",       "Bartenders profissionais, drinks autorais e estrutura de bar móvel"},
-            {"Mesa de Frios e Charcutaria", "Mesas de frios, queijos importados e tábuas de charcutaria"},
-            {"Chopeira e Cervejaria",       "Locação de chopeiras, cervejas especiais e estrutura"},
-
-            // ── Registro e imagem ──
-            {"Cabine de Fotos",             "Photobooths e cabines para registros instantâneos"},
-            {"Drone (Filmagem Aérea)",      "Filmagem e fotografia aérea com drones para eventos"},
-            {"Designer de Convites",        "Criação de convites digitais, impressos e papelaria do evento"},
-
-            // ── Decoração ──
-            {"Floricultura",                "Arranjos florais para cerimônia, mesa e decoração"},
-            {"Balões e Arcos",              "Decoração com balões, arcos e backdrops temáticos"},
-            {"Mobiliário e Mesa Posta",     "Aluguel de mesas, cadeiras, sousplats, louças e taças"},
-            {"Pirotecnia (Fogos)",          "Fogos de artifício e efeitos pirotécnicos para o grande momento"},
-
-            // ── Beleza e estética ──
-            {"Maquiagem",                   "Maquiadores profissionais para noiva, debutante e madrinhas"},
-            {"Cabelo e Penteado",           "Cabeleireiros e penteados para eventos"},
-            {"Manicure",                    "Manicures e nail designers atendendo no local"},
-            {"Day of Bride / Estética",     "Pacotes de relaxamento e beleza pré-cerimônia"},
-
-            // ── Cerimonial ──
-            {"Mestre de Cerimônia",         "Apresentadores e mestres de cerimônia para casamentos e eventos"},
-            {"Celebrante (Religioso e Civil)", "Padres, pastores e celebrantes para cerimônias formais"},
-            {"Wedding Planner",             "Planejamento completo de casamentos de A a Z"},
-            {"Assessoria de Eventos Corporativos", "Planejamento e produção de eventos empresariais"},
-
-            // ── Infraestrutura ──
-            {"Tendas e Coberturas",         "Tendas, gazebos e coberturas para eventos ao ar livre"},
-            {"Gerador de Energia",          "Locação de geradores para eventos sem rede elétrica disponível"},
-            {"Banheiros Químicos",          "Locação de banheiros químicos para eventos ao ar livre"},
-            {"Telão e Projeção",            "Telões, projetores e equipamentos audiovisuais"},
-            {"Climatização (Ar e Ventilação)", "Ar-condicionado portátil, climatizadores e ventiladores"},
-
-            // ── Animação e entretenimento ──
-            {"Pula-Pula e Brinquedos Infláveis", "Brinquedos infláveis, escorregadores e camas elásticas"},
-            {"Personagens e Mágicos",       "Personagens vivos, mágicos, palhaços e artistas circenses"},
-            {"Pintura Facial",              "Maquiadores infantis e oficinas de pintura"},
-            {"Algodão Doce e Pipoca",       "Carrinhos e estandes de guloseimas para festas infantis"},
-
-            // ── Transporte ──
-            {"Transporte e Vans",           "Vans e ônibus fretados para convidados"},
-            {"Carro de Noivos",             "Carros clássicos, esportivos e personalizados para os noivos"},
-            {"Valet / Manobrista",          "Serviço de manobristas profissionais uniformizados"},
-            {"Limousine",                   "Locação de limusines para eventos especiais"},
-
-            // ── Vestuário ──
-            {"Trajes e Vestidos (Aluguel)", "Aluguel de vestidos de noiva, trajes a rigor e smoking"},
-            {"Sapatos e Acessórios",        "Sapatos e acessórios para noivas, padrinhos e convidados"},
-
-            // ── Serviços auxiliares ──
-            {"Lembrancinhas e Brindes",     "Lembrancinhas personalizadas e brindes para convidados"},
-            {"Limpeza Pós-Evento",          "Equipes especializadas em limpeza pós-festa"},
-            {"Garçom e Copeiro",            "Garçons, copeiros e equipe de atendimento por hora"},
-            {"Recepcionista / Hostess",     "Recepcionistas e hostesses para receber convidados"},
-            {"Bombeiro Civil / Brigadista", "Brigadistas e bombeiros civis para eventos de grande porte"},
-        };
-        UUID[] ids = new UUID[data.length];
-        for (int i = 0; i < data.length; i++) {
-            ids[i] = UUID.randomUUID();
-            jdbc.update("INSERT INTO tb_categorias (id_categoria, nome, descricao, ativo) VALUES (?,?,?,true)",
-                    ids[i], data[i][0], data[i][1]);
+    // ─── Categorias (criadas pela migration 0.8.0) ────────────────────────────
+    private UUID[] buscarCategoriasDoSeed() {
+        UUID[] ids = new UUID[CATEGORIAS_DO_SEED.length];
+        for (int i = 0; i < CATEGORIAS_DO_SEED.length; i++) {
+            ids[i] = jdbc.queryForObject("SELECT id_categoria FROM tb_categorias WHERE nome = ?",
+                    UUID.class, CATEGORIAS_DO_SEED[i]);
         }
-        log.info("DataSeeder: {} categorias inseridas.", ids.length);
         return ids;
     }
 
