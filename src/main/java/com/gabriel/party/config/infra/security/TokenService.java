@@ -77,11 +77,18 @@ public class TokenService {
         try {
             Algorithm algorithm = Algorithm.HMAC256(segredo);
 
-            return JWT.require(algorithm)
+            var decodificado = JWT.require(algorithm)
                     .withIssuer("FestConnect")
                     .build()
-                    .verify(token)
-                    .getSubject();
+                    .verify(token);
+
+            // O token de recuperação de senha tem o mesmo emissor e o mesmo subject. Sem esta checagem,
+            // ele serviria de login em qualquer rota durante os 5 minutos de validade.
+            if (!decodificado.getClaim("tipo").isMissing()) {
+                throw new AppException(ErrorCode.ERRO_AO_VALIDAR_TOKEN_JWT, "Token JWT inválido ou expirado");
+            }
+
+            return decodificado.getSubject();
 
         }catch (JWTVerificationException e){
             throw new AppException(ErrorCode.ERRO_AO_VALIDAR_TOKEN_JWT, "Token JWT inválido ou expirado");
