@@ -244,6 +244,8 @@ public class AutenticacaoService implements UserDetailsService {
                         "Usuário não encontrado para o email do token", email));
 
         usuario.setSenha(encoder.encode(dados.novaSenha()));
+        // Quem trocou a senha pode estar expulsando um invasor: os tokens antigos não podem continuar valendo
+        usuario.encerrarTodasAsSessoes();
         usuarioRepository.save(usuario);
     }
 }

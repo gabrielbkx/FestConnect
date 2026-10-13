@@ -10,7 +10,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -84,6 +86,27 @@ public class Usuario implements UserDetails {
 
     @Column(name = "token_expiracao")
     private LocalDateTime tokenExpiracao;
+
+    /**
+     * Tokens de login emitidos ANTES deste momento não valem mais. É o "estado" mínimo que o
+     * servidor guarda para ter logout com JWT, que por natureza é stateless. Nulo = nenhuma sessão encerrada.
+     * Instant (e não LocalDateTime) porque é comparado com o "iat" do token, que é um instante em UTC.
+     */
+    @Column(name = "sessoes_validas_desde")
+    private Instant sessoesValidasDesde;
+
+    /**
+     * Derruba todos os tokens emitidos até agora (sair de todos os dispositivos, troca de senha).
+     * <p>
+     * O "iat" do JWT só tem precisão de segundos, então arredondamos PARA CIMA, para o próximo segundo
+     * cheio: assim todo token emitido até agora, inclusive neste mesmo segundo, deixa de valer.
+     * Arredondar para baixo deixaria escapar um token emitido no mesmo segundo, antes do encerramento.
+     * Efeito colateral aceito: um login feito no mesmo segundo, logo depois, também cai; pela tela
+     * isso não acontece, porque a pessoa precisa digitar a senha de novo.
+     */
+    public void encerrarTodasAsSessoes() {
+        this.sessoesValidasDesde = Instant.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
+    }
 
     @Override
     public boolean isEnabled() {

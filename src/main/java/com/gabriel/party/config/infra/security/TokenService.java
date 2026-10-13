@@ -37,6 +37,10 @@ public class TokenService {
             var builder = JWT.create()
                     .withIssuer("FestConnect")
                     .withSubject(usuario.getEmail())
+                    // iat: comparado com usuario.sessoesValidasDesde (sair de todos os dispositivos)
+                    .withIssuedAt(Instant.now())
+                    // jti: identifica este token específico (logout de um dispositivo só, fase 2)
+                    .withJWTId(UUID.randomUUID().toString())
                     .withClaim("role", usuario.getRole().name())
                     .withClaim("usuarioId", usuario.getId().toString())
                     .withExpiresAt(gerarDataExpiracao());
@@ -72,7 +76,7 @@ public class TokenService {
     }
 
 
-    public String validarTokenDeLogin(String token) {
+    public TokenDeLogin validarTokenDeLogin(String token) {
 
         try {
             Algorithm algorithm = Algorithm.HMAC256(segredo);
@@ -88,7 +92,9 @@ public class TokenService {
                 throw new AppException(ErrorCode.ERRO_AO_VALIDAR_TOKEN_JWT, "Token JWT inválido ou expirado");
             }
 
-            return decodificado.getSubject();
+            return new TokenDeLogin(decodificado.getSubject(),
+                    decodificado.getIssuedAtAsInstant(),
+                    decodificado.getId());
 
         }catch (JWTVerificationException e){
             throw new AppException(ErrorCode.ERRO_AO_VALIDAR_TOKEN_JWT, "Token JWT inválido ou expirado");

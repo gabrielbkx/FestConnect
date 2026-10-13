@@ -42,7 +42,21 @@ class TokenServiceTest {
     void tokenDeLogin_valido() {
         String token = tokenService.gerarToken(usuario);
 
-        assertThat(tokenService.validarTokenDeLogin(token)).isEqualTo(EMAIL);
+        assertThat(tokenService.validarTokenDeLogin(token).email()).isEqualTo(EMAIL);
+    }
+
+    @Test
+    @DisplayName("token de login traz data de emissão (iat) e um id único (jti)")
+    void tokenDeLogin_temIatEJti() {
+        Instant antes = Instant.now().minusSeconds(1);
+
+        TokenDeLogin primeiro = tokenService.validarTokenDeLogin(tokenService.gerarToken(usuario));
+        TokenDeLogin segundo = tokenService.validarTokenDeLogin(tokenService.gerarToken(usuario));
+
+        assertThat(primeiro.emitidoEm()).isNotNull().isAfter(antes);
+        assertThat(primeiro.id()).isNotBlank();
+        // Cada token tem o seu jti: é o que permite, na fase 2, revogar um dispositivo só
+        assertThat(primeiro.id()).isNotEqualTo(segundo.id());
     }
 
     @Test

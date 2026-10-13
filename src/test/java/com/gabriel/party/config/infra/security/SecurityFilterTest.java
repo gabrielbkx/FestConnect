@@ -17,6 +17,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,6 +62,83 @@ class SecurityFilterTest {
         return usuario;
     }
 
+    private static TokenDeLogin tokenEmitidoEm(Instant emitidoEm) {
+        return new TokenDeLogin(EMAIL, emitidoEm, "jti-qualquer");
+    }
+
+    private void autenticarCom(TokenDeLogin tokenDeLogin, Usuario usuario) throws Exception {
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenDeLogin);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+        filtro.doFilter(requisicaoComToken(), response, chain);
+    }
+
+    // ── Sair de todos os dispositivos (usuario.sessoesValidasDesde)
+
+    @Test
+    @DisplayName("token emitido ANTES de sair de todos os dispositivos não vale mais")
+    void tokenAnteriorAoEncerramento_segueAnonimo() throws Exception {
+        var usuario = usuario(true, true);
+        usuario.setSessoesValidasDesde(Instant.now());
+
+        autenticarCom(tokenEmitidoEm(Instant.now().minusSeconds(60)), usuario);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    @DisplayName("token emitido DEPOIS (novo login) vale normalmente")
+    void tokenPosteriorAoEncerramento_autentica() throws Exception {
+        var usuario = usuario(true, true);
+        usuario.setSessoesValidasDesde(Instant.now().minusSeconds(60));
+
+        autenticarCom(tokenEmitidoEm(Instant.now()), usuario);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("token emitido no MESMO segundo do encerramento também cai (sem brecha de 1 s)")
+    void tokenNoMesmoSegundoDoEncerramento_naoVale() throws Exception {
+        var usuario = usuario(true, true);
+        usuario.encerrarTodasAsSessoes(); // arredonda para o próximo segundo cheio
+        var emitidoNoMesmoSegundo = Instant.now().truncatedTo(ChronoUnit.SECONDS); // iat tem só segundos
+
+        autenticarCom(tokenEmitidoEm(emitidoNoMesmoSegundo), usuario);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    @DisplayName("token emitido exatamente no instante de validade vale")
+    void tokenNoInstanteDeValidade_autentica() throws Exception {
+        var validasDesde = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+        var usuario = usuario(true, true);
+        usuario.setSessoesValidasDesde(validasDesde);
+
+        autenticarCom(tokenEmitidoEm(validasDesde), usuario);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("token antigo, sem data de emissão, não vale se o usuário já encerrou as sessões")
+    void tokenSemIat_comSessaoEncerrada_segueAnonimo() throws Exception {
+        var usuario = usuario(true, true);
+        usuario.setSessoesValidasDesde(Instant.now().minusSeconds(3600));
+
+        autenticarCom(tokenEmitidoEm(null), usuario);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    @DisplayName("token antigo, sem data de emissão, continua valendo se nada foi encerrado (compatibilidade)")
+    void tokenSemIat_semSessaoEncerrada_autentica() throws Exception {
+        autenticarCom(tokenEmitidoEm(null), usuario(true, true));
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
     @Test
     @DisplayName("sem token: segue anônimo, sem consultar nada")
     void semToken_segueAnonimo() throws Exception {
@@ -87,7 +166,7 @@ class SecurityFilterTest {
     @Test
     @DisplayName("token de usuário que não existe mais: segue anônimo (antes: NoSuchElementException)")
     void usuarioInexistente_segueAnonimo() throws Exception {
-        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(EMAIL);
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
         filtro.doFilter(requisicaoComToken(), response, chain);
@@ -99,7 +178,7 @@ class SecurityFilterTest {
     @Test
     @DisplayName("usuário desativado perde o acesso na próxima requisição, mesmo com token dentro da validade")
     void usuarioDesativado_segueAnonimo() throws Exception {
-        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(EMAIL);
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario(false, true)));
 
         filtro.doFilter(requisicaoComToken(), response, chain);
@@ -112,7 +191,7 @@ class SecurityFilterTest {
     @DisplayName("usuário ativo é autenticado com os papéis dele")
     void usuarioAtivo_autentica() throws Exception {
         var usuario = usuario(true, true);
-        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(EMAIL);
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
 
         filtro.doFilter(requisicaoComToken(), response, chain);
@@ -126,7 +205,7 @@ class SecurityFilterTest {
     @Test
     @DisplayName("e-mail ainda não verificado continua autenticando (decisão: o token do cadastro precisa funcionar)")
     void emailNaoVerificado_aindaAutentica() throws Exception {
-        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(EMAIL);
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario(true, false)));
 
         filtro.doFilter(requisicaoComToken(), response, chain);

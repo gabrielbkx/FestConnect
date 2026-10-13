@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.9.0-usuario-sessoes-validas-desde" author="GF">
+        <addColumn tableName="tb_usuarios">
+            <column name="sessoes_validas_desde" type="TIMESTAMP WITH TIME ZONE"
+                    remarks="Tokens de login emitidos antes deste momento não valem mais (sair de todos os dispositivos, troca de senha). Nulo = nenhuma sessão encerrada."/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
