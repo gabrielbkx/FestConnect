@@ -24,6 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -36,6 +37,10 @@ public class SecurityConfig {
 
     @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
+
+    // Só o frontend conhecido pode chamar a API pelo navegador. Lista separada por vírgula.
+    @Value("${app.cors.allowed-origins}")
+    private List<String> origensPermitidas;
 
     public SecurityConfig(SecurityFilter securityFilter, OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
         this.securityFilter = securityFilter;
@@ -91,7 +96,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // Antes: "*" junto com allowCredentials(true), ou seja, qualquer site podia chamar a API
+        // com as credenciais (cookies de sessão) do usuário.
+        configuration.setAllowedOrigins(origensPermitidas);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));

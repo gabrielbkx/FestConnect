@@ -9,6 +9,7 @@ import com.gabriel.party.repositories.cliente.ClienteRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +59,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         if (usuarioOpt.isPresent()) {
             usuario = usuarioOpt.get();
+            // Conta desativada não recebe token. Aqui dá para dizer o motivo: quem chegou neste
+            // ponto já provou ao Google que é dono do e-mail.
+            if (!Boolean.TRUE.equals(usuario.getAtivo())) {
+                encerrarSessaoDoLogin(request);
+                response.sendRedirect(frontendUrl + "/login?erro=conta_desativada");
+                return;
+            }
         } else {
             usuario = new Usuario();
             usuario.setEmail(email);
@@ -88,7 +96,23 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             if (prestador != null) { profileId = prestador.getId(); nomeCompleto = prestador.getNomeCompleto(); fotoPerfil = prestador.getFotoPerfilUrl(); }
         }
         String tokenJwt = tokenService.gerarToken(usuario, profileId, nomeCompleto, fotoPerfil);
-        response.sendRedirect(frontendUrl + "/oauth2/callback?token=" + tokenJwt);
+        encerrarSessaoDoLogin(request);
+
+        // Token no FRAGMENTO (#), não na query (?): o fragmento não é enviado ao servidor, então não
+        // aparece em logs de acesso (Vercel, proxies) nem vai no cabeçalho Referer.
+        response.sendRedirect(frontendUrl + "/oauth2/callback#token=" + tokenJwt);
+    }
+
+    /**
+     * A sessão HTTP só existe para guardar o estado do fluxo OAuth2 com o Google. Terminado o login,
+     * a API passa a usar o JWT; deixar a sessão viva manteria um segundo jeito de estar autenticado
+     * (pelo cookie JSESSIONID) sem necessidade.
+     */
+    private void encerrarSessaoDoLogin(HttpServletRequest request) {
+        HttpSession sessao = request.getSession(false);
+        if (sessao != null) {
+            sessao.invalidate();
+        }
     }
 }
 
