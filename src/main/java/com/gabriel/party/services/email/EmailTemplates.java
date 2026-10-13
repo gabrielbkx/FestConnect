@@ -274,27 +274,31 @@ public class EmailTemplates {
                 "<html lang='pt-BR'><head><meta charset='UTF-8'>" +
                 "<meta name='viewport' content='width=device-width,initial-scale=1.0'>" +
                 "<title>Resenha</title></head>" +
-                // Identidade Resenha: papel creme, card branco com borda preta (sem sombra), cabeçalho rosa
-                "<body style='margin:0;padding:0;background-color:#f4f4f0;font-family:Arial,Helvetica,sans-serif;'>" +
-                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f4f0;padding:40px 16px;'>" +
+                // Identidade Resenha (estilo Shop): fundo cinza-claro, card branco sem borda, marca em violeta
+                "<body style='margin:0;padding:0;background-color:#f2f4f5;font-family:Inter,Arial,Helvetica,sans-serif;'>" +
+                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f2f4f5;padding:32px 16px;'>" +
                 "<tr><td align='center'>" +
-                "<table width='600' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border:2px solid #000000;border-radius:16px;overflow:hidden;'>" +
 
-                // Header
-                "<tr><td style='background-color:#ff90e8;border-bottom:2px solid #000000;padding:24px 32px;text-align:center;'>" +
-                "<span style='color:#000000;font-size:30px;font-weight:800;letter-spacing:-1px;'>resenha</span>" +
-                "</td></tr>" +
+                // Marca
+                "<table width='600' cellpadding='0' cellspacing='0'>" +
+                "<tr><td style='padding:0 8px 16px 8px;'>" +
+                "<span style='color:#5433eb;font-size:28px;font-weight:600;letter-spacing:-1.5px;'>resenha</span>" +
+                "</td></tr></table>" +
+
+                // Card
+                "<table width='600' cellpadding='0' cellspacing='0' style='background-color:#ffffff;border-radius:28px;" +
+                "box-shadow:rgba(0,0,0,0.1) 0px 4px 6px -1px,rgba(0,0,0,0.1) 0px 2px 4px -2px;'>" +
 
                 // Título
                 "<tr><td style='padding:32px 32px 0 32px;'>" +
-                "<h2 style='margin:0 0 16px 0;color:#111827;font-size:20px;font-weight:700;'>" + esc(titulo) + "</h2>" +
-                "<p style='margin:0 0 12px 0;color:#374151;font-size:15px;line-height:1.6;'>" + saudacao + "</p>" +
-                "<p style='margin:0 0 24px 0;color:#374151;font-size:15px;line-height:1.6;'>" + mensagem + "</p>" +
+                "<h2 style='margin:0 0 16px 0;color:#000000;font-size:20px;font-weight:600;letter-spacing:-1px;'>" + esc(titulo) + "</h2>" +
+                "<p style='margin:0 0 12px 0;color:#332f2d;font-size:15px;line-height:1.6;'>" + saudacao + "</p>" +
+                "<p style='margin:0 0 24px 0;color:#332f2d;font-size:15px;line-height:1.6;'>" + mensagem + "</p>" +
                 "</td></tr>" +
 
                 // Detalhes
                 "<tr><td style='padding:0 32px;'>" +
-                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;'>" +
+                "<table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f2f4f5;border-radius:20px;margin-bottom:24px;'>" +
                 linhasDetalhes +
                 "</table>" +
                 "</td></tr>" +
@@ -302,35 +306,36 @@ public class EmailTemplates {
                 // Rodapé extra (caixa de aviso/sucesso/info)
                 (rodapeExtra.isEmpty() ? "" : "<tr><td style='padding:0 32px 24px 32px;'>" + rodapeExtra + "</td></tr>") +
 
-                // Footer
-                "<tr><td style='background-color:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 32px;text-align:center;'>" +
-                "<p style='margin:0;color:#9ca3af;font-size:12px;line-height:1.5;'>" +
-                "Este e-mail foi enviado automaticamente pela Resenha.<br>Por favor, não responda a esta mensagem." +
-                "</p></td></tr>" +
+                "<tr><td style='padding:0 0 8px 0;'></td></tr>" +
+                "</table>" +
 
-                "</table></td></tr></table></body></html>";
+                // Footer
+                "<table width='600' cellpadding='0' cellspacing='0'>" +
+                "<tr><td style='padding:20px 8px;text-align:center;'>" +
+                "<p style='margin:0;color:#787574;font-size:12px;line-height:1.5;'>" +
+                "Este e-mail foi enviado automaticamente pela Resenha.<br>Por favor, não responda a esta mensagem." +
+                "</p></td></tr></table>" +
+
+                "</td></tr></table></body></html>";
     }
 
     private static String linha(String label, String valor) {
         return "<tr>" +
-                "<td style='padding:10px 16px;color:#6b7280;font-size:13px;font-weight:600;width:38%;border-bottom:1px solid #e5e7eb;'>" + esc(label) + "</td>" +
-                "<td style='padding:10px 16px;color:#111827;font-size:13px;border-bottom:1px solid #e5e7eb;'>" + esc(valor) + "</td>" +
+                "<td style='padding:12px 20px;color:#787574;font-size:13px;width:38%;border-bottom:1px solid #ebebeb;'>" + esc(label) + "</td>" +
+                "<td style='padding:12px 20px;color:#000000;font-size:13px;font-weight:500;border-bottom:1px solid #ebebeb;'>" + esc(valor) + "</td>" +
                 "</tr>";
     }
 
+    /** Caixa neutra com um ponto colorido: a cor do tipo fica só no marcador, como no app. */
     private static String caixa(String tipo, String conteudo) {
-        String corBorda = switch (tipo) {
-            case "sucesso" -> "#16a34a";
-            case "aviso"   -> "#d97706";
-            default        -> "#2563eb"; // info
+        String corPonto = switch (tipo) {
+            case "sucesso" -> "#008060";
+            case "aviso"   -> "#c58b00";
+            default        -> "#000000"; // info
         };
-        String corFundo = switch (tipo) {
-            case "sucesso" -> "#f0fdf4";
-            case "aviso"   -> "#fffbeb";
-            default        -> "#eff6ff";
-        };
-        return "<div style='background-color:" + corFundo + ";border-left:4px solid " + corBorda + ";" +
-                "border-radius:4px;padding:14px 16px;font-size:14px;color:#374151;line-height:1.6;'>" +
+        return "<div style='background-color:#f2f4f5;border-radius:20px;padding:14px 18px;font-size:14px;color:#332f2d;line-height:1.6;'>" +
+                "<span style='display:inline-block;width:8px;height:8px;border-radius:50%;background-color:" + corPonto + ";" +
+                "margin-right:8px;vertical-align:middle;'></span>" +
                 conteudo + "</div>";
     }
 
