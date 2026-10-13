@@ -5,6 +5,7 @@ import com.gabriel.party.dtos.cliente.ClienteAdminDTO;
 import com.gabriel.party.dtos.cliente.ClienteRequestDTO;
 import com.gabriel.party.dtos.cliente.ClienteResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
+import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.services.cliente.ClienteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -77,8 +79,9 @@ public class ClienteController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_ADMINISTRADOR')")
     public ResponseEntity<ClienteResponseDTO> atualizar(@PathVariable UUID id,
-                                                        @RequestBody @Valid ClienteRequestDTO dto) {
-        return ResponseEntity.ok(clienteService.atualizar(id, dto));
+                                                        @RequestBody @Valid ClienteRequestDTO dto,
+                                                        @AuthenticationPrincipal Usuario usuarioLogado) {
+        return ResponseEntity.ok(clienteService.atualizar(id, dto,usuarioLogado));
     }
 
     @ApiResponses(value = {

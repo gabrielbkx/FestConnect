@@ -16,6 +16,7 @@ import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
@@ -97,10 +98,12 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteResponseDTO atualizar(UUID id, ClienteRequestDTO dto) {
+    public ClienteResponseDTO atualizar(UUID id, ClienteRequestDTO dto,Usuario usuarioLogado) {
 
         Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+
+        garantirAcesso(cliente, usuarioLogado);
 
         UUID idUsuarioAtual = cliente.getUsuario().getId();
 
@@ -249,5 +252,13 @@ public class ClienteService {
         }
 
        return clienteRepository.save(novoCliente);
+    }
+
+    private void garantirAcesso(Cliente cliente, Usuario usuarioLogado) {
+        boolean ehAdmin = usuarioLogado.getRole() == Role.ROLE_ADMINISTRADOR;
+        boolean ehDono = cliente.getUsuario().getId().equals(usuarioLogado.getId());
+        if (!ehAdmin && !ehDono) {
+            throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioLogado.getId().toString());
+        }
     }
 }
