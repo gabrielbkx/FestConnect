@@ -34,7 +34,7 @@ public class EmailVerificacaoService {
         usuarioRepository.save(u);
 
         String link = frontendUrl + "/verificar-email?token=" + token;
-        String corpo = "<h2>Bem-vindo ao FestConnect!</h2>"
+        String corpo = "<h2>Boas-vindas à Resenha!</h2>"
                 + "<p>Confirme seu endereço de e-mail clicando no link abaixo:</p>"
                 + "<p><a href=\"" + link + "\">Verificar e-mail</a></p>"
                 + "<p>Este link expira em 24 horas.</p>";
@@ -43,11 +43,11 @@ public class EmailVerificacaoService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — FestConnect", corpo);
+                    emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — Resenha", corpo);
                 }
             });
         } else {
-            emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — FestConnect", corpo);
+            emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — Resenha", corpo);
         }
     }
 

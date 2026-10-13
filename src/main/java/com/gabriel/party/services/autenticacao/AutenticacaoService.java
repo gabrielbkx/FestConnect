@@ -163,7 +163,7 @@ public class AutenticacaoService implements UserDetailsService {
             codigoRecuperacao.setUsuario(user);
             codigoRecuperacaoRepository.save(codigoRecuperacao);
 
-            String assunto = "Recuperação de Senha - FestConnect";
+            String assunto = "Recuperação de senha - Resenha";
             String corpoEmail = String.format(
                     "Olá, %s!\n\n" +
                             "Recebemos uma solicitação para redefinir a sua senha.\n" +

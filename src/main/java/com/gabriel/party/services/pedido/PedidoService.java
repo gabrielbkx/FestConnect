@@ -95,7 +95,7 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 prestador.getUsuario().getEmail(),
-                "FestConnect - Novo pedido de orçamento",
+                "Resenha - Novo pedido de orçamento",
                 EmailTemplates.novoPedidoParaPrestador(salvo)
         );
 
@@ -165,7 +165,7 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
-                "FestConnect - Seu orçamento está pronto",
+                "Resenha - Seu orçamento está pronto",
                 EmailTemplates.orcamentoEnviadoParaCliente(pedido)
         );
 
@@ -180,7 +180,7 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
-                "FestConnect - Prestador não disponível",
+                "Resenha - Prestador não disponível",
                 EmailTemplates.pedidoRecusadoParaCliente(pedido)
         );
     }
@@ -203,7 +203,7 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getPrestador().getUsuario().getEmail(),
-                "FestConnect - Orçamento aceito!",
+                "Resenha - Orçamento aceito!",
                 EmailTemplates.orcamentoAceitoParaPrestador(pedido)
         );
 
@@ -223,7 +223,7 @@ public class PedidoService {
 
         emailService.enviarAposCommit(
                 pedido.getPrestador().getUsuario().getEmail(),
-                "FestConnect - Orçamento recusado",
+                "Resenha - Orçamento recusado",
                 EmailTemplates.orcamentoRecusadoPeloClienteParaPrestador(pedido)
         );
     }
@@ -241,7 +241,7 @@ public class PedidoService {
 
         emailService.enviarEmail(
                 pedido.getPrestador().getUsuario().getEmail(),
-                "FestConnect - Pedido cancelado",
+                "Resenha - Pedido cancelado",
                 EmailTemplates.pedidoCanceladoParaPrestador(pedido)
         );
     }
@@ -305,7 +305,7 @@ public class PedidoService {
         pedidosSalvos.forEach(p ->
                 emailService.enviarAposCommit(
                         p.getPrestador().getUsuario().getEmail(),
-                        "FestConnect - Novo pedido de orçamento",
+                        "Resenha - Novo pedido de orçamento",
                         EmailTemplates.novoPedidoParaPrestador(p)
                 )
         );

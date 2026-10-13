@@ -13,9 +13,9 @@ public class SpringDocConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("API para um marketplace de serviços de festas")
+                        .title("Resenha API")
                         .version("v1")
-                        .description("Documentação da API")
+                        .description("API da Resenha, marketplace de festas e eventos")
                         .contact(new Contact().name("Gabriel").email("22998715889")));
     }
 }
