@@ -1,6 +1,7 @@
 package com.gabriel.party.config.infra.security;
 
 import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 
 /**
  * Lê o JWT da requisição e, se ele for válido, coloca o usuário no contexto do Spring Security.
@@ -49,17 +51,18 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     private void autenticar(String token) {
         try {
-            var email = tokenService.validarTokenDeLogin(token);
+            var tokenDeLogin = tokenService.validarTokenDeLogin(token);
 
             // Só o campo "ativo" decide. Não usamos isEnabled(): ele também exige e-mail verificado,
             // e o token entregue no cadastro (antes da verificação) pararia de funcionar.
-            usuarioRepository.findByEmail(email)
+            usuarioRepository.findByEmail(tokenDeLogin.email())
                     .filter(usuario -> Boolean.TRUE.equals(usuario.getAtivo()))
+                    .filter(usuario -> sessaoAindaValida(usuario, tokenDeLogin))
                     .ifPresentOrElse(usuario -> {
                         var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                     }, () -> {
-                        log.debug("Token de usuário inexistente ou desativado; requisição segue anônima.");
+                        log.debug("Token de usuário inexistente, desativado ou de sessão encerrada; requisição segue anônima.");
                         SecurityContextHolder.clearContext();
                     });
 
@@ -68,6 +71,19 @@ public class SecurityFilter extends OncePerRequestFilter {
             log.debug("Token recusado ({}); requisição segue anônima.", e.getMessage());
             SecurityContextHolder.clearContext();
         }
+    }
+
+    /**
+     * "Sair de todos os dispositivos" e troca de senha gravam usuario.sessoesValidasDesde; todo token
+     * emitido antes disso deixa de valer. Custo zero: o usuário já é buscado no banco acima.
+     */
+    private static boolean sessaoAindaValida(Usuario usuario, TokenDeLogin token) {
+        Instant validasDesde = usuario.getSessoesValidasDesde();
+        if (validasDesde == null) {
+            return true;
+        }
+        // Token sem data de emissão (anterior a esta versão): não dá para provar que é novo, então não vale
+        return token.emitidoEm() != null && !token.emitidoEm().isBefore(validasDesde);
     }
 
     private String recuperarToken(HttpServletRequest request) {

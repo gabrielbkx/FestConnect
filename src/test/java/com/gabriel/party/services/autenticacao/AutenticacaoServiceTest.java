@@ -10,6 +10,8 @@ import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.autenticacao.CodigoRecuperacaoRepository;
 import com.gabriel.party.services.email.EmailService;
+import com.gabriel.party.dtos.autenticacao.DadosRedefinicaoDeSenhaDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +23,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,6 +51,7 @@ class AutenticacaoServiceTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private TokenService tokenService;
     @Mock private EmailService emailService;
+    @Mock private PasswordEncoder encoder;
 
     @InjectMocks private AutenticacaoService service;
 
@@ -233,6 +238,23 @@ class AutenticacaoServiceTest {
         verify(codigoRecuperacaoRepository).deleteByUsuario(usuario);
         verify(codigoRecuperacaoRepository).save(any(CodigoRecuperacao.class));
         verify(emailService).enviarAposCommit(eq(EMAIL), anyString(), anyString());
+    }
+
+    // ── Redefinição de senha
+
+    @Test
+    @DisplayName("redefinir a senha encerra todas as sessões: tokens antigos param de valer")
+    void redefinirSenha_encerraTodasAsSessoes() {
+        when(tokenService.validarTokenDeRecuperacaoDeSenha("token-recuperacao")).thenReturn(EMAIL);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+        when(encoder.encode("senha-nova-123")).thenReturn("hash-novo");
+        Instant antes = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+
+        service.redefinirSenha(new DadosRedefinicaoDeSenhaDTO("token-recuperacao", "senha-nova-123"));
+
+        assertThat(usuario.getSenha()).isEqualTo("hash-novo");
+        assertThat(usuario.getSessoesValidasDesde()).isNotNull().isAfterOrEqualTo(antes);
+        verify(usuarioRepository).save(usuario);
     }
 
     private void assertCodigoInvalido(ThrowingCallable acao) {
