@@ -104,13 +104,13 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/recuperacao-senha")
-    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody DadosRecuperacaoDTO email) {
+    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody @Valid DadosRecuperacaoDTO email) {
         autenticacaoService.enviarCodigoRecuperacao(email);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/validar-codigo")
-    public ResponseEntity<TokenResponseDTO> validarCodigoRecuperacao(@RequestBody DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
+    public ResponseEntity<TokenResponseDTO> validarCodigoRecuperacao(@RequestBody @Valid DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
 
         var tokenRecuperacao = autenticacaoService.validarCodigoRecuperacao(dados);
         return ResponseEntity.ok().body(new TokenResponseDTO(tokenRecuperacao));

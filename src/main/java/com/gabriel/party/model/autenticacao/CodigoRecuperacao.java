@@ -27,6 +27,12 @@ public class CodigoRecuperacao {
     @Column(name = "data_expiracao", nullable = false)
     LocalDateTime dataExpiracao;
 
+    @Column(name = "data_criacao", nullable = false)
+    LocalDateTime dataCriacao;
+
+    @Column(name = "tentativas", nullable = false)
+    int tentativas;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     Usuario usuario;
