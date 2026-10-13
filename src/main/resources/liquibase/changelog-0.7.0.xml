@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.7.0-codigo-recuperacao-limpeza" author="GF">
+        <comment>Códigos de recuperação valem só 15 minutos. Apaga os existentes (podem ter duplicados por usuário) para permitir a restrição de um código por usuário.</comment>
+        <delete tableName="tb_codigo_recuperacao"/>
+    </changeSet>
+
+    <changeSet id="0.7.0-codigo-recuperacao-tentativas" author="GF">
+        <addColumn tableName="tb_codigo_recuperacao">
+            <column name="tentativas" type="INT" defaultValueNumeric="0"
+                    remarks="Quantidade de PINs errados informados para este código. Ao atingir o limite, o código é apagado.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_criacao" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"
+                    remarks="Momento em que o código foi gerado. Usado para o intervalo mínimo entre reenvios.">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addUniqueConstraint tableName="tb_codigo_recuperacao" columnNames="usuario_id"
+                             constraintName="uk_codigo_recuperacao_usuario"/>
+    </changeSet>
+
+</databaseChangeLog>

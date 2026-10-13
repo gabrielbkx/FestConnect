@@ -28,8 +28,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -57,6 +59,14 @@ public class AutenticacaoService implements UserDetailsService {
     EmailService emailService;
     @Autowired
     EmailVerificacaoService emailVerificacaoService;
+
+    static final int MAX_TENTATIVAS_PIN = 5;
+    static final int VALIDADE_CODIGO_MINUTOS = 15;
+    static final int INTERVALO_MINIMO_REENVIO_SEGUNDOS = 60;
+
+    // SecureRandom: o PIN é um segredo, e o java.util.Random é previsível.
+    // Uma instância só, reaproveitada (criar uma por chamada é caro e desnecessário).
+    private final SecureRandom geradorSeguro = new SecureRandom();
 
 
     @Override
@@ -125,14 +135,31 @@ public class AutenticacaoService implements UserDetailsService {
         }
     }
 
+    @Transactional
     public void enviarCodigoRecuperacao(DadosRecuperacaoDTO dados) {
         var email = dados.email();
         usuarioRepository.findByEmail(email).ifPresent(user -> {
-            String pin = String.format("%06d", new Random().nextInt(1000000));
+            LocalDateTime agora = LocalDateTime.now();
+
+            // Reenvio muito rápido: ignora em silêncio. A resposta continua 200,
+            // para não revelar se o e-mail existe nem se já há código ativo.
+            boolean reenvioCedoDemais = codigoRecuperacaoRepository.findByUsuarioEmail(email)
+                    .map(anterior -> anterior.getDataCriacao().isAfter(agora.minusSeconds(INTERVALO_MINIMO_REENVIO_SEGUNDOS)))
+                    .orElse(false);
+            if (reenvioCedoDemais) {
+                return;
+            }
+
+            // Um código por usuário: o novo invalida o anterior
+            codigoRecuperacaoRepository.deleteByUsuario(user);
+
+            String pin = String.format("%06d", geradorSeguro.nextInt(1_000_000));
 
             CodigoRecuperacao codigoRecuperacao = new CodigoRecuperacao();
             codigoRecuperacao.setCodigoPin(pin);
-            codigoRecuperacao.setDataExpiracao(LocalDateTime.now().plusMinutes(15));
+            codigoRecuperacao.setDataCriacao(agora);
+            codigoRecuperacao.setDataExpiracao(agora.plusMinutes(VALIDADE_CODIGO_MINUTOS));
+            codigoRecuperacao.setTentativas(0);
             codigoRecuperacao.setUsuario(user);
             codigoRecuperacaoRepository.save(codigoRecuperacao);
 
@@ -147,21 +174,54 @@ public class AutenticacaoService implements UserDetailsService {
                             "Atenciosamente,\nEquipe de Suporte.", user.getEmail(), pin
             );
 
-            emailService.enviarEmail(user.getEmail(), assunto, corpoEmail);
+            // Após o commit e fora da thread da requisição: o e-mail só sai se o código
+            // foi gravado, e o tempo de resposta não denuncia se o e-mail existe.
+            emailService.enviarAposCommit(user.getEmail(), assunto, corpoEmail);
         });
     }
 
+    /**
+     * noRollbackFor: o PIN errado lança AppException, mas o incremento das tentativas
+     * (ou a remoção do código) precisa ser gravado mesmo assim. Sem isso, o rollback
+     * desfaria o contador e o limite de tentativas não funcionaria.
+     */
+    @Transactional(noRollbackFor = AppException.class)
     public String validarCodigoRecuperacao(DadosDeValidacaoDeCodigoRecuperacaoDTO dados) {
+        // Mesma resposta para "não existe código" e "PIN errado": quem ataca não
+        // descobre se o e-mail tem um código ativo
         var codigo = codigoRecuperacaoRepository.findByUsuarioEmail(dados.email())
-                .orElseThrow(() -> new RuntimeException("Código não encontrado"));
+                .orElseThrow(() -> new AppException(ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO));
 
-        if (!codigo.getCodigoPin().equals(dados.codigoPin()) || codigo.getDataExpiracao().isBefore(LocalDateTime.now())) {
-            throw new AppException(ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO,
-                    "O código de recuperação é inválido ou expirou", dados.email());
+        if (codigo.getDataExpiracao().isBefore(LocalDateTime.now())) {
+            codigoRecuperacaoRepository.delete(codigo);
+            throw new AppException(ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO);
         }
-        codigoRecuperacaoRepository.delete(codigo);
 
+        if (!pinConfere(codigo.getCodigoPin(), dados.codigoPin())) {
+            codigo.setTentativas(codigo.getTentativas() + 1);
+            if (codigo.getTentativas() >= MAX_TENTATIVAS_PIN) {
+                codigoRecuperacaoRepository.delete(codigo);
+            } else {
+                codigoRecuperacaoRepository.save(codigo);
+            }
+            throw new AppException(ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO);
+        }
+
+        codigoRecuperacaoRepository.delete(codigo);
         return tokenService.gerarTokenParaRecuperacaoDeSenha(codigo.getUsuario());
+    }
+
+    /**
+     * Comparação em tempo constante: o tempo de resposta não depende de quantos
+     * dígitos iniciais estão certos (proteção contra timing attack).
+     */
+    private static boolean pinConfere(String pinCorreto, String pinInformado) {
+        if (pinInformado == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                pinCorreto.getBytes(StandardCharsets.UTF_8),
+                pinInformado.getBytes(StandardCharsets.UTF_8));
     }
 
     public void verificarEmail(String token) {
