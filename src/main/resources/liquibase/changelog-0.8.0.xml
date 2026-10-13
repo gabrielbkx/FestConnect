@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        Categorias são dado de referência: o sistema não funciona sem elas, em nenhum ambiente.
+        Antes eram criadas pelo DataSeeder (que agora só roda em dev). IDs fixos para que todos
+        os ambientes novos tenham os mesmos IDs.
+        Bancos que já têm categorias (criadas pelo DataSeeder antigo) só marcam o changeset como
+        executado, sem inserir nada, para não duplicar.
+    -->
+    <changeSet id="0.8.0-categorias-referencia" author="GF">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM tb_categorias</sqlCheck>
+        </preConditions>
+        <loadData tableName="tb_categorias" file="dados/categorias.csv" relativeToChangelogFile="true"
+                  separator=";" encoding="UTF-8">
+            <column name="id_categoria" header="id_categoria" type="UUID"/>
+            <column name="nome" header="nome" type="STRING"/>
+            <column name="descricao" header="descricao" type="STRING"/>
+            <column name="ativo" header="ativo" type="BOOLEAN"/>
+        </loadData>
+    </changeSet>
+
+</databaseChangeLog>
