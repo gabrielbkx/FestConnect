@@ -60,10 +60,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/avaliacoes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/eventos/tipos").permitAll()
 
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMIN") // Apenas CLIENTE e ADMIN podem acessar
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMIN") // Apenas PRESTADOR e ADMIN podem acessar
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMINISTRADOR") // Apenas CLIENTE e ADMINISTRADOR podem acessar
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMINISTRADOR") // Apenas CLIENTE e ADMINISTRADOR podem acessar
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMINISTRADOR") // Apenas PRESTADOR e ADMINISTRADOR podem acessar
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMINISTRADOR") // Apenas PRESTADOR e ADMINISTRADOR podem acessar
 
                         .requestMatchers("/api/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                         .anyRequest().authenticated() // Qualquer outra rota exige token

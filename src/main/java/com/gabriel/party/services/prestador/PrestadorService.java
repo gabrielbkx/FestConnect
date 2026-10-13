@@ -12,6 +12,7 @@ import com.gabriel.party.mapper.autenticacao.UsuarioMapper;
 import com.gabriel.party.mapper.prestador.PrestadorMapper;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
@@ -106,9 +107,8 @@ public class PrestadorService {
     }
 
     @Transactional
-    public PrestadorResponseDTO atualizarPrestador(@Valid PrestadorRequestDTO dto, UUID id) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+    public PrestadorResponseDTO atualizarPrestador(@Valid PrestadorRequestDTO dto, UUID id, Usuario usuarioLogado) {
+        var prestador = buscarComAcesso(id, usuarioLogado);
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
 
@@ -130,9 +130,8 @@ public class PrestadorService {
     }
 
     @Transactional
-    public void deletar(UUID id) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+    public void deletar(UUID id, Usuario usuarioLogado) {
+        var prestador = buscarComAcesso(id, usuarioLogado);
 
         prestador.setAtivo(false);
         prestador.getUsuario().setAtivo(false);
@@ -141,9 +140,8 @@ public class PrestadorService {
     }
 
     @Transactional
-    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo, Usuario usuarioLogado) {
+        var prestador = buscarComAcesso(id, usuarioLogado);
 
         String contentType = arquivo.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
@@ -162,9 +160,8 @@ public class PrestadorService {
     }
 
     @Transactional
-    public String atualizarFotoBanner(UUID id, MultipartFile arquivo) {
-        var prestador = repository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+    public String atualizarFotoBanner(UUID id, MultipartFile arquivo, Usuario usuarioLogado) {
+        var prestador = buscarComAcesso(id, usuarioLogado);
 
         String contentType = arquivo.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
@@ -180,6 +177,25 @@ public class PrestadorService {
             try { armazenamentoService.deletaMidia(urlAntiga); } catch (Exception ignored) {}
         }
         return urlNova;
+    }
+
+    /**
+     * Busca o prestador e já garante que quem chama é o dono do perfil ou admin.
+     * Use sempre este método nas operações sobre um perfil, para a checagem não ser esquecida.
+     */
+    private Prestador buscarComAcesso(UUID id, Usuario usuarioLogado) {
+        var prestador = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
+        garantirAcesso(prestador, usuarioLogado);
+        return prestador;
+    }
+
+    private void garantirAcesso(Prestador prestador, Usuario usuarioLogado) {
+        boolean ehAdmin = usuarioLogado.getRole() == Role.ROLE_ADMINISTRADOR;
+        boolean ehDono = prestador.getUsuario().getId().equals(usuarioLogado.getId());
+        if (!ehAdmin && !ehDono) {
+            throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioLogado.getId().toString());
+        }
     }
 
     /**

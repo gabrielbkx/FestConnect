@@ -5,6 +5,7 @@ import com.gabriel.party.exceptions.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,6 +47,23 @@ public class GlobalExceptionHandler {
                 mensagensErro,
                 request.getRequestURI(),
                 "erro_de_validacao"
+        );
+        return ResponseEntity.status(status).body(err);
+    }
+
+    // Negação do @PreAuthorize (AuthorizationDeniedException). Sem este handler,
+    // ela caía no handler genérico abaixo e virava 500 em vez de 403.
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<AppErroResponse> handleAccessDenied(AccessDeniedException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
+
+        AppErroResponse err = new AppErroResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Você não tem permissão para acessar este recurso.",
+                request.getRequestURI(),
+                "acesso_negado"
         );
         return ResponseEntity.status(status).body(err);
     }

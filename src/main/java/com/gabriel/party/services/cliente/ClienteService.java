@@ -16,6 +16,7 @@ import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.Usuario.UsuarioRepository;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
@@ -72,9 +73,8 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
-    public ClienteResponseDTO buscarPorId(UUID id) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+    public ClienteResponseDTO buscarPorId(UUID id, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(id, usuarioLogado);
         return mapper.toDto(cliente);
     }
 
@@ -97,10 +97,9 @@ public class ClienteService {
     }
 
     @Transactional
-    public ClienteResponseDTO atualizar(UUID id, ClienteRequestDTO dto) {
+    public ClienteResponseDTO atualizar(UUID id, ClienteRequestDTO dto, Usuario usuarioLogado) {
 
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+        Cliente cliente = buscarComAcesso(id, usuarioLogado);
 
         UUID idUsuarioAtual = cliente.getUsuario().getId();
 
@@ -117,10 +116,9 @@ public class ClienteService {
     }
 
     @Transactional
-    public void deletar(UUID id) {
+    public void deletar(UUID id, Usuario usuarioLogado) {
 
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, "Cliente não encontrado", id.toString()));
+        Cliente cliente = buscarComAcesso(id, usuarioLogado);
         cliente.setAtivo(false);
         cliente.getUsuario().setAtivo(false);
 
@@ -129,9 +127,8 @@ public class ClienteService {
     }
 
     @Transactional
-    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, id.toString()));
+    public String atualizarFotoPerfil(UUID id, MultipartFile arquivo, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(id, usuarioLogado);
 
         String contentType = arquivo.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
@@ -150,9 +147,8 @@ public class ClienteService {
     }
 
     @Transactional
-    public void adicionarPrestadorFavorito(UUID clienteId, UUID prestadorId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public void adicionarPrestadorFavorito(UUID clienteId, UUID prestadorId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
         Prestador prestador = prestadorRepository.findByIdAndAtivoTrue(prestadorId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, prestadorId.toString()));
 
@@ -166,9 +162,8 @@ public class ClienteService {
     }
 
     @Transactional
-    public void removerPrestadorFavorito(UUID clienteId, UUID prestadorId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public void removerPrestadorFavorito(UUID clienteId, UUID prestadorId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
 
         if (cliente.getPrestadoresFavoritos() == null
                 || !cliente.getPrestadoresFavoritos().removeIf(p -> p.getId().equals(prestadorId))) {
@@ -178,9 +173,8 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
-    public List<PrestadorResumoDTO> listarPrestadoresFavoritos(UUID clienteId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public List<PrestadorResumoDTO> listarPrestadoresFavoritos(UUID clienteId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
 
         if (cliente.getPrestadoresFavoritos() == null || cliente.getPrestadoresFavoritos().isEmpty()) {
             return List.of();
@@ -189,9 +183,8 @@ public class ClienteService {
     }
 
     @Transactional
-    public void adicionarCategoriaFavorita(UUID clienteId, UUID categoriaId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public void adicionarCategoriaFavorita(UUID clienteId, UUID categoriaId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
         Categoria categoria = categoriaRepository.findByIdAndAtivoTrue(categoriaId)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORIA_NAO_ENCONTRADA, categoriaId.toString()));
 
@@ -205,9 +198,8 @@ public class ClienteService {
     }
 
     @Transactional
-    public void removerCategoriaFavorita(UUID clienteId, UUID categoriaId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public void removerCategoriaFavorita(UUID clienteId, UUID categoriaId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
 
         if (cliente.getCategoriasFavoritas() == null
                 || !cliente.getCategoriasFavoritas().removeIf(c -> c.getId().equals(categoriaId))) {
@@ -217,9 +209,8 @@ public class ClienteService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoriaReponseDTO> listarCategoriasFavoritas(UUID clienteId) {
-        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(clienteId)
-                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, clienteId.toString()));
+    public List<CategoriaReponseDTO> listarCategoriasFavoritas(UUID clienteId, Usuario usuarioLogado) {
+        Cliente cliente = buscarComAcesso(clienteId, usuarioLogado);
 
         if (cliente.getCategoriasFavoritas() == null || cliente.getCategoriasFavoritas().isEmpty()) {
             return List.of();
@@ -249,5 +240,24 @@ public class ClienteService {
         }
 
        return clienteRepository.save(novoCliente);
+    }
+
+    /**
+     * Busca o cliente e já garante que quem chama é o dono do perfil ou admin.
+     * Use sempre este método nas operações sobre um perfil, para a checagem não ser esquecida.
+     */
+    private Cliente buscarComAcesso(UUID id, Usuario usuarioLogado) {
+        Cliente cliente = clienteRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, id.toString()));
+        garantirAcesso(cliente, usuarioLogado);
+        return cliente;
+    }
+
+    private void garantirAcesso(Cliente cliente, Usuario usuarioLogado) {
+        boolean ehAdmin = usuarioLogado.getRole() == Role.ROLE_ADMINISTRADOR;
+        boolean ehDono = cliente.getUsuario().getId().equals(usuarioLogado.getId());
+        if (!ehAdmin && !ehDono) {
+            throw new AppException(ErrorCode.USUARIO_SEM_PERMISSAO, usuarioLogado.getId().toString());
+        }
     }
 }
