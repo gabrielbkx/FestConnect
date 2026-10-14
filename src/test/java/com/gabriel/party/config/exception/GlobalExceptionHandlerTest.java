@@ -1,11 +1,15 @@
 package com.gabriel.party.config.exception;
 
+import com.gabriel.party.exceptions.MuitasTentativasException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,5 +38,28 @@ class GlobalExceptionHandlerTest {
 
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(resposta.getBody()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("muitas tentativas cai no handler próprio, e não no da AppException")
+    void muitasTentativas_resolveParaHandlerProprio() {
+        var excecao = new MuitasTentativasException(Duration.ofSeconds(30));
+
+        var metodo = new ExceptionHandlerMethodResolver(GlobalExceptionHandler.class).resolveMethodByThrowable(excecao);
+
+        assertThat(metodo).isNotNull();
+        assertThat(metodo.getName()).isEqualTo("handleMuitasTentativas");
+    }
+
+    @Test
+    @DisplayName("muitas tentativas responde 429 com Retry-After em segundos, arredondado para cima")
+    void muitasTentativas_responde429ComRetryAfter() {
+        var request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+
+        var resposta = handler.handleMuitasTentativas(new MuitasTentativasException(Duration.ofMillis(839_200)), request);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(resposta.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("840");
+        assertThat(resposta.getBody().message()).isEqualTo("Muitas tentativas. Tente de novo em 14 minuto(s).");
     }
 }

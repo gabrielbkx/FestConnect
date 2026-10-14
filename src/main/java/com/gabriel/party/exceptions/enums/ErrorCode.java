@@ -73,6 +73,7 @@ public enum ErrorCode {
     USUARIO_JA_EXISTE_POR_EMAIL("usuario_ja_existe_por_email", HttpStatus.CONFLICT, "Já existe um usuário cadastrado com esse email '%email%'"),
     USUARIO_SEM_PERMISSAO("usuario_sem_permissao", HttpStatus.FORBIDDEN, "O usuário '%usuarioId%' não tem permissão para realizar esta ação."),
     CODIGO_INVALIDO_OU_EXPIRADO("codigo_invalido_ou_expirado", HttpStatus.BAD_REQUEST, "O código de recuperação é inválido ou expirou"),
+    MUITAS_TENTATIVAS("muitas_tentativas", HttpStatus.TOO_MANY_REQUESTS, "Muitas tentativas. Tente de novo em %minutos% minuto(s)."),
     USUARIO_NAO_ENCONTRADO_POR_EMAIL("usuario_nao_encontrado_por_email", HttpStatus.NOT_FOUND, "Usuário não encontrado para o email '%email%'"),
     TOKEN_DE_VERIFICACAO_NAO_ENCONTRADO("token_de_verificacao_nao_encontrado", HttpStatus.NOT_FOUND, "Token de verificação '%token%' não encontrado ou já utilizado."),
     TOKEN_DE_VERIFICACAO_EXPIRADO("token_de_verificacao_expirado", HttpStatus.BAD_REQUEST, "Token de verificação '%token%' expirado."),

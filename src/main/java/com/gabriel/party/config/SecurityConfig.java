@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/clientes/**").hasAnyRole("CLIENTE", "ADMINISTRADOR") // Apenas CLIENTE e ADMINISTRADOR podem acessar
                         .requestMatchers(HttpMethod.PUT, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMINISTRADOR") // Apenas PRESTADOR e ADMINISTRADOR podem acessar
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/prestadores/**").hasAnyRole("PRESTADOR", "ADMINISTRADOR") // Apenas PRESTADOR e ADMINISTRADOR podem acessar
+                        .requestMatchers("/actuator/health/**").permitAll()
 
                         .requestMatchers("/api/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                         .anyRequest().authenticated() // Qualquer outra rota exige token
