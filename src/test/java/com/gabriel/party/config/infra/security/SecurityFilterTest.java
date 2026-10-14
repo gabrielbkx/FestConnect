@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -220,7 +221,7 @@ class SecurityFilterTest {
     @DisplayName("token cancelado por logout segue anônimo, sem nem consultar o banco")
     void tokenCancelado_segueAnonimo() throws Exception {
         when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
-        when(tokensRevogados.estaRevogado("jti-qualquer")).thenReturn(true);
+        when(tokensRevogados.estaRevogado(any(TokenDeLogin.class))).thenReturn(true);
 
         filtro.doFilter(requisicaoComToken(), response, chain);
 
@@ -231,10 +232,14 @@ class SecurityFilterTest {
     @Test
     @DisplayName("token não cancelado do mesmo usuário continua autenticando (outro aparelho segue logado)")
     void tokenNaoCancelado_autentica() throws Exception {
-        when(tokensRevogados.estaRevogado("jti-qualquer")).thenReturn(false);
+        var tokenDeLogin = tokenEmitidoEm(Instant.now());
+        when(tokensRevogados.estaRevogado(tokenDeLogin)).thenReturn(false);
 
-        autenticarCom(tokenEmitidoEm(Instant.now()), usuario(true, true));
+        autenticarCom(tokenDeLogin, usuario(true, true));
 
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        var autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(autenticacao).isNotNull();
+        // O logout deste dispositivo lê o jti e o vencimento daqui, sem ler o cabeçalho de novo
+        assertThat(autenticacao.getDetails()).isSameAs(tokenDeLogin);
     }
 }
