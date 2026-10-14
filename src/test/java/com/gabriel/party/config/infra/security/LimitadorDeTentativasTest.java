@@ -1,11 +1,13 @@
 package com.gabriel.party.config.infra.security;
 
+import com.gabriel.party.config.infra.redis.DisjuntorDoRedis;
 import com.gabriel.party.config.infra.security.LimitadorDeTentativas.Limite;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -19,6 +21,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 @Testcontainers
 class LimitadorDeTentativasTest {
@@ -58,8 +62,8 @@ class LimitadorDeTentativasTest {
     @BeforeEach
     void preparar() {
         template = new StringRedisTemplate(conexao);
-        limitador = new LimitadorDeTentativas(template);
-        limitadorSemRedis = new LimitadorDeTentativas(new StringRedisTemplate(semRedis));
+        limitador = new LimitadorDeTentativas(template, new DisjuntorDoRedis());
+        limitadorSemRedis = new LimitadorDeTentativas(new StringRedisTemplate(semRedis), new DisjuntorDoRedis());
     }
 
     /** Cada teste usa uma chave nova: assim um teste nunca enxerga a sujeira do outro. */
@@ -221,5 +225,25 @@ class LimitadorDeTentativasTest {
         assertThatCode(() -> limitadorSemRedis.devolver(chave)).doesNotThrowAnyException();
 
         assertThat(limitadorSemRedis.registrar(chave, 2, Duration.ofMinutes(15)).permitido()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Redis pendurado: só a primeira chamada espera; as seguintes vão direto para o plano B")
+    void redisPendurado_naoEsperaEmTodaTentativa() {
+        // Todo método deste Redis de mentira estoura como um timeout
+        var redisPendurado = mock(StringRedisTemplate.class, invocacao -> {
+            throw new QueryTimeoutException("Redis não respondeu em 2 s");
+        });
+        var comRedisPendurado = new LimitadorDeTentativas(redisPendurado, new DisjuntorDoRedis());
+        String chave = chaveNova();
+
+        for (int i = 1; i <= 5; i++) {
+            assertThat(comRedisPendurado.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isTrue();
+        }
+        assertThat(comRedisPendurado.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isFalse();
+        comRedisPendurado.zerar(chave);
+        comRedisPendurado.devolver(chave);
+
+        assertThat(mockingDetails(redisPendurado).getInvocations()).hasSize(1);
     }
 }

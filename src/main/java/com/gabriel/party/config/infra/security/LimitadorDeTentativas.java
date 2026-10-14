@@ -1,10 +1,9 @@
 package com.gabriel.party.config.infra.security;
 
+import com.gabriel.party.config.infra.redis.DisjuntorDoRedis;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -15,7 +14,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Conta tentativas (de login, de recuperação de senha...) dentro de uma janela de tempo.
@@ -24,8 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Component
 public class LimitadorDeTentativas {
-
-    private static final Logger log = LoggerFactory.getLogger(LimitadorDeTentativas.class);
 
     /** Uma regra: no máximo {@code maximo} tentativas na chave dentro da janela. */
     public record Limite(String chave, int maximo) {}
@@ -78,13 +74,12 @@ public class LimitadorDeTentativas {
             .expireAfter(Expiry.writing((String chave, JanelaLocal janela) -> tempoAte(janela.fim())))
             .build();
 
-    /** Para avisar no log só quando o Redis cai e quando volta, e não a cada tentativa. */
-    private final AtomicBoolean redisFora = new AtomicBoolean(false);
-
     private final StringRedisTemplate redis;
+    private final DisjuntorDoRedis disjuntor;
 
-    public LimitadorDeTentativas(StringRedisTemplate redis) {
+    public LimitadorDeTentativas(StringRedisTemplate redis, DisjuntorDoRedis disjuntor) {
         this.redis = redis;
+        this.disjuntor = disjuntor;
     }
 
     public Resultado registrar(String chave, int limite, Duration janela) {
@@ -94,17 +89,20 @@ public class LimitadorDeTentativas {
     /** Soma 1 em todos os limites e barra se qualquer um passou do máximo. */
     @SuppressWarnings("unchecked")
     public Resultado registrar(Duration janela, Limite... limites) {
+        if (!disjuntor.podeUsar()) {
+            return registrarNaMemoria(janela, limites);
+        }
         List<String> chaves = Arrays.stream(limites).map(Limite::chave).toList();
         try {
             List<Long> resposta = redis.execute(CONTAR, chaves, String.valueOf(janela.toMillis()));
-            redisRespondeu();
+            disjuntor.deuCerto();
             List<Contagem> contagens = new ArrayList<>();
             for (int i = 0; i < limites.length; i++) {
                 contagens.add(new Contagem(limites[i], resposta.get(2 * i), Duration.ofMillis(resposta.get(2 * i + 1))));
             }
             return combinar(contagens);
         } catch (DataAccessException e) {
-            redisFalhou(e);
+            disjuntor.falhou(e);
             return registrarNaMemoria(janela, limites);
         }
     }
@@ -112,11 +110,14 @@ public class LimitadorDeTentativas {
     /** Apaga a contagem das chaves (ex.: login certo). */
     public void zerar(String... chaves) {
         planoB.invalidateAll(List.of(chaves));
+        if (!disjuntor.podeUsar()) {
+            return;
+        }
         try {
             redis.delete(List.of(chaves));
-            redisRespondeu();
+            disjuntor.deuCerto();
         } catch (DataAccessException e) {
-            redisFalhou(e);
+            disjuntor.falhou(e);
         }
     }
 
@@ -124,11 +125,14 @@ public class LimitadorDeTentativas {
     public void devolver(String chave) {
         planoB.asMap().computeIfPresent(chave, (k, janela) ->
                 janela.tentativas() > 0 ? new JanelaLocal(janela.tentativas() - 1, janela.fim()) : janela);
+        if (!disjuntor.podeUsar()) {
+            return;
+        }
         try {
             redis.execute(DEVOLVER, List.of(chave));
-            redisRespondeu();
+            disjuntor.deuCerto();
         } catch (DataAccessException e) {
-            redisFalhou(e);
+            disjuntor.falhou(e);
         }
     }
 
@@ -165,17 +169,5 @@ public class LimitadorDeTentativas {
     private static Duration tempoAte(Instant fim) {
         Duration falta = Duration.between(Instant.now(), fim);
         return falta.isNegative() ? Duration.ZERO : falta;
-    }
-
-    private void redisRespondeu() {
-        if (redisFora.compareAndSet(true, false)) {
-            log.info("Redis voltou: o limite de tentativas volta a ser compartilhado entre as cópias da aplicação");
-        }
-    }
-
-    private void redisFalhou(DataAccessException e) {
-        if (redisFora.compareAndSet(false, true)) {
-            log.warn("Redis indisponível: contando tentativas na memória (plano B) até ele voltar. Causa: {}", e.getMessage());
-        }
     }
 }

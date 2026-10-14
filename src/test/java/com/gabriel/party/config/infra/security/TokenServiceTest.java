@@ -119,4 +119,14 @@ class TokenServiceTest {
         assertThatThrownBy(() -> tokenService.validarTokenDeLogin("isso-nao-e-um-jwt"))
                 .isInstanceOf(AppException.class);
     }
+
+    @Test
+    @DisplayName("token de login traz a data de expiração (é até ela que o logout precisa guardar o token)")
+    void tokenDeLogin_temExpiracao() {
+        TokenDeLogin token = tokenService.validarTokenDeLogin(tokenService.gerarToken(usuario));
+
+        assertThat(token.expiraEm())
+                .isAfter(Instant.now().plusSeconds(7100))
+                .isBefore(Instant.now().plusSeconds(7300));
+    }
 }

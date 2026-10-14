@@ -7,7 +7,8 @@ import java.time.Instant;
  *
  * @param email     dono do token (claim "sub")
  * @param emitidoEm quando o token foi emitido (claim "iat"); nulo em tokens anteriores a esta versão
- * @param id        identificador único do token (claim "jti"), usado na fase 2 do logout (denylist no Redis)
+ * @param id        identificador único do token (claim "jti"), usado no logout de um dispositivo (lista no Redis)
+ * @param expiraEm  quando o token vence (claim "exp"); a revogação só precisa durar até aqui
  */
-public record TokenDeLogin(String email, Instant emitidoEm, String id) {
+public record TokenDeLogin(String email, Instant emitidoEm, String id, Instant expiraEm) {
 }

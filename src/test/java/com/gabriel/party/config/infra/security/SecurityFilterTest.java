@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,7 @@ class SecurityFilterTest {
 
     @Mock private TokenService tokenService;
     @Mock private UsuarioRepository usuarioRepository;
+    @Mock private TokensRevogados tokensRevogados;
 
     @InjectMocks private SecurityFilter filtro;
 
@@ -63,7 +65,7 @@ class SecurityFilterTest {
     }
 
     private static TokenDeLogin tokenEmitidoEm(Instant emitidoEm) {
-        return new TokenDeLogin(EMAIL, emitidoEm, "jti-qualquer");
+        return new TokenDeLogin(EMAIL, emitidoEm, "jti-qualquer", Instant.now().plusSeconds(3600));
     }
 
     private void autenticarCom(TokenDeLogin tokenDeLogin, Usuario usuario) throws Exception {
@@ -211,5 +213,33 @@ class SecurityFilterTest {
         filtro.doFilter(requisicaoComToken(), response, chain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
+    // ── Sair deste dispositivo (lista de tokens cancelados no Redis)
+
+    @Test
+    @DisplayName("token cancelado por logout segue anônimo, sem nem consultar o banco")
+    void tokenCancelado_segueAnonimo() throws Exception {
+        when(tokenService.validarTokenDeLogin(TOKEN)).thenReturn(tokenEmitidoEm(Instant.now()));
+        when(tokensRevogados.estaRevogado(any(TokenDeLogin.class))).thenReturn(true);
+
+        filtro.doFilter(requisicaoComToken(), response, chain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verifyNoInteractions(usuarioRepository);
+    }
+
+    @Test
+    @DisplayName("token não cancelado do mesmo usuário continua autenticando (outro aparelho segue logado)")
+    void tokenNaoCancelado_autentica() throws Exception {
+        var tokenDeLogin = tokenEmitidoEm(Instant.now());
+        when(tokensRevogados.estaRevogado(tokenDeLogin)).thenReturn(false);
+
+        autenticarCom(tokenDeLogin, usuario(true, true));
+
+        var autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(autenticacao).isNotNull();
+        // O logout deste dispositivo lê o jti e o vencimento daqui, sem ler o cabeçalho de novo
+        assertThat(autenticacao.getDetails()).isSameAs(tokenDeLogin);
     }
 }
