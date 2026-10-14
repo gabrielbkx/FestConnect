@@ -229,11 +229,16 @@ public class AutenticacaoService implements UserDetailsService {
         emailVerificacaoService.verificarToken(token);
     }
 
+    /**
+     * E-mail inexistente ou já verificado: não faz nada, em silêncio. Antes, o e-mail inexistente
+     * respondia 404, e isso revelava quem tem conta. O e-mail sai depois do commit e fora da thread
+     * da requisição, para o tempo de resposta também não denunciar.
+     */
+    @Transactional
     public void reenviarVerificacaoEmail(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL, email));
-        if (Boolean.TRUE.equals(usuario.getEmailVerificado())) return;
-        emailVerificacaoService.enviarVerificacaoEmail(usuario);
+        usuarioRepository.findByEmail(email)
+                .filter(usuario -> !Boolean.TRUE.equals(usuario.getEmailVerificado()))
+                .ifPresent(emailVerificacaoService::enviarVerificacaoEmail);
     }
 
     @Transactional

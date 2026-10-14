@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -39,16 +37,8 @@ public class EmailVerificacaoService {
                 + "<p><a href=\"" + link + "\">Verificar e-mail</a></p>"
                 + "<p>Este link expira em 24 horas.</p>";
 
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — Resenha", corpo);
-                }
-            });
-        } else {
-            emailService.enviarEmail(u.getEmail(), "Verifique seu e-mail — Resenha", corpo);
-        }
+        // Depois do commit (só avisa se o token foi gravado) e fora da thread da requisição
+        emailService.enviarAposCommit(u.getEmail(), "Verifique seu e-mail — Resenha", corpo);
     }
 
     @Transactional

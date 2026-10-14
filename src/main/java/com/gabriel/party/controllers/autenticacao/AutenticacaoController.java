@@ -15,7 +15,8 @@ import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.autenticacao.LimiteDeLogin;
-import com.gabriel.party.services.autenticacao.LimiteDeRecuperacaoDeSenha;
+import com.gabriel.party.services.autenticacao.LimiteDeEnvioDeEmail;
+import com.gabriel.party.services.autenticacao.LimiteDeEnvioDeEmail.Envio;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import java.util.UUID;
 
@@ -39,7 +40,7 @@ public class AutenticacaoController {
     private final ClienteRepository clienteRepository;
     private final PrestadorRepository prestadorRepository;
     private final LimiteDeLogin limiteDeLogin;
-    private final LimiteDeRecuperacaoDeSenha limiteDeRecuperacao;
+    private final LimiteDeEnvioDeEmail limiteDeEnvioDeEmail;
 
     public AutenticacaoController(TokenService tokenService,
                                   AuthenticationManager authenticationManager,
@@ -48,14 +49,14 @@ public class AutenticacaoController {
                                   ClienteRepository clienteRepository,
                                   PrestadorRepository prestadorRepository,
                                   LimiteDeLogin limiteDeLogin,
-                                  LimiteDeRecuperacaoDeSenha limiteDeRecuperacao) {
+                                  LimiteDeEnvioDeEmail limiteDeEnvioDeEmail) {
         this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
         this.autenticacaoService = autenticacaoService;
         this.clienteRepository = clienteRepository;
         this.prestadorRepository = prestadorRepository;
         this.limiteDeLogin = limiteDeLogin;
-        this.limiteDeRecuperacao = limiteDeRecuperacao;
+        this.limiteDeEnvioDeEmail = limiteDeEnvioDeEmail;
     }
 
     @PostMapping("/login")
@@ -119,8 +120,8 @@ public class AutenticacaoController {
     @PostMapping("/recuperacao-senha")
     public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody @Valid DadosRecuperacaoDTO email,
                                                         HttpServletRequest request) {
-        // Antes do service, para contar todo e-mail digitado (cadastrado ou não). Ver LimiteDeRecuperacaoDeSenha.
-        limiteDeRecuperacao.registrarPedido(email.email(), request.getRemoteAddr());
+        // Antes do service, para contar todo e-mail digitado (cadastrado ou não). Ver LimiteDeEnvioDeEmail.
+        limiteDeEnvioDeEmail.registrarPedido(Envio.RECUPERACAO_DE_SENHA, email.email(), request.getRemoteAddr());
         autenticacaoService.enviarCodigoRecuperacao(email);
         return ResponseEntity.ok().build();
     }
@@ -145,7 +146,10 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/reenviar-verificacao")
-    public ResponseEntity<Void> reenviarVerificacao(@RequestBody DadosRecuperacaoDTO dados) {
+    public ResponseEntity<Void> reenviarVerificacao(@RequestBody @Valid DadosRecuperacaoDTO dados,
+                                                    HttpServletRequest request) {
+        // Mesmo cuidado da recuperação: conta todo e-mail digitado, e a resposta é sempre 200 (ou 429)
+        limiteDeEnvioDeEmail.registrarPedido(Envio.VERIFICACAO_DE_EMAIL, dados.email(), request.getRemoteAddr());
         autenticacaoService.reenviarVerificacaoEmail(dados.email());
         return ResponseEntity.ok().build();
     }

@@ -53,6 +53,7 @@ class AutenticacaoServiceTest {
     @Mock private TokenService tokenService;
     @Mock private EmailService emailService;
     @Mock private PasswordEncoder encoder;
+    @Mock private EmailVerificacaoService emailVerificacaoService;
 
     @InjectMocks private AutenticacaoService service;
 
@@ -271,5 +272,37 @@ class AutenticacaoServiceTest {
 
         assertThatThrownBy(() -> service.loadUserByUsername("naoexiste@x.com"))
                 .isInstanceOf(UsernameNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("reenviar verificação para e-mail inexistente não faz nada e não revela (antes respondia 404)")
+    void reenviarVerificacao_emailInexistente_silencio() {
+        when(usuarioRepository.findByEmail("naoexiste@x.com")).thenReturn(Optional.empty());
+
+        service.reenviarVerificacaoEmail("naoexiste@x.com");
+
+        verifyNoInteractions(emailVerificacaoService);
+    }
+
+    @Test
+    @DisplayName("reenviar verificação para e-mail já verificado não envia nada")
+    void reenviarVerificacao_jaVerificado_naoEnvia() {
+        usuario.setEmailVerificado(true);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+
+        service.reenviarVerificacaoEmail(EMAIL);
+
+        verifyNoInteractions(emailVerificacaoService);
+    }
+
+    @Test
+    @DisplayName("reenviar verificação para e-mail ainda não verificado envia o link")
+    void reenviarVerificacao_naoVerificado_envia() {
+        usuario.setEmailVerificado(false);
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(usuario));
+
+        service.reenviarVerificacaoEmail(EMAIL);
+
+        verify(emailVerificacaoService).enviarVerificacaoEmail(usuario);
     }
 }

@@ -9,7 +9,8 @@ import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
 import com.gabriel.party.services.autenticacao.AutenticacaoService;
 import com.gabriel.party.services.autenticacao.LimiteDeLogin;
-import com.gabriel.party.services.autenticacao.LimiteDeRecuperacaoDeSenha;
+import com.gabriel.party.services.autenticacao.LimiteDeEnvioDeEmail;
+import com.gabriel.party.services.autenticacao.LimiteDeEnvioDeEmail.Envio;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -49,6 +51,7 @@ class AutenticacaoControllerTest {
 
     private static final String LOGIN = "/api/v1/auth/login";
     private static final String RECUPERACAO = "/api/v1/auth/recuperacao-senha";
+    private static final String REENVIO = "/api/v1/auth/reenviar-verificacao";
     private static final String IP_DO_MOCKMVC = "127.0.0.1";
 
     @Mock private TokenService tokenService;
@@ -58,14 +61,14 @@ class AutenticacaoControllerTest {
     @Mock private ClienteRepository clienteRepository;
     @Mock private PrestadorRepository prestadorRepository;
     @Mock private LimiteDeLogin limiteDeLogin;
-    @Mock private LimiteDeRecuperacaoDeSenha limiteDeRecuperacao;
+    @Mock private LimiteDeEnvioDeEmail limiteDeEnvioDeEmail;
 
     private MockMvc mvc;
 
     @BeforeEach
     void montar() {
         var controller = new AutenticacaoController(tokenService, authenticationManager, autenticacaoService,
-                armazenamentoService, clienteRepository, prestadorRepository, limiteDeLogin, limiteDeRecuperacao);
+                armazenamentoService, clienteRepository, prestadorRepository, limiteDeLogin, limiteDeEnvioDeEmail);
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -119,7 +122,7 @@ class AutenticacaoControllerTest {
     @DisplayName("recuperação barrada responde 429 e não envia e-mail")
     void recuperacaoBarrada_429() throws Exception {
         doThrow(new MuitasTentativasException(Duration.ofMinutes(40)))
-                .when(limiteDeRecuperacao).registrarPedido(anyString(), anyString());
+                .when(limiteDeEnvioDeEmail).registrarPedido(eq(Envio.RECUPERACAO_DE_SENHA), anyString(), anyString());
 
         mvc.perform(post(RECUPERACAO).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"ana@x.com\"}"))
@@ -135,6 +138,40 @@ class AutenticacaoControllerTest {
         mvc.perform(post(RECUPERACAO).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
 
-        verifyNoInteractions(limiteDeRecuperacao, autenticacaoService);
+        verifyNoInteractions(limiteDeEnvioDeEmail, autenticacaoService);
+    }
+
+    @Test
+    @DisplayName("reenvio de verificação barrado responde 429 e não envia e-mail")
+    void reenvioBarrado_429() throws Exception {
+        doThrow(new MuitasTentativasException(Duration.ofMinutes(40)))
+                .when(limiteDeEnvioDeEmail).registrarPedido(eq(Envio.VERIFICACAO_DE_EMAIL), anyString(), anyString());
+
+        mvc.perform(post(REENVIO).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ana@x.com\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "2400"));
+
+        verifyNoInteractions(autenticacaoService);
+    }
+
+    @Test
+    @DisplayName("reenvio de verificação conta no limite próprio e responde 200")
+    void reenvio_contaNoLimiteEResponde200() throws Exception {
+        mvc.perform(post(REENVIO).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ana@x.com\"}"))
+                .andExpect(status().isOk());
+
+        verify(limiteDeEnvioDeEmail).registrarPedido(Envio.VERIFICACAO_DE_EMAIL, "ana@x.com", IP_DO_MOCKMVC);
+        verify(autenticacaoService).reenviarVerificacaoEmail("ana@x.com");
+    }
+
+    @Test
+    @DisplayName("reenvio de verificação sem e-mail responde 400")
+    void reenvioSemEmail_400() throws Exception {
+        mvc.perform(post(REENVIO).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(limiteDeEnvioDeEmail, autenticacaoService);
     }
 }

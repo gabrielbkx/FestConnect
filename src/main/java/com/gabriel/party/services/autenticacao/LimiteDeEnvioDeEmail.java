@@ -9,9 +9,25 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Locale;
 
-/** Limite de pedidos de código de recuperação de senha: 3 por e-mail e 10 por IP a cada hora. */
+/**
+ * Limite dos endpoints públicos que disparam e-mail: 3 pedidos por e-mail e 10 por IP a cada hora,
+ * contados separadamente para cada tipo de envio. Protege a caixa de entrada das pessoas e a cota
+ * de envio do sistema.
+ */
 @Component
-public class LimiteDeRecuperacaoDeSenha {
+public class LimiteDeEnvioDeEmail {
+
+    /** Cada tipo de envio tem os próprios contadores (o prefixo das chaves no Redis). */
+    public enum Envio {
+        RECUPERACAO_DE_SENHA("recuperacao"),
+        VERIFICACAO_DE_EMAIL("verificacao");
+
+        private final String prefixo;
+
+        Envio(String prefixo) {
+            this.prefixo = prefixo;
+        }
+    }
 
     static final int MAX_POR_EMAIL = 3;
     static final int MAX_POR_IP = 10;
@@ -19,7 +35,7 @@ public class LimiteDeRecuperacaoDeSenha {
 
     private final LimitadorDeTentativas limitador;
 
-    public LimiteDeRecuperacaoDeSenha(LimitadorDeTentativas limitador) {
+    public LimiteDeEnvioDeEmail(LimitadorDeTentativas limitador) {
         this.limitador = limitador;
     }
 
@@ -27,10 +43,10 @@ public class LimiteDeRecuperacaoDeSenha {
      * Conta pelo e-mail DIGITADO, exista ele ou não: assim o 429 aparece igual para e-mail
      * cadastrado e inventado, e a resposta não revela quem tem conta na Resenha.
      */
-    public void registrarPedido(String email, String ip) {
+    public void registrarPedido(Envio envio, String email, String ip) {
         var resultado = limitador.registrar(JANELA,
-                new Limite("rl:recuperacao:email:" + email.trim().toLowerCase(Locale.ROOT), MAX_POR_EMAIL),
-                new Limite("rl:recuperacao:ip:" + EnderecoDeOrigem.paraChave(ip), MAX_POR_IP));
+                new Limite("rl:" + envio.prefixo + ":email:" + email.trim().toLowerCase(Locale.ROOT), MAX_POR_EMAIL),
+                new Limite("rl:" + envio.prefixo + ":ip:" + EnderecoDeOrigem.paraChave(ip), MAX_POR_IP));
         if (!resultado.permitido()) {
             throw new MuitasTentativasException(resultado.tempoRestante());
         }
