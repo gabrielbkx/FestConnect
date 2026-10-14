@@ -60,13 +60,12 @@ public class AutenticacaoController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO dto, HttpServletRequest request) {
-
+        // Fora do try de propósito: o catch (Exception) lá embaixo engoliria o 429 e responderia 500
         limiteDeLogin.registrarTentativa(dto.email(), request.getRemoteAddr());
-
         try {
             var tokenAutenticacao = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
             var usuarioAutenticado = authenticationManager.authenticate(tokenAutenticacao);
-            limiteDeLogin.loginComSucesso(dto.email());
+            limiteDeLogin.loginComSucesso(dto.email(), request.getRemoteAddr());
 
             if (!(usuarioAutenticado.getPrincipal() instanceof Usuario usuario)) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno na sessão.");

@@ -1,5 +1,6 @@
 package com.gabriel.party.config.infra.security;
 
+import com.gabriel.party.config.infra.security.LimitadorDeTentativas.Limite;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,12 +13,15 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
 import java.time.Duration;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @Testcontainers
-public class LimitadorDeTentativasTest {
+class LimitadorDeTentativasTest {
 
     // Um Redis de verdade e descartável. A porta no seu Windows é sorteada,
     // então não briga com o Redis do docker compose na 6379.
@@ -26,25 +30,36 @@ public class LimitadorDeTentativasTest {
 
     static LettuceConnectionFactory conexao;
 
+    // "Redis fora do ar": a porta 1 desta máquina, onde nada escuta (conexão recusada na hora)
+    static LettuceConnectionFactory semRedis;
+
     StringRedisTemplate template;
     LimitadorDeTentativas limitador;
+    LimitadorDeTentativas limitadorSemRedis;
 
     @BeforeAll
     static void conectar() {
         conexao = new LettuceConnectionFactory(
                 new RedisStandaloneConfiguration(redis.getHost(), redis.getMappedPort(6379)));
         conexao.afterPropertiesSet();
+
+        semRedis = new LettuceConnectionFactory(
+                new RedisStandaloneConfiguration("localhost", 1),
+                LettuceClientConfiguration.builder().commandTimeout(Duration.ofMillis(500)).build());
+        semRedis.afterPropertiesSet();
     }
 
     @AfterAll
     static void desconectar() {
         conexao.destroy();
+        semRedis.destroy();
     }
 
     @BeforeEach
     void preparar() {
         template = new StringRedisTemplate(conexao);
         limitador = new LimitadorDeTentativas(template);
+        limitadorSemRedis = new LimitadorDeTentativas(new StringRedisTemplate(semRedis));
     }
 
     /** Cada teste usa uma chave nova: assim um teste nunca enxerga a sujeira do outro. */
@@ -84,6 +99,7 @@ public class LimitadorDeTentativasTest {
 
         assertThat(template.getExpire(chave)).isBetween(1L, 900L);
     }
+
     @Test
     @DisplayName("chaves diferentes têm contagens separadas")
     void chavesDiferentes_naoSeMisturam() {
@@ -126,29 +142,84 @@ public class LimitadorDeTentativasTest {
     }
 
     @Test
-    @DisplayName("com o Redis fora do ar, continua contando na memória e não quebra o login")
-    void redisForaDoAr_contaNaMemoria() {
-        var semRedis = new LettuceConnectionFactory(
-                new RedisStandaloneConfiguration("localhost", 1),   // nada escuta aqui: conexão recusada
-                LettuceClientConfiguration.builder().commandTimeout(Duration.ofMillis(500)).build());
-        semRedis.afterPropertiesSet();
-        try {
-            var limitadorSemRedis = new LimitadorDeTentativas(new StringRedisTemplate(semRedis));
-            String chave = chaveNova();
+    @DisplayName("vários limites numa chamada: barra quando qualquer um estoura e soma em todos")
+    void variosLimites_barraPeloQueEstourou() {
+        String apertado = chaveNova();
+        String folgado = chaveNova();
+        var janela = Duration.ofMinutes(15);
 
-            for (int i = 1; i <= 5; i++) {
-                assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido())
-                        .as("tentativa %d", i)
-                        .isTrue();
-            }
-            assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isFalse();
+        limitador.registrar(janela, new Limite(apertado, 2), new Limite(folgado, 10));
+        limitador.registrar(janela, new Limite(apertado, 2), new Limite(folgado, 10));
+        var terceira = limitador.registrar(janela, new Limite(apertado, 2), new Limite(folgado, 10));
 
-            limitadorSemRedis.zerar(chave);   // não pode estourar exceção
-            assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isTrue();
-        } finally {
-            semRedis.destroy();
-        }
+        assertThat(terceira.permitido()).isFalse();
+        assertThat(terceira.tempoRestante()).isPositive().isLessThanOrEqualTo(janela);
+        assertThat(template.opsForValue().get(apertado)).isEqualTo("3");
+        assertThat(template.opsForValue().get(folgado)).isEqualTo("3");
     }
 
+    @Test
+    @DisplayName("devolver desconta uma tentativa sem apagar a contagem nem o prazo")
+    void devolver_descontaUma() {
+        String chave = chaveNova();
+        limitador.registrar(chave, 20, Duration.ofMinutes(15));
+        limitador.registrar(chave, 20, Duration.ofMinutes(15));
+        limitador.registrar(chave, 20, Duration.ofMinutes(15));
 
+        limitador.devolver(chave);
+
+        assertThat(template.opsForValue().get(chave)).isEqualTo("2");
+        assertThat(template.getExpire(chave)).isBetween(1L, 900L);
+    }
+
+    @Test
+    @DisplayName("devolver numa chave que não existe não cria nada (nem chave negativa sem prazo)")
+    void devolver_semChave_naoCriaNada() {
+        String chave = chaveNova();
+
+        limitador.devolver(chave);
+
+        assertThat(template.hasKey(chave)).isFalse();
+    }
+
+    @Test
+    @DisplayName("com o Redis fora do ar, continua contando na memória (plano B) e não quebra o login")
+    void redisForaDoAr_contaNaMemoria() {
+        String chave = chaveNova();
+
+        for (int i = 1; i <= 5; i++) {
+            assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido())
+                    .as("tentativa %d", i)
+                    .isTrue();
+        }
+        assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isFalse();
+
+        assertThatCode(() -> limitadorSemRedis.zerar(chave)).doesNotThrowAnyException();
+        assertThat(limitadorSemRedis.registrar(chave, 5, Duration.ofMinutes(15)).permitido()).isTrue();
+    }
+
+    @Test
+    @DisplayName("no plano B, a janela acaba e a contagem recomeça")
+    void planoB_janelaAcaba_libera() throws InterruptedException {
+        String chave = chaveNova();
+        var janelaCurta = Duration.ofMillis(300);
+        limitadorSemRedis.registrar(chave, 1, janelaCurta);
+        assertThat(limitadorSemRedis.registrar(chave, 1, janelaCurta).permitido()).isFalse();
+
+        Thread.sleep(400);   // espera a janela acabar
+
+        assertThat(limitadorSemRedis.registrar(chave, 1, janelaCurta).permitido()).isTrue();
+    }
+
+    @Test
+    @DisplayName("no plano B, devolver também desconta uma tentativa")
+    void planoB_devolver() {
+        String chave = chaveNova();
+        limitadorSemRedis.registrar(chave, 2, Duration.ofMinutes(15));
+        limitadorSemRedis.registrar(chave, 2, Duration.ofMinutes(15));
+
+        assertThatCode(() -> limitadorSemRedis.devolver(chave)).doesNotThrowAnyException();
+
+        assertThat(limitadorSemRedis.registrar(chave, 2, Duration.ofMinutes(15)).permitido()).isTrue();
+    }
 }

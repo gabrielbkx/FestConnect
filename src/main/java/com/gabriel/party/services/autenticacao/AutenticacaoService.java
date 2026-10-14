@@ -71,9 +71,10 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // CORREÇÃO 1: Usando a exceção correta do Spring Security
+        // UsernameNotFoundException (e não AppException): o Spring converte em BadCredentials e o login
+        // responde 401 igual a senha errada. Com AppException virava 500 e revelava quem tem conta.
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USUARIO_NAO_ENCONTRADO_POR_EMAIL, "email"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
     }
 
     @Transactional

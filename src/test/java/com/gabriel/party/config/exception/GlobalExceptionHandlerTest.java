@@ -62,4 +62,15 @@ class GlobalExceptionHandlerTest {
         assertThat(resposta.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("840");
         assertThat(resposta.getBody().message()).isEqualTo("Muitas tentativas. Tente de novo em 14 minuto(s).");
     }
+
+    @Test
+    @DisplayName("mensagem e Retry-After nunca discordam: 60,4 s viram 61 s e 2 minutos")
+    void muitasTentativas_mensagemERetryAfterConcordam() {
+        var request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+
+        var resposta = handler.handleMuitasTentativas(new MuitasTentativasException(Duration.ofMillis(60_400)), request);
+
+        assertThat(resposta.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("61");
+        assertThat(resposta.getBody().message()).isEqualTo("Muitas tentativas. Tente de novo em 2 minuto(s).");
+    }
 }

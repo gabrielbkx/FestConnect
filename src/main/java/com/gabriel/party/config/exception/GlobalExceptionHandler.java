@@ -87,8 +87,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MuitasTentativasException.class)
     public ResponseEntity<AppErroResponse> handleMuitasTentativas(MuitasTentativasException e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.TOO_MANY_REQUESTS;
-        long segundos = Math.max(1, (long) Math.ceil(e.getTempoRestante().toMillis() / 1000.0));
-
         AppErroResponse err = new AppErroResponse(
                 LocalDateTime.now(),
                 status.value(),
@@ -98,7 +96,7 @@ public class GlobalExceptionHandler {
                 e.getErrorCode().getCode()
         );
         return ResponseEntity.status(status)
-                .header(HttpHeaders.RETRY_AFTER, String.valueOf(segundos))
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.segundosParaLiberar()))
                 .body(err);
     }
 }

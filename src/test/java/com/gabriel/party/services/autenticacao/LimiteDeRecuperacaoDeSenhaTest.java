@@ -1,6 +1,7 @@
 package com.gabriel.party.services.autenticacao;
 
 import com.gabriel.party.config.infra.security.LimitadorDeTentativas;
+import com.gabriel.party.config.infra.security.LimitadorDeTentativas.Limite;
 import com.gabriel.party.config.infra.security.LimitadorDeTentativas.Resultado;
 import com.gabriel.party.exceptions.MuitasTentativasException;
 import org.junit.jupiter.api.DisplayName;
@@ -15,8 +16,6 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,35 +23,36 @@ import static org.mockito.Mockito.when;
 class LimiteDeRecuperacaoDeSenhaTest {
 
     private static final Duration JANELA = Duration.ofHours(1);
-    private static final String CHAVE_EMAIL = "rl:recuperacao:email:ana@x.com";
-    private static final String CHAVE_IP = "rl:recuperacao:ip:10.0.0.1";
+    private static final Limite EMAIL = new Limite("rl:recuperacao:email:ana@x.com", 3);
+    private static final Limite IP = new Limite("rl:recuperacao:ip:10.0.0.1", 10);
 
     @Mock private LimitadorDeTentativas limitador;
 
     @InjectMocks private LimiteDeRecuperacaoDeSenha limite;
 
-    private static Resultado liberado() {
-        return new Resultado(true, Duration.ofMinutes(50));
-    }
+    @Test
+    @DisplayName("conta 3 por e-mail e 10 por IP na janela de 1 hora")
+    void contaNosDoisLimites() {
+        when(limitador.registrar(any(Duration.class), any(Limite.class), any(Limite.class))).thenReturn(new Resultado(true, Duration.ofMinutes(50)));
 
-    private static Resultado barrado(Duration falta) {
-        return new Resultado(false, falta);
+        limite.registrarPedido("ana@x.com", "10.0.0.1");
+
+        verify(limitador).registrar(JANELA, EMAIL, IP);
     }
 
     @Test
     @DisplayName("dentro dos limites, não barra")
     void dentroDoLimite_naoBarra() {
-        when(limitador.registrar(anyString(), anyInt(), any())).thenReturn(liberado());
+        when(limitador.registrar(any(Duration.class), any(Limite.class), any(Limite.class))).thenReturn(new Resultado(true, Duration.ofMinutes(50)));
 
         assertThatCode(() -> limite.registrarPedido("ana@x.com", "10.0.0.1"))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("passou de 3 pedidos no e-mail em 1 hora: barra")
-    void emailEstourado_barra() {
-        when(limitador.registrar(CHAVE_EMAIL, 3, JANELA)).thenReturn(barrado(Duration.ofMinutes(40)));
-        when(limitador.registrar(CHAVE_IP, 10, JANELA)).thenReturn(liberado());
+    @DisplayName("algum limite estourado: barra com o tempo que falta")
+    void limiteEstourado_barra() {
+        when(limitador.registrar(any(Duration.class), any(Limite.class), any(Limite.class))).thenReturn(new Resultado(false, Duration.ofMinutes(40)));
 
         assertThatThrownBy(() -> limite.registrarPedido("ana@x.com", "10.0.0.1"))
                 .isInstanceOf(MuitasTentativasException.class)
@@ -60,23 +60,12 @@ class LimiteDeRecuperacaoDeSenhaTest {
     }
 
     @Test
-    @DisplayName("passou de 10 pedidos no IP em 1 hora: barra mesmo num e-mail novo")
-    void ipEstourado_barra() {
-        when(limitador.registrar(CHAVE_EMAIL, 3, JANELA)).thenReturn(liberado());
-        when(limitador.registrar(CHAVE_IP, 10, JANELA)).thenReturn(barrado(Duration.ofMinutes(25)));
-
-        assertThatThrownBy(() -> limite.registrarPedido("ana@x.com", "10.0.0.1"))
-                .isInstanceOf(MuitasTentativasException.class)
-                .extracting("tempoRestante").isEqualTo(Duration.ofMinutes(25));
-    }
-
-    @Test
     @DisplayName("e-mail com espaços e maiúsculas conta no mesmo contador")
     void emailNormalizado() {
-        when(limitador.registrar(anyString(), anyInt(), any())).thenReturn(liberado());
+        when(limitador.registrar(any(Duration.class), any(Limite.class), any(Limite.class))).thenReturn(new Resultado(true, Duration.ofMinutes(50)));
 
         limite.registrarPedido("  Ana@X.com ", "10.0.0.1");
 
-        verify(limitador).registrar(CHAVE_EMAIL, 3, JANELA);
+        verify(limitador).registrar(JANELA, EMAIL, IP);
     }
 }
