@@ -14,8 +14,12 @@ import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.model.usuario.enums.Role;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
 import com.gabriel.party.repositories.prestador.PrestadorRepository;
+import com.gabriel.party.services.autenticacao.LimiteDeLogin;
+import com.gabriel.party.services.autenticacao.LimiteDeRecuperacaoDeSenha;
 import com.gabriel.party.services.integracoes.aws.ArmazenamentoService;
 import java.util.UUID;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,25 +38,34 @@ public class AutenticacaoController {
     private final AutenticacaoService autenticacaoService;
     private final ClienteRepository clienteRepository;
     private final PrestadorRepository prestadorRepository;
+    private final LimiteDeLogin limiteDeLogin;
+    private final LimiteDeRecuperacaoDeSenha limiteDeRecuperacao;
 
     public AutenticacaoController(TokenService tokenService,
                                   AuthenticationManager authenticationManager,
                                   AutenticacaoService autenticacaoService,
                                   ArmazenamentoService armazenamentoService,
                                   ClienteRepository clienteRepository,
-                                  PrestadorRepository prestadorRepository) {
+                                  PrestadorRepository prestadorRepository,
+                                  LimiteDeLogin limiteDeLogin,
+                                  LimiteDeRecuperacaoDeSenha limiteDeRecuperacao) {
         this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
         this.autenticacaoService = autenticacaoService;
         this.clienteRepository = clienteRepository;
         this.prestadorRepository = prestadorRepository;
+        this.limiteDeLogin = limiteDeLogin;
+        this.limiteDeRecuperacao = limiteDeRecuperacao;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO dto) {
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO dto, HttpServletRequest request) {
+        // Fora do try de propósito: o catch (Exception) lá embaixo engoliria o 429 e responderia 500
+        limiteDeLogin.registrarTentativa(dto.email(), request.getRemoteAddr());
         try {
             var tokenAutenticacao = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
             var usuarioAutenticado = authenticationManager.authenticate(tokenAutenticacao);
+            limiteDeLogin.loginComSucesso(dto.email(), request.getRemoteAddr());
 
             if (!(usuarioAutenticado.getPrincipal() instanceof Usuario usuario)) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno na sessão.");
@@ -104,7 +117,10 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/recuperacao-senha")
-    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody @Valid DadosRecuperacaoDTO email) {
+    public ResponseEntity<Void> iniciarRecuperacaoSenha(@RequestBody @Valid DadosRecuperacaoDTO email,
+                                                        HttpServletRequest request) {
+        // Antes do service, para contar todo e-mail digitado (cadastrado ou não). Ver LimiteDeRecuperacaoDeSenha.
+        limiteDeRecuperacao.registrarPedido(email.email(), request.getRemoteAddr());
         autenticacaoService.enviarCodigoRecuperacao(email);
         return ResponseEntity.ok().build();
     }

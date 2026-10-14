@@ -12,6 +12,7 @@ import com.gabriel.party.repositories.autenticacao.CodigoRecuperacaoRepository;
 import com.gabriel.party.services.email.EmailService;
 import com.gabriel.party.dtos.autenticacao.DadosRedefinicaoDeSenhaDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -261,5 +262,14 @@ class AutenticacaoServiceTest {
         assertThatThrownBy(acao)
                 .isInstanceOf(AppException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.CODIGO_INVALIDO_OU_EXPIRADO);
+    }
+
+    @Test
+    @DisplayName("login com e-mail inexistente lança UsernameNotFoundException (o Spring responde 401, igual a senha errada)")
+    void loadUserByUsername_emailInexistente_usernameNotFound() {
+        when(usuarioRepository.findByEmail("naoexiste@x.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.loadUserByUsername("naoexiste@x.com"))
+                .isInstanceOf(UsernameNotFoundException.class);
     }
 }

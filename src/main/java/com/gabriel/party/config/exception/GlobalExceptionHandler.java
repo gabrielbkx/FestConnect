@@ -3,6 +3,7 @@ package com.gabriel.party.config.exception;
 import com.gabriel.party.exceptions.*;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -81,5 +82,21 @@ public class GlobalExceptionHandler {
                 "erro_inesperado"
         );
         return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(MuitasTentativasException.class)
+    public ResponseEntity<AppErroResponse> handleMuitasTentativas(MuitasTentativasException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.TOO_MANY_REQUESTS;
+        AppErroResponse err = new AppErroResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI(),
+                e.getErrorCode().getCode()
+        );
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.segundosParaLiberar()))
+                .body(err);
     }
 }
