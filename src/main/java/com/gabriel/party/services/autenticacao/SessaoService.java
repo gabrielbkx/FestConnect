@@ -1,5 +1,7 @@
 package com.gabriel.party.services.autenticacao;
 
+import com.gabriel.party.config.infra.security.TokenService;
+import com.gabriel.party.config.infra.security.TokensRevogados;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.model.usuario.Usuario;
@@ -11,9 +13,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class SessaoService {
 
     private final UsuarioRepository usuarioRepository;
+    private final TokenService tokenService;
+    private final TokensRevogados tokensRevogados;
 
-    public SessaoService(UsuarioRepository usuarioRepository) {
+    public SessaoService(UsuarioRepository usuarioRepository, TokenService tokenService, TokensRevogados tokensRevogados) {
         this.usuarioRepository = usuarioRepository;
+        this.tokenService = tokenService;
+        this.tokensRevogados = tokensRevogados;
+    }
+
+    /**
+     * Sair só deste dispositivo: cancela o token desta requisição até a hora em que ele venceria.
+     * Os outros aparelhos continuam logados.
+     */
+    public void encerrarEsteDispositivo(String token) {
+        var tokenDeLogin = tokenService.validarTokenDeLogin(token);
+        tokensRevogados.revogar(tokenDeLogin.id(), tokenDeLogin.expiraEm());
     }
 
     /**

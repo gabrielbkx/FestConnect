@@ -94,7 +94,8 @@ public class TokenService {
 
             return new TokenDeLogin(decodificado.getSubject(),
                     decodificado.getIssuedAtAsInstant(),
-                    decodificado.getId());
+                    decodificado.getId(),
+                    decodificado.getExpiresAtAsInstant());
 
         }catch (JWTVerificationException e){
             throw new AppException(ErrorCode.ERRO_AO_VALIDAR_TOKEN_JWT, "Token JWT inválido ou expirado");

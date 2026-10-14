@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +26,19 @@ public class SessaoController {
 
     public SessaoController(SessaoService sessaoService) {
         this.sessaoService = sessaoService;
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "A sessão deste dispositivo foi encerrada"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado")
+    })
+    @Operation(summary = "Sair deste dispositivo",
+            description = "Invalida só o token desta requisição. Os outros dispositivos continuam logados.")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> sairDesteDispositivo(@RequestHeader("Authorization") String authorization) {
+        // A rota exige login, então o SecurityFilter já validou este cabeçalho "Bearer <token>"
+        sessaoService.encerrarEsteDispositivo(authorization.substring("Bearer ".length()));
+        return ResponseEntity.noContent().build();
     }
 
     @ApiResponses(value = {

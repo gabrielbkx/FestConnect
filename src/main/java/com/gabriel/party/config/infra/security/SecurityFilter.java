@@ -34,6 +34,8 @@ public class SecurityFilter extends OncePerRequestFilter {
     TokenService tokenService;
     @Autowired
     UsuarioRepository usuarioRepository;
+    @Autowired
+    TokensRevogados tokensRevogados;
 
 
     @Override
@@ -52,6 +54,14 @@ public class SecurityFilter extends OncePerRequestFilter {
     private void autenticar(String token) {
         try {
             var tokenDeLogin = tokenService.validarTokenDeLogin(token);
+
+            // Logout deste dispositivo: o token foi cancelado antes de vencer. Checa antes do banco,
+            // que é a consulta mais cara.
+            if (tokensRevogados.estaRevogado(tokenDeLogin.id())) {
+                log.debug("Token cancelado por logout; requisição segue anônima.");
+                SecurityContextHolder.clearContext();
+                return;
+            }
 
             // Só o campo "ativo" decide. Não usamos isEnabled(): ele também exige e-mail verificado,
             // e o token entregue no cadastro (antes da verificação) pararia de funcionar.
