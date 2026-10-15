@@ -74,7 +74,7 @@ public interface PedidoMapper {
     @Mapping(source = "evento.dataEvento", target = "dataEvento")
     @Mapping(source = "evento.numeroConvidados", target = "numeroConvidados")
     @Mapping(target = "localEvento",  expression = "java(evento.getEndereco() + \", \" + evento.getBairro() + \" - \" + evento.getCidade())")
-    @Mapping(target = "tipoEvento",   expression = "java(evento.getTipoEvento().name())")
+    @Mapping(target = "tipoEvento",   expression = "java(evento.getTipoEvento().getRotulo())")
     @Mapping(target = "descricao",    expression = "java(evento.getObservacoes() != null ? evento.getObservacoes() : \"\")")
     Pedido toEntityFromEvento(Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo, Evento evento);
 }
