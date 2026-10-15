@@ -159,6 +159,7 @@ public interface ItemCatalogoMapper {
         if (dto.titulo() != null) item.setTitulo(dto.titulo());
         if (dto.descricao() != null) item.setDescricao(dto.descricao());
         if (dto.precoBase() != null) item.setPrecoBase(dto.precoBase());
+        if (dto.duracaoMinutos() != null) item.setDuracaoMinutos(dto.duracaoMinutos());
 
         if (item instanceof Local local && dto.localDetalhe() != null) {
             LocalDetalheDTO d = dto.localDetalhe();

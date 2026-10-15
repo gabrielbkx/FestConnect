@@ -4,6 +4,7 @@ import com.gabriel.party.model.itemcatalogo.enums.TipoItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -20,6 +21,11 @@ public record ItemCatalogoRequestDTO(
 
         @Schema(description = "Preço base em R$. Pode ser usado como referência de valor mínimo.", example = "3500.00")
         BigDecimal precoBase,
+
+        @Schema(description = "Duração do serviço em minutos. Define quanto tempo ele ocupa a agenda do prestador e serve para detectar conflitos de horário.", example = "240")
+        @NotNull(message = "A duração em minutos é obrigatória")
+        @Positive(message = "A duração em minutos deve ser maior que zero")
+        Integer duracaoMinutos,
 
         @Schema(description = "Tipo do item. PRODUTO = bem físico alugado/vendido; SERVICO = mão de obra/serviço prestado; LOCAL = espaço para evento.",
                 allowableValues = {"PRODUTO", "SERVICO", "LOCAL"})

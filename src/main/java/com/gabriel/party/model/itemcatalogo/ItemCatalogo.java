@@ -34,6 +34,11 @@ public abstract class ItemCatalogo {
     @Column(name = "preco_base",precision = 10, scale = 2, nullable = false)
     private BigDecimal precoBase;
 
+    // Quanto tempo o serviço ocupa a agenda do prestador. É o que dá "fim" ao pedido e permite
+    // detectar sobreposição de horários (ver #85). Itens anteriores receberam 240 na migration.
+    @Column(name = "duracao_minutos", nullable = false)
+    private Integer duracaoMinutos;
+
     @Column(nullable = false)
     private Boolean ativo = true;
 
