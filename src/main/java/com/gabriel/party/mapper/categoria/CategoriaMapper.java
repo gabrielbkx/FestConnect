@@ -17,8 +17,13 @@ public interface CategoriaMapper {
     @Mapping(target = "ativo", ignore = true)
     Categoria toEntity(CategoriaRequestDTO dto);
 
+    // Respostas de categoria única (criar/atualizar/buscar): a contagem não é o foco, fica 0.
     @Mapping(target = "quantidadePrestadores", constant = "0")
     CategoriaReponseDTO toDto(Categoria categoria);
+
+    // Listagem: recebe a contagem real de prestadores vinda da consulta agrupada.
+    @Mapping(target = "quantidadePrestadores", source = "quantidadePrestadores")
+    CategoriaReponseDTO toDto(Categoria categoria, Integer quantidadePrestadores);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)

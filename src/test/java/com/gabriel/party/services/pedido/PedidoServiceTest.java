@@ -2,6 +2,7 @@ package com.gabriel.party.services.pedido;
 
 
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
+import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.pedido.PedidoMapper;
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,6 +35,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -102,6 +107,134 @@ class PedidoServiceTest {
         pedidoEntity.setNumeroConvidados(100);
         when(pedidoMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(pedidoEntity);
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    /** Pedido pronto para as ações de transição, com os campos que os templates de e-mail leem. */
+    private Pedido pedidoCom(StatusPedido status) {
+        var pedido = new Pedido();
+        pedido.setId(UUID.randomUUID());
+        pedido.setCliente(cliente);
+        pedido.setPrestador(prestador);
+        pedido.setItemCatalogo(item);
+        pedido.setStatusPedido(status);
+        pedido.setTipoEvento("Casamento");
+        pedido.setDataEvento(LocalDateTime.now().plusDays(10));
+        return pedido;
+    }
+
+    private void mockarPrestadorDonoDoPedido(Pedido pedido) {
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+    }
+
+    private void mockarClienteDonoDoPedido(Pedido pedido) {
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+    }
+
+    // ── whatsappCliente: revelado só ao prestador do pedido e depois do aceite
+
+    @Test
+    @DisplayName("prestador vê o WhatsApp do cliente quando o pedido está ACEITO")
+    void buscarPorId_prestadorEPedidoAceito_revelaWhatsappDoCliente() {
+        cliente.setWhatsapp("11912345678");
+        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var dtoBase = mock(PedidoResponseDTO.class);
+        var dtoComWhatsapp = mock(PedidoResponseDTO.class);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+        when(pedidoMapper.toResponseDTO(pedido)).thenReturn(dtoBase);
+        when(pedidoMapper.comWhatsappCliente(dtoBase, "11912345678")).thenReturn(dtoComWhatsapp);
+
+        var resultado = service.buscarPedidoPorId(pedido.getId(), prestador.getUsuario());
+
+        assertThat(resultado).isSameAs(dtoComWhatsapp);
+    }
+
+    @Test
+    @DisplayName("antes do aceite, o WhatsApp do cliente não é revelado ao prestador")
+    void buscarPorId_prestadorMasAindaOrcado_naoRevela() {
+        cliente.setWhatsapp("11912345678");
+        var pedido = pedidoCom(StatusPedido.ORCADO);
+        var dtoBase = mock(PedidoResponseDTO.class);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+        when(pedidoMapper.toResponseDTO(pedido)).thenReturn(dtoBase);
+
+        var resultado = service.buscarPedidoPorId(pedido.getId(), prestador.getUsuario());
+
+        assertThat(resultado).isSameAs(dtoBase);
+        verify(pedidoMapper, never()).comWhatsappCliente(any(), any());
+    }
+
+    @Test
+    @DisplayName("o cliente não recebe o próprio WhatsApp de volta (só o prestador vê)")
+    void buscarPorId_clienteDono_naoRevela() {
+        cliente.setWhatsapp("11912345678");
+        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var dtoBase = mock(PedidoResponseDTO.class);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoMapper.toResponseDTO(pedido)).thenReturn(dtoBase);
+
+        var resultado = service.buscarPedidoPorId(pedido.getId(), usuarioCliente);
+
+        assertThat(resultado).isSameAs(dtoBase);
+        verify(pedidoMapper, never()).comWhatsappCliente(any(), any());
+    }
+
+    // ── recusarPedido (prestador): só vale enquanto o pedido ainda pode ser recusado
+
+    @ParameterizedTest
+    @EnumSource(value = StatusPedido.class, names = {"PENDENTE", "ORCADO"})
+    @DisplayName("prestador recusa um pedido que ainda pode ser recusado")
+    void recusarPedido_statusValido_recusa(StatusPedido status) {
+        var pedido = pedidoCom(status);
+        mockarPrestadorDonoDoPedido(pedido);
+
+        service.recusarPedido(pedido.getId(), prestador.getUsuario());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RECUSADO);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @DisplayName("recusar um pedido já encerrado devolve PEDIDO_STATUS_INVALIDO")
+    void recusarPedido_statusInvalido_barra(StatusPedido status) {
+        var pedido = pedidoCom(status);
+        mockarPrestadorDonoDoPedido(pedido);
+
+        assertThatThrownBy(() -> service.recusarPedido(pedido.getId(), prestador.getUsuario()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(status); // não mudou
+    }
+
+    // ── cancelarPedidoPeloCliente: só antes do aceite
+
+    @ParameterizedTest
+    @EnumSource(value = StatusPedido.class, names = {"PENDENTE", "ORCADO"})
+    @DisplayName("cliente cancela um pedido ainda não aceito")
+    void cancelarPedido_statusValido_cancela(StatusPedido status) {
+        var pedido = pedidoCom(status);
+        mockarClienteDonoDoPedido(pedido);
+
+        service.cancelarPedidoPeloCliente(pedido.getId(), usuarioCliente);
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.CANCELADO);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @DisplayName("cancelar um pedido aceito ou já encerrado devolve PEDIDO_STATUS_INVALIDO")
+    void cancelarPedido_statusInvalido_barra(StatusPedido status) {
+        var pedido = pedidoCom(status);
+        mockarClienteDonoDoPedido(pedido);
+
+        assertThatThrownBy(() -> service.cancelarPedidoPeloCliente(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(status); // não mudou
     }
 
     @Test

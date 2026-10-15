@@ -5,6 +5,7 @@ import com.gabriel.party.dtos.categoria.CategoriaReponseDTO;
 import com.gabriel.party.dtos.categoria.CategoriaRequestDTO;
 import com.gabriel.party.exceptions.AppException;
 import com.gabriel.party.exceptions.enums.ErrorCode;
+import com.gabriel.party.model.categoria.Categoria;
 import com.gabriel.party.repositories.categoria.CategoriaRepository;
 import com.gabriel.party.repositories.itemcatalogo.ItemCatalogoRepository;
 import jakarta.validation.Valid;
@@ -13,7 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoriaService {
@@ -64,9 +68,19 @@ public class CategoriaService {
 
     @Transactional(readOnly = true)
     public Page<CategoriaReponseDTO> listarCategorias(Pageable pageable) {
+        Page<Categoria> pagina = repository.findAllByAtivoTrue(pageable);
 
-        return repository.findAllByAtivoTrue(pageable)
-                .map(mapper::toDto);
+        List<UUID> ids = pagina.getContent().stream().map(Categoria::getId).toList();
+        // Uma consulta só para a página inteira; categorias sem prestador nem aparecem no resultado (default 0).
+        Map<UUID, Integer> prestadoresPorCategoria = ids.isEmpty()
+                ? Map.of()
+                : itemCatalogoRepository.contarPrestadoresPorCategoria(ids).stream()
+                        .collect(Collectors.toMap(
+                                ItemCatalogoRepository.ContagemDePrestadoresPorCategoria::getCategoriaId,
+                                c -> (int) c.getTotal()));
+
+        return pagina.map(categoria ->
+                mapper.toDto(categoria, prestadoresPorCategoria.getOrDefault(categoria.getId(), 0)));
     }
 
     @Transactional
