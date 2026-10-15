@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.11.0-pedido-data-fim" author="GF">
+        <!-- 1) Cria a coluna nula para poder preencher os pedidos antigos antes de exigir valor. -->
+        <addColumn tableName="tb_pedidos">
+            <column name="data_fim" type="TIMESTAMP"
+                    remarks="Fim do evento (início + duração do item). Define o intervalo [início, fim) usado para detectar sobreposição na agenda do prestador."/>
+        </addColumn>
+
+        <!-- 2) Backfill: fim = início + a duração do item do pedido. -->
+        <sql>
+            UPDATE tb_pedidos p
+               SET data_fim = p.data_do_evento + (i.duracao_minutos * INTERVAL '1 minute')
+              FROM tb_item_catalogo i
+             WHERE p.item_catalogo_id = i.id
+               AND p.data_fim IS NULL
+        </sql>
+
+        <!-- 3) Agora que todos têm valor, torna obrigatória. -->
+        <addNotNullConstraint tableName="tb_pedidos" columnName="data_fim" columnDataType="TIMESTAMP"/>
+    </changeSet>
+
+</databaseChangeLog>

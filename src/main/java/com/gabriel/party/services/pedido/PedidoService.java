@@ -91,6 +91,7 @@ public class PedidoService {
 
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
         pedido.setPrazoResposta(calcularPrazo(pedido.getDataEvento()));
+        pedido.setDataFim(pedido.getDataEvento().plusMinutes(item.getDuracaoMinutos()));
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(
@@ -299,6 +300,7 @@ public class PedidoService {
         for (ItemResolvido r : resolvidos) {
             Pedido pedido = pedidoMapper.toEntityFromEvento(cliente, r.prestador(), r.item(), evento);
             pedido.setPrazoResposta(prazo);
+            pedido.setDataFim(pedido.getDataEvento().plusMinutes(r.item().getDuracaoMinutos()));
             pedidosSalvos.add(pedidoRepository.save(pedido));
         }
 

@@ -29,6 +29,11 @@ public class Pedido {
     @Column(name = "data_do_evento", nullable = false)
     private LocalDateTime dataEvento;
 
+    // Fim do evento = início + duração do item. Dá o intervalo [início, fim) usado para
+    // detectar sobreposição na agenda do prestador (#85). Preenchido no criarPedido/lote.
+    @Column(name = "data_fim", nullable = false)
+    private LocalDateTime dataFim;
+
     @Column(name = "local_do_evento", nullable = false)
     private String localEvento;
 

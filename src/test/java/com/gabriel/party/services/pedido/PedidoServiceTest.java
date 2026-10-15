@@ -73,6 +73,7 @@ class PedidoServiceTest {
         item = new Servico();
         item.setId(UUID.randomUUID());
         item.setPrestador(prestador);
+        item.setDuracaoMinutos(240);
     }
 
     private PedidoRequestDTO novoRequest(LocalDateTime dataEvento) {
@@ -109,6 +110,19 @@ class PedidoServiceTest {
         var captor = ArgumentCaptor.forClass(Pedido.class);
         verify(pedidoRepository).save(captor.capture());
         assertThat(captor.getValue().getPrazoResposta()).isEqualTo(dataEvento);
+    }
+
+    @Test
+    @DisplayName("criarPedido grava o fim do pedido = início + a duração do item")
+    void criarPedido_gravaDataFim() {
+        LocalDateTime dataEvento = LocalDateTime.now().plusDays(30);
+        mockarFluxoCriacao(dataEvento);   // item com 240 min (4h)
+
+        service.criarPedido(novoRequest(dataEvento), usuarioCliente);
+
+        var captor = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(captor.capture());
+        assertThat(captor.getValue().getDataFim()).isEqualTo(dataEvento.plusMinutes(240));
     }
 
     @Test
