@@ -48,8 +48,14 @@ public interface PedidoMapper {
     @Mapping(source = "evento.id", target = "eventoId")
     @Mapping(source = "evento.nome", target = "eventoNome")
     @Mapping(target = "fotoPrestadorUrl", source = "prestador.fotoPerfilUrl")
+    // whatsappCliente fica oculto por padrão; o service revela só para o prestador e após o aceite
+    @Mapping(target = "whatsappCliente", ignore = true)
     PedidoResponseDTO toResponseDTO(Pedido pedido);
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
+
+    /** Copia o DTO trocando só o whatsappCliente (para revelar o contato ao prestador após o aceite). */
+    @Mapping(target = "whatsappCliente", source = "novoWhatsapp")
+    PedidoResponseDTO comWhatsappCliente(PedidoResponseDTO dto, String novoWhatsapp);
 
     void updatePedidoFromOrcamento(OrcamentoRequestDTO dto, @MappingTarget Pedido pedido);
 
@@ -68,7 +74,7 @@ public interface PedidoMapper {
     @Mapping(source = "evento.dataEvento", target = "dataEvento")
     @Mapping(source = "evento.numeroConvidados", target = "numeroConvidados")
     @Mapping(target = "localEvento",  expression = "java(evento.getEndereco() + \", \" + evento.getBairro() + \" - \" + evento.getCidade())")
-    @Mapping(target = "tipoEvento",   expression = "java(evento.getTipoEvento().name())")
+    @Mapping(target = "tipoEvento",   expression = "java(evento.getTipoEvento().getRotulo())")
     @Mapping(target = "descricao",    expression = "java(evento.getObservacoes() != null ? evento.getObservacoes() : \"\")")
     Pedido toEntityFromEvento(Cliente cliente, Prestador prestador, ItemCatalogo itemCatalogo, Evento evento);
 }

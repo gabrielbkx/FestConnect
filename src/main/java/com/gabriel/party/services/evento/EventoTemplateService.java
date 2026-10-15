@@ -40,25 +40,11 @@ public class EventoTemplateService {
             Map.entry(TipoEvento.OUTRO, Collections.emptyList())
     );
 
-    private static final Map<TipoEvento, String> LABELS = Map.ofEntries(
-            Map.entry(TipoEvento.CASAMENTO, "Casamento"),
-            Map.entry(TipoEvento.QUINZE_ANOS, "15 Anos"),
-            Map.entry(TipoEvento.ANIVERSARIO, "Aniversário"),
-            Map.entry(TipoEvento.INFANTIL, "Festa Infantil"),
-            Map.entry(TipoEvento.CHURRASCO, "Churrasco"),
-            Map.entry(TipoEvento.FORMATURA, "Formatura"),
-            Map.entry(TipoEvento.CORPORATIVO, "Corporativo"),
-            Map.entry(TipoEvento.CONFRATERNIZACAO, "Confraternização"),
-            Map.entry(TipoEvento.CHA_REVELACAO, "Chá Revelação"),
-            Map.entry(TipoEvento.BATIZADO, "Batizado"),
-            Map.entry(TipoEvento.OUTRO, "Outro")
-    );
-
     public List<TipoEventoDTO> listarTipos() {
         return Arrays.stream(TipoEvento.values())
                 .map(tipo -> new TipoEventoDTO(
                         tipo,
-                        LABELS.getOrDefault(tipo, tipo.name()),
+                        tipo.getRotulo(),
                         CATEGORIAS_POR_TIPO.getOrDefault(tipo, Collections.emptyList())))
                 .toList();
     }

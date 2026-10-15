@@ -24,6 +24,27 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
 
     boolean existsByCategoriaIdAndAtivoTrue(UUID categoriaId);
 
+    /** Projeção da contagem de prestadores por categoria (uma linha por categoria). */
+    interface ContagemDePrestadoresPorCategoria {
+        UUID getCategoriaId();
+        long getTotal();
+    }
+
+    /**
+     * Para cada categoria da lista, quantos prestadores DISTINTOS têm ao menos um item ativo nela.
+     * Conta só prestador ativo, para bater com a busca pública (que exige p.ativo = true).
+     * Uma consulta agrupada, sem N+1.
+     */
+    @Query("""
+            SELECT i.categoria.id AS categoriaId, COUNT(DISTINCT i.prestador.id) AS total
+            FROM ItemCatalogo i
+            WHERE i.ativo = true
+              AND i.prestador.ativo = true
+              AND i.categoria.id IN :categoriaIds
+            GROUP BY i.categoria.id
+            """)
+    List<ContagemDePrestadoresPorCategoria> contarPrestadoresPorCategoria(@Param("categoriaIds") List<UUID> categoriaIds);
+
 
     @Query(
         value = """

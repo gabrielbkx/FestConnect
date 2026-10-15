@@ -2,7 +2,10 @@ package com.gabriel.party.model.pedido.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.gabriel.party.model.midia.enums.TipoMidia;
+
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
 
 public enum StatusPedido {
     PENDENTE("pendente"),
@@ -16,6 +19,21 @@ public enum StatusPedido {
 
     StatusPedido(String valor) {
         this.valor = valor;
+    }
+
+    /**
+     * Para onde cada status pode ir. Quem não está no mapa (RECUSADO, CANCELADO, ACEITO, EXPIRADO)
+     * é terminal: não vai para lugar nenhum. A #90 abre as transições a partir de ACEITO.
+     * Isto é só a máquina de estados; QUEM pode disparar cada transição é checado nas permissões.
+     */
+    private static final Map<StatusPedido, Set<StatusPedido>> TRANSICOES = Map.of(
+            PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
+            ORCADO, EnumSet.of(ACEITO, RECUSADO, CANCELADO, EXPIRADO)
+    );
+
+    /** O pedido neste status pode passar para {@code novo}? */
+    public boolean podeIrPara(StatusPedido novo) {
+        return novo != null && TRANSICOES.getOrDefault(this, EnumSet.noneOf(StatusPedido.class)).contains(novo);
     }
 
     @JsonValue

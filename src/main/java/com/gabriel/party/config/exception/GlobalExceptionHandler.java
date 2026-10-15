@@ -6,10 +6,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,40 @@ public class GlobalExceptionHandler {
                 "Você não tem permissão para acessar este recurso.",
                 request.getRequestURI(),
                 "acesso_negado"
+        );
+        return ResponseEntity.status(status).body(err);
+    }
+
+    // Corpo ausente ou JSON malformado. Sem este handler virava 500 em vez de 400.
+    // A mensagem é genérica de propósito: o detalhe do parser não ajuda o cliente e pode vazar interno.
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<AppErroResponse> handleCorpoIlegivel(HttpMessageNotReadableException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        AppErroResponse err = new AppErroResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Corpo da requisição ausente ou mal formatado.",
+                request.getRequestURI(),
+                "corpo_invalido"
+        );
+        return ResponseEntity.status(status).body(err);
+    }
+
+    // Rota inexistente. Sem este handler o DispatcherServlet lançava NoResourceFoundException,
+    // que caía no genérico abaixo e virava 500 em vez de 404.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<AppErroResponse> handleRotaInexistente(NoResourceFoundException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+
+        AppErroResponse err = new AppErroResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                "Recurso não encontrado.",
+                request.getRequestURI(),
+                "recurso_nao_encontrado"
         );
         return ResponseEntity.status(status).body(err);
     }

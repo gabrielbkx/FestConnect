@@ -31,6 +31,9 @@ public record PedidoResponseDTO(
         @Schema(description = "WhatsApp do prestador (disponível após aceite)", example = "11987654321")
         String whatsappPrestador,
 
+        @Schema(description = "WhatsApp do cliente. Só é preenchido para o prestador do pedido e depois do aceite (status ACEITO); nos demais casos vem nulo.", example = "11912345678")
+        String whatsappCliente,
+
         @Schema(description = "ID do item do catálogo solicitado")
         UUID itemCatalogoId,
 
