@@ -26,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -139,15 +140,34 @@ class PedidoServiceTest {
     void aceitarOrcamento_comSobreposicao_barra() {
         var inicio = LocalDateTime.now().plusDays(10);
         var pedido = pedidoOrcado(inicio);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO); // o que já ocupa a agenda (20:00–00:00)
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.existsSobreposicao(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
-                .thenReturn(true);
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO); // não aceitou
+    }
+
+    @Test
+    @DisplayName("a mensagem do 409 diz o horário e o dia do evento já confirmado")
+    void aceitarOrcamento_comSobreposicao_mensagemComHorario() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0)); // 20:00–00:00 em 12/12
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(any(), any(), any(), any())).thenReturn(List.of(jaConfirmado));
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .hasMessageContaining("20:00")
+                .hasMessageContaining("00:00")
+                .hasMessageContaining("12/12");
     }
 
     @Test
@@ -157,8 +177,8 @@ class PedidoServiceTest {
         var pedido = pedidoOrcado(inicio);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.existsSobreposicao(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
-                .thenReturn(false);
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(List.of());
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.aceitarOrcamento(pedido.getId(), usuarioCliente);

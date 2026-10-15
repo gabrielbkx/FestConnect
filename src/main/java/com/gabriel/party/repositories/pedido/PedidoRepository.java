@@ -29,16 +29,17 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
      * fica na restrição de exclusão do banco (#85).
      */
     @Query("""
-            SELECT COUNT(p) > 0 FROM Pedido p
+            SELECT p FROM Pedido p
              WHERE p.prestador.id = :prestadorId
                AND p.statusPedido = :status
                AND p.dataEvento < :fim
                AND :inicio < p.dataFim
+             ORDER BY p.dataEvento
             """)
-    boolean existsSobreposicao(@Param("prestadorId") UUID prestadorId,
-                               @Param("inicio") LocalDateTime inicio,
-                               @Param("fim") LocalDateTime fim,
-                               @Param("status") StatusPedido status);
+    List<Pedido> buscarSobreposicoes(@Param("prestadorId") UUID prestadorId,
+                                     @Param("inicio") LocalDateTime inicio,
+                                     @Param("fim") LocalDateTime fim,
+                                     @Param("status") StatusPedido status);
 
     boolean existsByPrestadorIdAndClienteIdAndStatusPedido(UUID prestadorId, UUID clienteId, StatusPedido status);
 

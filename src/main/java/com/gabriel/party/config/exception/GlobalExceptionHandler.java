@@ -77,11 +77,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<AppErroResponse> handleViolacaoDeIntegridade(DataIntegrityViolationException e, HttpServletRequest request) {
         if (ehConflitoDeAgenda(e)) {
             ErrorCode errorCode = ErrorCode.PEDIDO_CONFLITO_AGENDA;
+            // Mensagem fixa: aqui (corrida pega pelo banco) não temos os horários do conflito à mão.
+            // O caminho normal (checagem na aplicação) devolve a mensagem detalhada com os horários.
             AppErroResponse err = new AppErroResponse(
                     LocalDateTime.now(),
                     errorCode.getStatus().value(),
                     errorCode.getStatus().getReasonPhrase(),
-                    errorCode.getMessage(),
+                    "Esse horário acabou de ser preenchido para o parceiro. Escolha outro.",
                     request.getRequestURI(),
                     errorCode.getCode()
             );

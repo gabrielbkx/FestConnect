@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
+
+    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM");
 
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
@@ -194,9 +198,14 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        if (pedidoRepository.existsSobreposicao(
-                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ACEITO)) {
-            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ACEITO);
+        if (!conflitos.isEmpty()) {
+            Pedido jaConfirmado = conflitos.get(0);
+            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
+                    jaConfirmado.getDataEvento().format(HORA),
+                    jaConfirmado.getDataFim().format(HORA),
+                    jaConfirmado.getDataEvento().format(DIA));
         }
 
         pedido.setStatusPedido(StatusPedido.ACEITO);
