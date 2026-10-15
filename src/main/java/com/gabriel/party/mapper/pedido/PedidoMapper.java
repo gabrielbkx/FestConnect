@@ -48,8 +48,14 @@ public interface PedidoMapper {
     @Mapping(source = "evento.id", target = "eventoId")
     @Mapping(source = "evento.nome", target = "eventoNome")
     @Mapping(target = "fotoPrestadorUrl", source = "prestador.fotoPerfilUrl")
+    // whatsappCliente fica oculto por padrão; o service revela só para o prestador e após o aceite
+    @Mapping(target = "whatsappCliente", ignore = true)
     PedidoResponseDTO toResponseDTO(Pedido pedido);
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
+
+    /** Copia o DTO trocando só o whatsappCliente (para revelar o contato ao prestador após o aceite). */
+    @Mapping(target = "whatsappCliente", source = "novoWhatsapp")
+    PedidoResponseDTO comWhatsappCliente(PedidoResponseDTO dto, String novoWhatsapp);
 
     void updatePedidoFromOrcamento(OrcamentoRequestDTO dto, @MappingTarget Pedido pedido);
 

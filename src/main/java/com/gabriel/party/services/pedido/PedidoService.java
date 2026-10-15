@@ -125,8 +125,21 @@ public class PedidoService {
         Prestador prestador = prestadorRepository.findByUsuarioId(usuarioLogado.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
 
-        return pedidoMapper.toResponseList(
-                pedidoRepository.findByPrestadorIdOrderByDataHoraCriacaoDesc(prestador.getId()));
+        return pedidoRepository.findByPrestadorIdOrderByDataHoraCriacaoDesc(prestador.getId()).stream()
+                .map(pedido -> comContatoDoCliente(pedido, true))
+                .toList();
+    }
+
+    /**
+     * Depois do aceite, o prestador precisa falar com o cliente. Revela o WhatsApp do cliente só
+     * nesse caso (status ACEITO e quem lê é o prestador do pedido); nos demais, o campo fica nulo.
+     */
+    private PedidoResponseDTO comContatoDoCliente(Pedido pedido, boolean solicitanteEhPrestador) {
+        PedidoResponseDTO dto = pedidoMapper.toResponseDTO(pedido);
+        if (solicitanteEhPrestador && pedido.getStatusPedido() == StatusPedido.ACEITO) {
+            return pedidoMapper.comWhatsappCliente(dto, pedido.getCliente().getWhatsapp());
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)
@@ -134,17 +147,18 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
 
-        boolean autorizado = clienteRepository.findByUsuarioId(usuarioLogado.getId())
+        boolean ehClienteDono = clienteRepository.findByUsuarioId(usuarioLogado.getId())
                 .map(c -> c.getId().equals(pedido.getCliente().getId()))
-                .orElseGet(() -> prestadorRepository.findByUsuarioId(usuarioLogado.getId())
-                        .map(p -> p.getId().equals(pedido.getPrestador().getId()))
-                        .orElse(false));
+                .orElse(false);
+        boolean ehPrestadorDono = prestadorRepository.findByUsuarioId(usuarioLogado.getId())
+                .map(p -> p.getId().equals(pedido.getPrestador().getId()))
+                .orElse(false);
 
-        if (!autorizado) {
+        if (!ehClienteDono && !ehPrestadorDono) {
             throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
         }
 
-        return pedidoMapper.toResponseDTO(pedido);
+        return comContatoDoCliente(pedido, ehPrestadorDono);
     }
 
     @Transactional
