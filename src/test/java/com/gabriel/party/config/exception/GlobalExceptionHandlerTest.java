@@ -4,10 +4,13 @@ import com.gabriel.party.exceptions.MuitasTentativasException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Duration;
 
@@ -38,6 +41,54 @@ class GlobalExceptionHandlerTest {
 
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(resposta.getBody()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("JSON malformado resolve para o handler de corpo ilegível, e não para o genérico (500)")
+    void corpoIlegivel_resolveParaHandlerProprio() {
+        var excecao = new HttpMessageNotReadableException("JSON parse error", (org.springframework.http.HttpInputMessage) null);
+
+        var metodo = new ExceptionHandlerMethodResolver(GlobalExceptionHandler.class).resolveMethodByThrowable(excecao);
+
+        assertThat(metodo).isNotNull();
+        assertThat(metodo.getName()).isEqualTo("handleCorpoIlegivel");
+    }
+
+    @Test
+    @DisplayName("corpo ilegível responde 400 com o código corpo_invalido")
+    void handleCorpoIlegivel_responde400() {
+        var request = new MockHttpServletRequest("POST", "/api/v1/pedidos");
+
+        var resposta = handler.handleCorpoIlegivel(
+                new HttpMessageNotReadableException("x", (org.springframework.http.HttpInputMessage) null), request);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resposta.getBody()).isNotNull();
+        assertThat(resposta.getBody().code()).isEqualTo("corpo_invalido");
+    }
+
+    @Test
+    @DisplayName("rota inexistente resolve para o handler de 404, e não para o genérico (500)")
+    void rotaInexistente_resolveParaHandlerProprio() {
+        var excecao = new NoResourceFoundException(HttpMethod.GET, "/api/v1/rota-que-nao-existe", "/api/v1/rota-que-nao-existe");
+
+        var metodo = new ExceptionHandlerMethodResolver(GlobalExceptionHandler.class).resolveMethodByThrowable(excecao);
+
+        assertThat(metodo).isNotNull();
+        assertThat(metodo.getName()).isEqualTo("handleRotaInexistente");
+    }
+
+    @Test
+    @DisplayName("rota inexistente responde 404 com o código recurso_nao_encontrado")
+    void handleRotaInexistente_responde404() {
+        var request = new MockHttpServletRequest("GET", "/api/v1/rota-que-nao-existe");
+
+        var resposta = handler.handleRotaInexistente(
+                new NoResourceFoundException(HttpMethod.GET, "/api/v1/rota-que-nao-existe", "/api/v1/rota-que-nao-existe"), request);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(resposta.getBody()).isNotNull();
+        assertThat(resposta.getBody().code()).isEqualTo("recurso_nao_encontrado");
     }
 
     @Test
