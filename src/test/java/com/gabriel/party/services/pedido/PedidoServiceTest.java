@@ -2,11 +2,14 @@ package com.gabriel.party.services.pedido;
 
 
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
+import com.gabriel.party.exceptions.AppException;
+import com.gabriel.party.exceptions.enums.ErrorCode;
 import com.gabriel.party.mapper.pedido.PedidoMapper;
 import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.itemcatalogo.Servico;
 import com.gabriel.party.model.pedido.Pedido;
+import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
 import com.gabriel.party.repositories.cliente.ClienteRepository;
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -110,6 +114,56 @@ class PedidoServiceTest {
         var captor = ArgumentCaptor.forClass(Pedido.class);
         verify(pedidoRepository).save(captor.capture());
         assertThat(captor.getValue().getPrazoResposta()).isEqualTo(dataEvento);
+    }
+
+    // ── aceitarOrcamento: usa a checagem de SOBREPOSIÇÃO (não mais igualdade de horário)
+
+    private Pedido pedidoOrcado(LocalDateTime inicio) {
+        var pedido = new Pedido();
+        pedido.setId(UUID.randomUUID());
+        pedido.setCliente(cliente);
+        pedido.setPrestador(prestador);
+        pedido.setItemCatalogo(item);
+        pedido.setStatusPedido(StatusPedido.ORCADO);
+        pedido.setTipoEvento("Casamento");
+        pedido.setLocalEvento("Salão X");
+        pedido.setNumeroConvidados(100);
+        pedido.setValor(java.math.BigDecimal.valueOf(2500));
+        pedido.setDataEvento(inicio);
+        pedido.setDataFim(inicio.plusMinutes(240));
+        return pedido;
+    }
+
+    @Test
+    @DisplayName("aceitar barra quando o intervalo do pedido se sobrepõe a outro já aceito")
+    void aceitarOrcamento_comSobreposicao_barra() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.existsSobreposicao(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO); // não aceitou
+    }
+
+    @Test
+    @DisplayName("aceitar passa quando não há sobreposição na agenda do prestador")
+    void aceitarOrcamento_semSobreposicao_aceita() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.existsSobreposicao(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(false);
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
     }
 
     @Test

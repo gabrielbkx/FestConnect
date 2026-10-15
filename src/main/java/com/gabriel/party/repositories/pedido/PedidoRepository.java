@@ -6,6 +6,7 @@ import com.gabriel.party.model.pedido.enums.StatusPedido;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -21,7 +22,23 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     List<Pedido> findByPrestadorIdOrderByDataHoraCriacaoDesc(UUID prestadorId);
 
-    boolean existsByPrestadorIdAndDataEventoAndStatusPedido(UUID prestadorId, LocalDateTime dataEvento, StatusPedido status);
+    /**
+     * O prestador já tem algum pedido no status dado que se SOBREPÕE ao intervalo [inicio, fim)?
+     * Sobreposição de intervalos semiabertos: inicioA &lt; fimB AND inicioB &lt; fimA. Encostado
+     * (fim == inicio) não conflita. Esta é a checagem na aplicação; a garantia contra corrida
+     * fica na restrição de exclusão do banco (#85).
+     */
+    @Query("""
+            SELECT COUNT(p) > 0 FROM Pedido p
+             WHERE p.prestador.id = :prestadorId
+               AND p.statusPedido = :status
+               AND p.dataEvento < :fim
+               AND :inicio < p.dataFim
+            """)
+    boolean existsSobreposicao(@Param("prestadorId") UUID prestadorId,
+                               @Param("inicio") LocalDateTime inicio,
+                               @Param("fim") LocalDateTime fim,
+                               @Param("status") StatusPedido status);
 
     boolean existsByPrestadorIdAndClienteIdAndStatusPedido(UUID prestadorId, UUID clienteId, StatusPedido status);
 

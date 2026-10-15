@@ -194,8 +194,8 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        if (pedidoRepository.existsByPrestadorIdAndDataEventoAndStatusPedido(
-                pedido.getPrestador().getId(), pedido.getDataEvento(), StatusPedido.ACEITO)) {
+        if (pedidoRepository.existsSobreposicao(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ACEITO)) {
             throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA);
         }
 
