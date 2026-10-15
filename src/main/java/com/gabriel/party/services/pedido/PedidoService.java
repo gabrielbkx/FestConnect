@@ -175,6 +175,11 @@ public class PedidoService {
     @Transactional
     public void recusarPedido(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoPrestador(pedidoId, usuarioLogado);
+
+        if (!pedido.getStatusPedido().podeIrPara(StatusPedido.RECUSADO)) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
         pedido.setStatusPedido(StatusPedido.RECUSADO);
         pedidoRepository.save(pedido);
 
@@ -232,7 +237,7 @@ public class PedidoService {
     public void cancelarPedidoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
 
-        if (pedido.getStatusPedido() == StatusPedido.ACEITO) {
+        if (!pedido.getStatusPedido().podeIrPara(StatusPedido.CANCELADO)) {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
