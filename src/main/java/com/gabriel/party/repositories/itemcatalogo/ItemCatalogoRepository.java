@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +57,12 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
                                OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+              AND (:disponivelEm IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM Pedido pe
+                     WHERE pe.prestador = i.prestador
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.dataEvento <= :disponivelEm
+                       AND :disponivelEm < pe.dataFim))
             """,
         countQuery = """
             SELECT COUNT(DISTINCT i) FROM ItemCatalogo i
@@ -65,11 +72,18 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
                                OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(i.prestador.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+              AND (:disponivelEm IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM Pedido pe
+                     WHERE pe.prestador = i.prestador
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.dataEvento <= :disponivelEm
+                       AND :disponivelEm < pe.dataFim))
             """
     )
     Page<ItemCatalogo> buscarSemCategoria(
             @Param("busca") String busca,
             @Param("cidade") String cidade,
+            @Param("disponivelEm") LocalDateTime disponivelEm,
             Pageable pageable
     );
 
@@ -84,6 +98,12 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
                                OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(p.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+              AND (:disponivelEm IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM Pedido pe
+                     WHERE pe.prestador = i.prestador
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.dataEvento <= :disponivelEm
+                       AND :disponivelEm < pe.dataFim))
             """,
         countQuery = """
             SELECT COUNT(DISTINCT i) FROM ItemCatalogo i
@@ -94,12 +114,19 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
                                OR LOWER(i.descricao) LIKE LOWER(CONCAT('%', :busca, '%'))
                                OR LOWER(i.categoria.nome) LIKE LOWER(CONCAT('%', :busca, '%')))
               AND (:cidade = '' OR LOWER(i.prestador.endereco.cidade) LIKE LOWER(CONCAT('%', :cidade, '%')))
+              AND (:disponivelEm IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM Pedido pe
+                     WHERE pe.prestador = i.prestador
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.dataEvento <= :disponivelEm
+                       AND :disponivelEm < pe.dataFim))
             """
     )
     Page<ItemCatalogo> buscarComCategorias(
             @Param("categoriaIds") List<UUID> categoriaIds,
             @Param("busca") String busca,
             @Param("cidade") String cidade,
+            @Param("disponivelEm") LocalDateTime disponivelEm,
             Pageable pageable
     );
 
