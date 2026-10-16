@@ -1,6 +1,7 @@
 package com.gabriel.party.services.pedido;
 
 
+import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
@@ -249,6 +250,58 @@ class PedidoServiceTest {
         var captor = ArgumentCaptor.forClass(Pedido.class);
         verify(pedidoRepository).save(captor.capture());
         assertThat(captor.getValue().getPrazoResposta()).isEqualTo(dataEvento);
+    }
+
+    // ── enviarOrcamento: recusa horário confirmado e avisa concorrentes
+
+    private Pedido pedidoPendente(LocalDateTime inicio) {
+        var pedido = pedidoOrcado(inicio);
+        pedido.setStatusPedido(StatusPedido.PENDENTE);
+        pedido.setPrazoResposta(LocalDateTime.now().plusHours(10));
+        return pedido;
+    }
+
+    private OrcamentoRequestDTO orcamento() {
+        return new OrcamentoRequestDTO(java.math.BigDecimal.valueOf(2500), "Inclui tudo");
+    }
+
+    @Test
+    @DisplayName("orçar um horário já confirmado é recusado (409)")
+    void enviarOrcamento_horarioConfirmado_barra() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoPendente(inicio);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of(jaConfirmado));
+
+        assertThatThrownBy(() -> service.enviarOrcamento(pedido.getId(), orcamento(), prestador.getUsuario()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.PENDENTE); // não orçou
+    }
+
+    @Test
+    @DisplayName("sem confirmado no horário, a resposta avisa quantos outros orçados concorrem")
+    void enviarOrcamento_avisaConcorrentes() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoPendente(inicio);
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of());
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ORCADO)))
+                .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 concorrentes
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+        var dtoBase = mock(PedidoResponseDTO.class);
+        when(pedidoMapper.toResponseDTO(pedido)).thenReturn(dtoBase);
+
+        service.enviarOrcamento(pedido.getId(), orcamento(), prestador.getUsuario());
+
+        verify(pedidoMapper).comPedidosConcorrentes(dtoBase, 2);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
     }
 
     // ── aceitarOrcamento: usa a checagem de SOBREPOSIÇÃO (não mais igualdade de horário)

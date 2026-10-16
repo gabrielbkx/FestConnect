@@ -50,12 +50,18 @@ public interface PedidoMapper {
     @Mapping(target = "fotoPrestadorUrl", source = "prestador.fotoPerfilUrl")
     // whatsappCliente fica oculto por padrão; o service revela só para o prestador e após o aceite
     @Mapping(target = "whatsappCliente", ignore = true)
+    // pedidosConcorrentes só é preenchido na resposta do envio do orçamento
+    @Mapping(target = "pedidosConcorrentes", ignore = true)
     PedidoResponseDTO toResponseDTO(Pedido pedido);
     List<PedidoResponseDTO> toResponseList(List<Pedido> pedidos);
 
     /** Copia o DTO trocando só o whatsappCliente (para revelar o contato ao prestador após o aceite). */
     @Mapping(target = "whatsappCliente", source = "novoWhatsapp")
     PedidoResponseDTO comWhatsappCliente(PedidoResponseDTO dto, String novoWhatsapp);
+
+    /** Copia o DTO preenchendo quantos outros orçados disputam o mesmo horário (resposta do orçamento). */
+    @Mapping(target = "pedidosConcorrentes", source = "concorrentes")
+    PedidoResponseDTO comPedidosConcorrentes(PedidoResponseDTO dto, Integer concorrentes);
 
     void updatePedidoFromOrcamento(OrcamentoRequestDTO dto, @MappingTarget Pedido pedido);
 

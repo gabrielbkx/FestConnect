@@ -80,5 +80,8 @@ public record PedidoResponseDTO(
         UUID eventoId,
 
         @Schema(description = "Nome do evento ao qual este pedido pertence (null para pedido avulso)")
-        String eventoNome
+        String eventoNome,
+
+        @Schema(description = "Quantos OUTROS pedidos orçados do prestador disputam este mesmo horário. Só é preenchido na resposta do envio do orçamento; nos demais casos vem nulo.", example = "2")
+        Integer pedidosConcorrentes
 ) {}

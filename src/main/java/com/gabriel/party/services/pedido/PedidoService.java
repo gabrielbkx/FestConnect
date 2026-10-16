@@ -201,10 +201,17 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_PRAZO_EXPIRADO);
         }
 
+        // Não deixa orçar um horário que já está confirmado para outro cliente.
+        recusarSeHorarioConfirmado(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim());
+        // Outros orçados disputando o mesmo horário (este ainda é PENDENTE, então não se conta).
+        int concorrentes = pedidoRepository.buscarSobreposicoes(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ORCADO).size();
+
         pedidoMapper.updatePedidoFromOrcamento(dto, pedido);
         pedido.setValidadeOrcamento(calcularPrazo(pedido.getDataEvento()));
         pedido.setStatusPedido(StatusPedido.ORCADO);
-        PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
+        PedidoResponseDTO resposta = pedidoMapper.comPedidosConcorrentes(
+                pedidoMapper.toResponseDTO(pedidoRepository.save(pedido)), concorrentes);
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
