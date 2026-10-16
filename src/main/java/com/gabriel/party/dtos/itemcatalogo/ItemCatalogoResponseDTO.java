@@ -22,6 +22,9 @@ public record ItemCatalogoResponseDTO(
         @Schema(description = "Preço base em R$", example = "3500.00")
         BigDecimal precoBase,
 
+        @Schema(description = "Duração do serviço em minutos (quanto ocupa a agenda do prestador)", example = "240")
+        Integer duracaoMinutos,
+
         @Schema(description = "Tipo do item: PRODUTO, SERVICO ou LOCAL", example = "SERVICO")
         String tipo,
 

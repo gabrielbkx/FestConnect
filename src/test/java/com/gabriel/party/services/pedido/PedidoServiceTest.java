@@ -29,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,6 +83,7 @@ class PedidoServiceTest {
         item = new Servico();
         item.setId(UUID.randomUUID());
         item.setPrestador(prestador);
+        item.setDuracaoMinutos(240);
     }
 
     private PedidoRequestDTO novoRequest(LocalDateTime dataEvento) {
@@ -246,6 +248,88 @@ class PedidoServiceTest {
         var captor = ArgumentCaptor.forClass(Pedido.class);
         verify(pedidoRepository).save(captor.capture());
         assertThat(captor.getValue().getPrazoResposta()).isEqualTo(dataEvento);
+    }
+
+    // ── aceitarOrcamento: usa a checagem de SOBREPOSIÇÃO (não mais igualdade de horário)
+
+    private Pedido pedidoOrcado(LocalDateTime inicio) {
+        var pedido = new Pedido();
+        pedido.setId(UUID.randomUUID());
+        pedido.setCliente(cliente);
+        pedido.setPrestador(prestador);
+        pedido.setItemCatalogo(item);
+        pedido.setStatusPedido(StatusPedido.ORCADO);
+        pedido.setTipoEvento("Casamento");
+        pedido.setLocalEvento("Salão X");
+        pedido.setNumeroConvidados(100);
+        pedido.setValor(java.math.BigDecimal.valueOf(2500));
+        pedido.setDataEvento(inicio);
+        pedido.setDataFim(inicio.plusMinutes(240));
+        return pedido;
+    }
+
+    @Test
+    @DisplayName("aceitar barra quando o intervalo do pedido se sobrepõe a outro já aceito")
+    void aceitarOrcamento_comSobreposicao_barra() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO); // o que já ocupa a agenda (20:00–00:00)
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(List.of(jaConfirmado));
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO); // não aceitou
+    }
+
+    @Test
+    @DisplayName("a mensagem do 409 diz o horário e o dia do evento já confirmado")
+    void aceitarOrcamento_comSobreposicao_mensagemComHorario() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0)); // 20:00–00:00 em 12/12
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(any(), any(), any(), any())).thenReturn(List.of(jaConfirmado));
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .hasMessageContaining("20:00")
+                .hasMessageContaining("00:00")
+                .hasMessageContaining("12/12");
+    }
+
+    @Test
+    @DisplayName("aceitar passa quando não há sobreposição na agenda do prestador")
+    void aceitarOrcamento_semSobreposicao_aceita() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+                .thenReturn(List.of());
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
+    }
+
+    @Test
+    @DisplayName("criarPedido grava o fim do pedido = início + a duração do item")
+    void criarPedido_gravaDataFim() {
+        LocalDateTime dataEvento = LocalDateTime.now().plusDays(30);
+        mockarFluxoCriacao(dataEvento);   // item com 240 min (4h)
+
+        service.criarPedido(novoRequest(dataEvento), usuarioCliente);
+
+        var captor = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepository).save(captor.capture());
+        assertThat(captor.getValue().getDataFim()).isEqualTo(dataEvento.plusMinutes(240));
     }
 
     @Test

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.10.0-item-duracao-minutos" author="GF">
+        <addColumn tableName="tb_item_catalogo">
+            <column name="duracao_minutos" type="INT" defaultValueNumeric="240"
+                    remarks="Quanto tempo o serviço ocupa a agenda do prestador (em minutos). Dá o fim do pedido e permite detectar sobreposição de horários. Itens anteriores receberam o padrão de 240 (4 h).">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

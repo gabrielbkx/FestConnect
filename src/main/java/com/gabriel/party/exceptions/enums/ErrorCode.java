@@ -12,7 +12,7 @@ public enum ErrorCode {
     // Erros de Pedido
     PEDIDO_NAO_ENCONTRADO("pedido_nao_encontrado", HttpStatus.NOT_FOUND, "Pedido '%id%' não encontrado."),
     PEDIDO_STATUS_INVALIDO("pedido_status_invalido", HttpStatus.BAD_REQUEST, "Operação inválida para o status atual do pedido: '%status%'."),
-    PEDIDO_CONFLITO_AGENDA("pedido_conflito_agenda", HttpStatus.CONFLICT, "O prestador já possui um pedido confirmado nesta data."),
+    PEDIDO_CONFLITO_AGENDA("pedido_conflito_agenda", HttpStatus.CONFLICT, "Esse parceiro já tem um evento confirmado das %inicio% às %fim% em %dia%."),
     PEDIDO_SEM_PERMISSAO("pedido_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este pedido."),
     PEDIDO_PRAZO_EXPIRADO("pedido_prazo_expirado", HttpStatus.BAD_REQUEST, "O prazo para responder a este pedido expirou."),
 

@@ -3,6 +3,7 @@ package com.gabriel.party.config.exception;
 import com.gabriel.party.exceptions.*;
 import com.gabriel.party.exceptions.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import java.sql.SQLException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -71,6 +73,37 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(err);
     }
 
+    // Restrição de exclusão do banco (dois aceites simultâneos para o mesmo horário): SQLState 23P01.
+    // Só esse caso vira 409; qualquer outra violação de integridade segue como erro inesperado (500).
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<AppErroResponse> handleViolacaoDeIntegridade(DataIntegrityViolationException e, HttpServletRequest request) {
+        if (ehConflitoDeAgenda(e)) {
+            ErrorCode errorCode = ErrorCode.PEDIDO_CONFLITO_AGENDA;
+            // Mensagem fixa: aqui (corrida pega pelo banco) não temos os horários do conflito à mão.
+            // O caminho normal (checagem na aplicação) devolve a mensagem detalhada com os horários.
+            AppErroResponse err = new AppErroResponse(
+                    LocalDateTime.now(),
+                    errorCode.getStatus().value(),
+                    errorCode.getStatus().getReasonPhrase(),
+                    "Esse horário acabou de ser preenchido para o parceiro. Escolha outro.",
+                    request.getRequestURI(),
+                    errorCode.getCode()
+            );
+            return ResponseEntity.status(errorCode.getStatus()).body(err);
+        }
+        return erroInesperado(e, request);
+    }
+
+    /** Percorre a cadeia de causas atrás do SQLState 23P01 (exclusion_violation do Postgres). */
+    private static boolean ehConflitoDeAgenda(Throwable e) {
+        for (Throwable causa = e; causa != null; causa = causa.getCause()) {
+            if (causa instanceof SQLException sql && "23P01".equals(sql.getSQLState())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Corpo ausente ou JSON malformado. Sem este handler virava 500 em vez de 400.
     // A mensagem é genérica de propósito: o detalhe do parser não ajuda o cliente e pode vazar interno.
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -107,6 +140,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<AppErroResponse> handleException(Exception e, HttpServletRequest request) {
+        return erroInesperado(e, request);
+    }
+
+    private ResponseEntity<AppErroResponse> erroInesperado(Exception e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         AppErroResponse err = new AppErroResponse(

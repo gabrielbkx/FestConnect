@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+      Garantia contra a corrida (check-then-act): mesmo que duas requisições passem pela checagem
+      da aplicação ao mesmo tempo, o banco recusa a segunda. É uma restrição de EXCLUSÃO parcial:
+      só pedidos ACEITO ocupam a agenda. Precisa da extensão btree_gist para combinar a igualdade
+      do prestador_id com a sobreposição (&&) do intervalo no mesmo índice GiST.
+      A violação chega como SQLState 23P01 e vira 409 no GlobalExceptionHandler.
+
+      ATENÇÃO: se o banco já tiver pedidos ACEITO que se sobrepõem (ex.: a dupla reserva do teste),
+      a criação da restrição FALHA. Resolver os conflitos existentes antes de aplicar.
+    -->
+    <changeSet id="0.12.0-pedido-sem-sobreposicao" author="GF">
+        <sql splitStatements="false">
+            CREATE EXTENSION IF NOT EXISTS btree_gist
+        </sql>
+        <sql splitStatements="false">
+            ALTER TABLE tb_pedidos ADD CONSTRAINT pedido_sem_sobreposicao
+              EXCLUDE USING gist (
+                prestador_id WITH =,
+                tsrange(data_do_evento, data_fim, '[)') WITH &amp;&amp;
+              ) WHERE (status_pedido = 'ACEITO')
+        </sql>
+
+        <rollback>
+            ALTER TABLE tb_pedidos DROP CONSTRAINT pedido_sem_sobreposicao;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
+
+    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM");
 
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
@@ -91,6 +95,7 @@ public class PedidoService {
 
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
         pedido.setPrazoResposta(calcularPrazo(pedido.getDataEvento()));
+        pedido.setDataFim(pedido.getDataEvento().plusMinutes(item.getDuracaoMinutos()));
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(
@@ -212,9 +217,14 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        if (pedidoRepository.existsByPrestadorIdAndDataEventoAndStatusPedido(
-                pedido.getPrestador().getId(), pedido.getDataEvento(), StatusPedido.ACEITO)) {
-            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ACEITO);
+        if (!conflitos.isEmpty()) {
+            Pedido jaConfirmado = conflitos.get(0);
+            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
+                    jaConfirmado.getDataEvento().format(HORA),
+                    jaConfirmado.getDataFim().format(HORA),
+                    jaConfirmado.getDataEvento().format(DIA));
         }
 
         pedido.setStatusPedido(StatusPedido.ACEITO);
@@ -318,6 +328,7 @@ public class PedidoService {
         for (ItemResolvido r : resolvidos) {
             Pedido pedido = pedidoMapper.toEntityFromEvento(cliente, r.prestador(), r.item(), evento);
             pedido.setPrazoResposta(prazo);
+            pedido.setDataFim(pedido.getDataEvento().plusMinutes(r.item().getDuracaoMinutos()));
             pedidosSalvos.add(pedidoRepository.save(pedido));
         }
 
