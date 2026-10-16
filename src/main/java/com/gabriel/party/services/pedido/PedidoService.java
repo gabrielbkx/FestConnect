@@ -3,6 +3,7 @@ package com.gabriel.party.services.pedido;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteItemDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
+import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
@@ -105,6 +106,12 @@ public class PedidoService {
         );
 
         return pedidoMapper.toResponseDTO(salvo);
+    }
+
+    /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
+    @Transactional(readOnly = true)
+    public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
+        return pedidoRepository.agendaOcupada(prestadorId, de, ate);
     }
 
     @Transactional(readOnly = true)

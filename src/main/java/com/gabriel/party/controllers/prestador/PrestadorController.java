@@ -9,6 +9,8 @@ import com.gabriel.party.dtos.prestador.PrestadorRequestDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResponseDTO;
 import com.gabriel.party.dtos.prestador.PrestadorResumoDTO;
 import com.gabriel.party.model.usuario.Usuario;
+import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
+import com.gabriel.party.services.pedido.PedidoService;
 import com.gabriel.party.services.prestador.PrestadorService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +19,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,9 +41,11 @@ import java.util.UUID;
 public class PrestadorController {
 
     private final PrestadorService prestadorService;
+    private final PedidoService pedidoService;
 
-    public PrestadorController(PrestadorService prestadorService) {
+    public PrestadorController(PrestadorService prestadorService, PedidoService pedidoService) {
         this.prestadorService = prestadorService;
+        this.pedidoService = pedidoService;
     }
 
 
@@ -54,6 +60,21 @@ public class PrestadorController {
             @RequestParam(required = false) String cidade,
             @PageableDefault(size = 10, sort = "nomeCompleto") Pageable pageable) {
         return ResponseEntity.ok(prestadorService.listarPrestadores(categoriaId, busca, cidade, pageable));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Intervalos ocupados no período")
+    })
+    @Operation(summary = "Agenda ocupada do prestador",
+            description = "Lista pública dos intervalos em que o prestador já tem evento confirmado na janela informada. Não traz nenhum dado do cliente: mostra quando está ocupado, nunca com quem.")
+    @GetMapping("/{id}/agenda")
+    public ResponseEntity<List<IntervaloOcupadoDTO>> agendaOcupada(
+            @PathVariable UUID id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate) {
+        // Janela do primeiro instante de 'de' até o fim do dia 'ate' (exclusivo no dia seguinte).
+        return ResponseEntity.ok(
+                pedidoService.agendaOcupada(id, de.atStartOfDay(), ate.plusDays(1).atStartOfDay()));
     }
 
     @ApiResponses( value = {
