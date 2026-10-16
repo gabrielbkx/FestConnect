@@ -35,6 +35,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -330,6 +331,29 @@ class PedidoServiceTest {
         var captor = ArgumentCaptor.forClass(Pedido.class);
         verify(pedidoRepository).save(captor.capture());
         assertThat(captor.getValue().getDataFim()).isEqualTo(dataEvento.plusMinutes(240));
+    }
+
+    @Test
+    @DisplayName("criarPedido recusa um horário já confirmado para o prestador (409)")
+    void criarPedido_horarioConfirmado_barra() {
+        LocalDateTime dataEvento = LocalDateTime.now().plusDays(10);
+        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
+        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(prestadorRepository.findById(prestador.getId())).thenReturn(Optional.of(prestador));
+        when(itemCatalogoRepository.findByIdAndAtivoTrue(item.getId())).thenReturn(Optional.of(item));
+        var pedidoEntity = new Pedido();
+        pedidoEntity.setPrestador(prestador);
+        pedidoEntity.setDataEvento(dataEvento);
+        when(pedidoMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(pedidoEntity);
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of(jaConfirmado));
+
+        assertThatThrownBy(() -> service.criarPedido(novoRequest(dataEvento), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        verify(pedidoRepository, never()).save(any());
     }
 
     @Test
