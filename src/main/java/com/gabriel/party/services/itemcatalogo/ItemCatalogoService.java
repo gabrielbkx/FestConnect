@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -82,13 +83,13 @@ public class ItemCatalogoService {
 
     @Transactional(readOnly = true)
     public Page<ItemCatalogoResumoDTO> buscarItens(String busca, String cidade, List<UUID> categoriaIds,
-            Pageable pageable) {
+            LocalDateTime disponivelEm, Pageable pageable) {
         String buscaTratada = busca == null ? "" : busca.trim();
         String cidadeTratada = cidade == null ? "" : cidade.trim();
 
         Page<ItemCatalogo> resultado = (categoriaIds == null || categoriaIds.isEmpty())
-                ? itemCatalogoRepository.buscarSemCategoria(buscaTratada, cidadeTratada, pageable)
-                : itemCatalogoRepository.buscarComCategorias(categoriaIds, buscaTratada, cidadeTratada, pageable);
+                ? itemCatalogoRepository.buscarSemCategoria(buscaTratada, cidadeTratada, disponivelEm, pageable)
+                : itemCatalogoRepository.buscarComCategorias(categoriaIds, buscaTratada, cidadeTratada, disponivelEm, pageable);
 
         List<UUID> idsItens = resultado.getContent().stream().map(ItemCatalogo::getId).toList();
 

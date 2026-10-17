@@ -1,6 +1,7 @@
 package com.gabriel.party.repositories.pedido;
 
 
+import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
 import com.gabriel.party.model.pedido.Pedido;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,6 +41,23 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
                                      @Param("inicio") LocalDateTime inicio,
                                      @Param("fim") LocalDateTime fim,
                                      @Param("status") StatusPedido status);
+
+    /**
+     * Intervalos ACEITO do prestador que tocam a janela [de, ate]. Só os horários, nada do cliente:
+     * é o que alimenta a agenda pública (ver quando está ocupado, nunca com quem).
+     */
+    @Query("""
+            SELECT new com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO(p.dataEvento, p.dataFim)
+              FROM Pedido p
+             WHERE p.prestador.id = :prestadorId
+               AND p.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+               AND p.dataEvento < :ate
+               AND :de < p.dataFim
+             ORDER BY p.dataEvento
+            """)
+    List<IntervaloOcupadoDTO> agendaOcupada(@Param("prestadorId") UUID prestadorId,
+                                            @Param("de") LocalDateTime de,
+                                            @Param("ate") LocalDateTime ate);
 
     boolean existsByPrestadorIdAndClienteIdAndStatusPedido(UUID prestadorId, UUID clienteId, StatusPedido status);
 

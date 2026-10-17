@@ -3,6 +3,7 @@ package com.gabriel.party.services.pedido;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteItemDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
+import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
@@ -96,6 +97,7 @@ public class PedidoService {
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
         pedido.setPrazoResposta(calcularPrazo(pedido.getDataEvento()));
         pedido.setDataFim(pedido.getDataEvento().plusMinutes(item.getDuracaoMinutos()));
+        recusarSeHorarioConfirmado(prestador.getId(), pedido.getDataEvento(), pedido.getDataFim());
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(
@@ -105,6 +107,28 @@ public class PedidoService {
         );
 
         return pedidoMapper.toResponseDTO(salvo);
+    }
+
+    /**
+     * Recusa (409) se o intervalo [inicio, fim) se sobrepõe a algum evento JÁ CONFIRMADO (ACEITO) do
+     * prestador. Usado no aceite, na criação e no lote, para ninguém sequer pedir um horário ocupado.
+     * A mensagem traz o horário e o dia do evento já confirmado.
+     */
+    private void recusarSeHorarioConfirmado(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim) {
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, inicio, fim, StatusPedido.ACEITO);
+        if (!conflitos.isEmpty()) {
+            Pedido jaConfirmado = conflitos.get(0);
+            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
+                    jaConfirmado.getDataEvento().format(HORA),
+                    jaConfirmado.getDataFim().format(HORA),
+                    jaConfirmado.getDataEvento().format(DIA));
+        }
+    }
+
+    /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
+    @Transactional(readOnly = true)
+    public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
+        return pedidoRepository.agendaOcupada(prestadorId, de, ate);
     }
 
     @Transactional(readOnly = true)
@@ -177,10 +201,17 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_PRAZO_EXPIRADO);
         }
 
+        // Não deixa orçar um horário que já está confirmado para outro cliente.
+        recusarSeHorarioConfirmado(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim());
+        // Outros orçados disputando o mesmo horário (este ainda é PENDENTE, então não se conta).
+        int concorrentes = pedidoRepository.buscarSobreposicoes(
+                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ORCADO).size();
+
         pedidoMapper.updatePedidoFromOrcamento(dto, pedido);
         pedido.setValidadeOrcamento(calcularPrazo(pedido.getDataEvento()));
         pedido.setStatusPedido(StatusPedido.ORCADO);
-        PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
+        PedidoResponseDTO resposta = pedidoMapper.comPedidosConcorrentes(
+                pedidoMapper.toResponseDTO(pedidoRepository.save(pedido)), concorrentes);
 
         emailService.enviarEmail(
                 pedido.getCliente().getUsuario().getEmail(),
@@ -217,15 +248,7 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(
-                pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ACEITO);
-        if (!conflitos.isEmpty()) {
-            Pedido jaConfirmado = conflitos.get(0);
-            throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
-                    jaConfirmado.getDataEvento().format(HORA),
-                    jaConfirmado.getDataFim().format(HORA),
-                    jaConfirmado.getDataEvento().format(DIA));
-        }
+        recusarSeHorarioConfirmado(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim());
 
         pedido.setStatusPedido(StatusPedido.ACEITO);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
@@ -308,6 +331,10 @@ public class PedidoService {
                     prestador.getId(), item.getId(), eventoId, statusAtivos)) {
                 throw new AppException(ErrorCode.PEDIDO_LOTE_DUPLICADO, prestador.getNomeCompleto());
             }
+
+            // Não oferece no lote um prestador já confirmado no horário do evento
+            LocalDateTime inicio = evento.getDataEvento();
+            recusarSeHorarioConfirmado(prestador.getId(), inicio, inicio.plusMinutes(item.getDuracaoMinutos()));
 
             resolvidos.add(new ItemResolvido(prestador, item));
         }

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,8 +71,10 @@ public class ItemCatalogoController {
             @Parameter(description = "Texto livre para busca em título e descrição", example = "buffet") @RequestParam(required = false) String busca,
             @Parameter(description = "Cidade do prestador", example = "São Paulo") @RequestParam(required = false) String cidade,
             @Parameter(description = "Um ou mais IDs de categoria. Quando informado, retorna apenas itens dessas categorias.") @RequestParam(required = false) List<UUID> categoriaId,
+            @Parameter(description = "Data e hora do evento. Quando informado, esconde os prestadores que já têm evento confirmado nesse instante.", example = "2026-12-12T18:00:00")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime disponivelEm,
             @PageableDefault(size = 12, sort = "titulo") Pageable pageable){
-        return ResponseEntity.ok(itemCatalogoService.buscarItens(busca, cidade, categoriaId, pageable));
+        return ResponseEntity.ok(itemCatalogoService.buscarItens(busca, cidade, categoriaId, disponivelEm, pageable));
     }
 
     @ApiResponses( value = {
