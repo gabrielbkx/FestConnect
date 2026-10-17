@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -50,6 +51,7 @@ class PedidoServiceTest {
     @Mock private PrestadorRepository prestadorRepository;
     @Mock private ItemCatalogoRepository itemCatalogoRepository;
     @Mock private EventoRepository eventoRepository;
+    @Mock private com.gabriel.party.repositories.agenda.BloqueioAgendaRepository bloqueioRepository;
     @Mock private PedidoMapper pedidoMapper;
     @Mock private EmailService emailService;
 
@@ -63,7 +65,7 @@ class PedidoServiceTest {
     void setUp() {
         // Injeção via construtor nos dá controle das 72h
         service = new PedidoService(pedidoRepository, clienteRepository, prestadorRepository,
-                itemCatalogoRepository, eventoRepository, pedidoMapper, emailService, 72L);
+                itemCatalogoRepository, eventoRepository, bloqueioRepository, pedidoMapper, emailService, 72L);
 
         usuarioCliente = new Usuario();
         usuarioCliente.setId(UUID.randomUUID());
@@ -86,6 +88,10 @@ class PedidoServiceTest {
         item.setId(UUID.randomUUID());
         item.setPrestador(prestador);
         item.setDuracaoMinutos(240);
+
+        // O helper de agenda busca o prestador (capacidade/folga). Padrão: capacidade 1, folga 0.
+        lenient().when(prestadorRepository.buscarComLock(prestador.getId())).thenReturn(Optional.of(prestador));
+        lenient().when(prestadorRepository.findById(prestador.getId())).thenReturn(Optional.of(prestador));
     }
 
     private PedidoRequestDTO novoRequest(LocalDateTime dataEvento) {
@@ -183,6 +189,82 @@ class PedidoServiceTest {
 
         assertThat(resultado).isSameAs(dtoBase);
         verify(pedidoMapper, never()).comWhatsappCliente(any(), any());
+    }
+
+    // ── capacidade (eventos simultâneos) e folga no aceite
+
+    @Test
+    @DisplayName("com capacidade 2, um evento sobreposto ainda deixa aceitar (2º cabe)")
+    void aceitar_capacidade2_umSobreposto_aceita() {
+        prestador.setEventosSimultaneos(2);
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of(pedidoOrcado(inicio))); // 1 já confirmado < capacidade 2
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
+    }
+
+    @Test
+    @DisplayName("com capacidade 2, o terceiro evento sobreposto é recusado")
+    void aceitar_capacidade2_doisSobrepostos_barra() {
+        prestador.setEventosSimultaneos(2);
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 já confirmados = capacidade
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
+    }
+
+    @Test
+    @DisplayName("a folga expande a janela consultada ([início - folga, fim + folga))")
+    void aceitar_folga_expandeAJanela() {
+        prestador.setFolgaMinutos(60);
+        var inicio = LocalDateTime.of(2026, 12, 12, 20, 0);
+        var pedido = pedidoOrcado(inicio); // [20:00, 00:00)
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of());
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
+
+        // janela = [20:00 - 60min, 00:00 + 60min) = [19:00, 01:00)
+        verify(pedidoRepository).buscarSobreposicoes(prestador.getId(),
+                inicio.minusMinutes(60), inicio.plusMinutes(240).plusMinutes(60), StatusPedido.ACEITO);
+    }
+
+    @Test
+    @DisplayName("um bloqueio manual ocupa a agenda e barra o aceite")
+    void aceitar_comBloqueio_barra() {
+        var inicio = LocalDateTime.of(2026, 12, 12, 20, 0);
+        var pedido = pedidoOrcado(inicio);
+        var bloqueio = new com.gabriel.party.model.agenda.BloqueioAgenda();
+        bloqueio.setInicio(inicio);
+        bloqueio.setFim(inicio.plusHours(4));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+                .thenReturn(List.of()); // nenhum pedido confirmado
+        when(bloqueioRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any()))
+                .thenReturn(List.of(bloqueio)); // mas há um bloqueio (capacidade 1)
+
+        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
     }
 
     // ── recusarPedido (prestador): só vale enquanto o pedido ainda pode ser recusado

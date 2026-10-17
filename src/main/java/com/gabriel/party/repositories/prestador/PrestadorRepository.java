@@ -4,7 +4,9 @@ import com.gabriel.party.model.prestador.Prestador;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -17,6 +19,15 @@ public interface PrestadorRepository extends JpaRepository<Prestador, UUID> {
     Page<Prestador> findAllByAtivoTrue(Pageable pageable);
 
     Optional<Prestador> findByIdAndAtivoTrue(UUID id);
+
+    /**
+     * Carrega o prestador travando a linha dele (SELECT ... FOR UPDATE). Serializa os aceites
+     * concorrentes do MESMO prestador: com capacidade > 1 não dá para usar a restrição de exclusão
+     * do banco, então o lock garante que a contagem de ocupação seja consistente (#88).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Prestador p WHERE p.id = :id")
+    Optional<Prestador> buscarComLock(@Param("id") UUID id);
 
     @Query(value = """
     SELECT * FROM tb_prestador

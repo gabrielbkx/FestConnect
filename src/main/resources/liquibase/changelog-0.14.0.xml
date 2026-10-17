@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.14.0-prestador-capacidade-folga" author="GF">
+        <addColumn tableName="tb_prestador">
+            <column name="eventos_simultaneos" type="INT" defaultValueNumeric="1"
+                    remarks="Quantos eventos o prestador atende ao mesmo tempo. &gt; 1 (ex.: buffet) troca a garantia de 'zero sobreposição' por 'contar sob lock'.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="folga_minutos" type="INT" defaultValueNumeric="0"
+                    remarks="Minutos de folga antes e depois de cada evento (montagem/deslocamento). Ocupação real = [inicio - folga, fim + folga).">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

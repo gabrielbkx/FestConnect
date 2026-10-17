@@ -4,6 +4,8 @@ import com.gabriel.party.dtos.pedido.OrcamentoLoteItemDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
+import com.gabriel.party.model.agenda.BloqueioAgenda;
+import com.gabriel.party.repositories.agenda.BloqueioAgendaRepository;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class PedidoService {
@@ -46,6 +49,7 @@ public class PedidoService {
     private final PrestadorRepository prestadorRepository;
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final EventoRepository eventoRepository;
+    private final BloqueioAgendaRepository bloqueioRepository;
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
     private final long prazoRespostaHoras;
@@ -55,6 +59,7 @@ public class PedidoService {
                          PrestadorRepository prestadorRepository,
                          ItemCatalogoRepository itemCatalogoRepository,
                          EventoRepository eventoRepository,
+                         BloqueioAgendaRepository bloqueioRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService,
                          @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras) {
@@ -64,6 +69,7 @@ public class PedidoService {
         this.prestadorRepository = prestadorRepository;
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.eventoRepository = eventoRepository;
+        this.bloqueioRepository = bloqueioRepository;
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
         this.prazoRespostaHoras = prazoRespostaHoras;
@@ -97,7 +103,7 @@ public class PedidoService {
         Pedido pedido = pedidoMapper.toEntity(dto, cliente, prestador, item, evento);
         pedido.setPrazoResposta(calcularPrazo(pedido.getDataEvento()));
         pedido.setDataFim(pedido.getDataEvento().plusMinutes(item.getDuracaoMinutos()));
-        recusarSeHorarioConfirmado(prestador.getId(), pedido.getDataEvento(), pedido.getDataFim());
+        recusarSeAgendaCheia(prestador.getId(), pedido.getDataEvento(), pedido.getDataFim(), false);
         Pedido salvo = pedidoRepository.save(pedido);
 
         emailService.enviarEmail(
@@ -110,25 +116,52 @@ public class PedidoService {
     }
 
     /**
-     * Recusa (409) se o intervalo [inicio, fim) se sobrepõe a algum evento JÁ CONFIRMADO (ACEITO) do
-     * prestador. Usado no aceite, na criação e no lote, para ninguém sequer pedir um horário ocupado.
-     * A mensagem traz o horário e o dia do evento já confirmado.
+     * Recusa (409) se a agenda do prestador está CHEIA no intervalo [inicio, fim). "Cheia" = o número
+     * de eventos ACEITO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
+     * aplicada expandindo a janela para [inicio - folga, fim + folga).
+     * <p>
+     * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE). Usado no ACEITE para
+     * serializar aceites concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do
+     * banco (ela só garante zero sobreposição), então o lock é o que mantém a contagem consistente.
+     * Na criação/orçamento (que não geram ACEITO) é uma pré-checagem leve, sem lock.
      */
-    private void recusarSeHorarioConfirmado(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim) {
-        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, inicio, fim, StatusPedido.ACEITO);
-        if (!conflitos.isEmpty()) {
-            Pedido jaConfirmado = conflitos.get(0);
+    private void recusarSeAgendaCheia(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim, boolean comLock) {
+        Prestador prestador = (comLock
+                ? prestadorRepository.buscarComLock(prestadorId)
+                : prestadorRepository.findById(prestadorId))
+                .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO));
+
+        LocalDateTime de = inicio.minusMinutes(prestador.getFolgaMinutos());
+        LocalDateTime ate = fim.plusMinutes(prestador.getFolgaMinutos());
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.ACEITO);
+        List<BloqueioAgenda> bloqueios = bloqueioRepository.buscarSobreposicoes(prestadorId, de, ate);
+
+        // Pedido confirmado e bloqueio ocupam a agenda do mesmo jeito: somam na conta da capacidade.
+        if (conflitos.size() + bloqueios.size() >= prestador.getEventosSimultaneos()) {
+            if (!conflitos.isEmpty()) {
+                Pedido jaConfirmado = conflitos.get(0);
+                throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
+                        jaConfirmado.getDataEvento().format(HORA),
+                        jaConfirmado.getDataFim().format(HORA),
+                        jaConfirmado.getDataEvento().format(DIA));
+            }
+            BloqueioAgenda bloqueio = bloqueios.get(0);
             throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
-                    jaConfirmado.getDataEvento().format(HORA),
-                    jaConfirmado.getDataFim().format(HORA),
-                    jaConfirmado.getDataEvento().format(DIA));
+                    bloqueio.getInicio().format(HORA),
+                    bloqueio.getFim().format(HORA),
+                    bloqueio.getInicio().format(DIA));
         }
     }
 
     /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
     @Transactional(readOnly = true)
     public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
-        return pedidoRepository.agendaOcupada(prestadorId, de, ate);
+        // A agenda ocupada junta eventos confirmados e bloqueios manuais, ordenados por início.
+        return Stream.concat(
+                        pedidoRepository.agendaOcupada(prestadorId, de, ate).stream(),
+                        bloqueioRepository.agendaOcupada(prestadorId, de, ate).stream())
+                .sorted(java.util.Comparator.comparing(IntervaloOcupadoDTO::inicio))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -202,7 +235,7 @@ public class PedidoService {
         }
 
         // Não deixa orçar um horário que já está confirmado para outro cliente.
-        recusarSeHorarioConfirmado(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim());
+        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), false);
         // Outros orçados disputando o mesmo horário (este ainda é PENDENTE, então não se conta).
         int concorrentes = pedidoRepository.buscarSobreposicoes(
                 pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), StatusPedido.ORCADO).size();
@@ -248,7 +281,7 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        recusarSeHorarioConfirmado(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim());
+        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
 
         pedido.setStatusPedido(StatusPedido.ACEITO);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
@@ -334,7 +367,7 @@ public class PedidoService {
 
             // Não oferece no lote um prestador já confirmado no horário do evento
             LocalDateTime inicio = evento.getDataEvento();
-            recusarSeHorarioConfirmado(prestador.getId(), inicio, inicio.plusMinutes(item.getDuracaoMinutos()));
+            recusarSeAgendaCheia(prestador.getId(), inicio, inicio.plusMinutes(item.getDuracaoMinutos()), false);
 
             resolvidos.add(new ItemResolvido(prestador, item));
         }
