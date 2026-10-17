@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.gabriel.party.model.pedido.enums.StatusPedido.AGUARDANDO_ENTRADA;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.CANCELADO;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.EXPIRADO;
@@ -20,7 +21,8 @@ class StatusPedidoTest {
     // A máquina de estados esperada. Tudo que não está aqui tem que ser proibido.
     private static final Map<StatusPedido, Set<StatusPedido>> PERMITIDAS = Map.of(
             PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
-            ORCADO, EnumSet.of(RESERVADO, RECUSADO, CANCELADO, EXPIRADO)
+            ORCADO, EnumSet.of(AGUARDANDO_ENTRADA, RECUSADO, CANCELADO, EXPIRADO),
+            AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO)
     );
 
     @Test

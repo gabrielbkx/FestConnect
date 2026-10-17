@@ -55,7 +55,10 @@ public record PrestadorResponseDTO(
         LocalDateTime dataCriacao,
 
         @Schema(description = "Total de pedidos aceitos (concluídos) recebidos pelo prestador", example = "42")
-        Long pedidosConcluidos
+        Long pedidosConcluidos,
+
+        @Schema(description = "Percentual do valor exigido como sinal para reservar a data", example = "30")
+        Integer percentualSinal
 ) {
 
     @Schema(description = "Resumo de categoria — id e nome")

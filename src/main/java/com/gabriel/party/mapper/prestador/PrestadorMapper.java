@@ -28,6 +28,7 @@ public interface PrestadorMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
+    @Mapping(target = "percentualSinal", ignore = true)
     Prestador toEntity(PrestadorRequestDTO dto);
 
     @Mapping(target = "nome", source = "prestador.nomeCompleto")
@@ -70,6 +71,9 @@ public interface PrestadorMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", ignore = true)
+    // percentualSinal é tratado no service (só sobrescreve quando o DTO manda um valor), para não
+    // apagar o percentual atual quando a atualização de perfil vem sem esse campo.
+    @Mapping(target = "percentualSinal", ignore = true)
     void atualizarPrestadorDoDTO(PrestadorRequestDTO dto, @MappingTarget Prestador prestador);
 
     default Double calcularMedia(Collection<Avaliacao> avaliacoes) {

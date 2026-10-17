@@ -30,6 +30,7 @@ public class PedidoExpiracaoJob {
         var agora = LocalDateTime.now();
         expirarPendentesSemResposta(agora);
         expirarOrcamentosNaoAceitos(agora);
+        expirarEntradasNaoPagas(agora);
     }
 
     private void expirarPendentesSemResposta(LocalDateTime agora) {
@@ -78,5 +79,23 @@ public class PedidoExpiracaoJob {
         });
 
         logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " orcamento(s) ORCADO expirado(s) por falta de aceite.");
+    }
+
+    private void expirarEntradasNaoPagas(LocalDateTime agora) {
+        var aExpirar = pedidoRepository.findByStatusPedidoAndPrazoEntradaBefore(StatusPedido.AGUARDANDO_ENTRADA, agora);
+        if (aExpirar.isEmpty()) return;
+
+        aExpirar.forEach(pedido -> {
+            pedido.setStatusPedido(StatusPedido.EXPIRADO);
+            pedidoRepository.save(pedido);
+
+            emailService.enviarAposCommit(
+                    pedido.getCliente().getUsuario().getEmail(),
+                    "Resenha - Reserva não efetivada",
+                    EmailTemplates.entradaNaoPagaParaCliente(pedido)
+            );
+        });
+
+        logger.info("[PedidoExpiracaoJob] " + aExpirar.size() + " pedido(s) AGUARDANDO_ENTRADA expirado(s) por falta de pagamento do sinal.");
     }
 }

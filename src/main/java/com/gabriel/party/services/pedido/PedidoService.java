@@ -53,6 +53,7 @@ public class PedidoService {
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
     private final long prazoRespostaHoras;
+    private final long prazoEntradaHoras;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ClienteRepository clienteRepository,
@@ -62,7 +63,8 @@ public class PedidoService {
                          BloqueioAgendaRepository bloqueioRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService,
-                         @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras) {
+                         @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras,
+                         @Value("${festconnect.pedido.prazo-entrada-horas}") Long prazoEntradaHoras) {
 
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
@@ -73,6 +75,7 @@ public class PedidoService {
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
         this.prazoRespostaHoras = prazoRespostaHoras;
+        this.prazoEntradaHoras = prazoEntradaHoras;
     }
 
     @Transactional
@@ -120,10 +123,11 @@ public class PedidoService {
      * de eventos RESERVADO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
      * aplicada expandindo a janela para [inicio - folga, fim + folga).
      * <p>
-     * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE). Usado no ACEITE para
-     * serializar aceites concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do
-     * banco (ela só garante zero sobreposição), então o lock é o que mantém a contagem consistente.
-     * Na criação/orçamento (que não geram RESERVADO) é uma pré-checagem leve, sem lock.
+     * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE) para serializar reservas
+     * concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do banco (ela só
+     * garante zero sobreposição), então o lock é o que mantém a contagem consistente. Será usado no
+     * pagamento do sinal (#99, fatia 4), que é o momento em que a data vira RESERVADO. Na
+     * criação/orçamento/aceite (que não geram RESERVADO) é uma pré-checagem leve, sem lock.
      */
     private void recusarSeAgendaCheia(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim, boolean comLock) {
         Prestador prestador = (comLock
@@ -273,6 +277,12 @@ public class PedidoService {
         );
     }
 
+    /**
+     * O cliente aceita o orçamento. Aqui a data ainda NÃO é travada: o aceite só calcula o sinal
+     * (arras) e abre o prazo para pagá-lo. Quem garante a data é o pagamento do sinal (#99, fatia 4),
+     * que leva o pedido a RESERVADO. Por isso vários clientes podem aceitar o mesmo horário; a disputa
+     * é resolvida no pagamento, sob lock. O status vai para AGUARDANDO_ENTRADA.
+     */
     @Transactional
     public PedidoResponseDTO aceitarOrcamento(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
@@ -281,18 +291,28 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
-
-        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        pedido.setValorSinal(calcularSinal(pedido.getValor(), pedido.getPrestador().getPercentualSinal()));
+        pedido.setPrazoEntrada(LocalDateTime.now().plusHours(prazoEntradaHoras));
+        pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
 
         emailService.enviarEmail(
-                pedido.getPrestador().getUsuario().getEmail(),
-                "Resenha - Orçamento aceito!",
-                EmailTemplates.orcamentoAceitoParaPrestador(pedido)
+                pedido.getCliente().getUsuario().getEmail(),
+                "Resenha - Pague o sinal para reservar a data",
+                EmailTemplates.sinalPendenteParaCliente(pedido)
         );
 
         return resposta;
+    }
+
+    /** Sinal = valor × percentual do prestador, arredondado a 2 casas. Nulo se ainda não há valor. */
+    private java.math.BigDecimal calcularSinal(java.math.BigDecimal valor, Integer percentual) {
+        if (valor == null || percentual == null) {
+            return null;
+        }
+        return valor
+                .multiply(java.math.BigDecimal.valueOf(percentual))
+                .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 
     @Transactional

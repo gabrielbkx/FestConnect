@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        #99 Fase 1 (fatia 2): sinal por prestador + dados do sinal no pedido.
+        - tb_prestador.percentual_sinal: % do valor exigido como sinal (default 30%).
+        - tb_pedidos.valor_sinal: valor do sinal calculado no aceite.
+        - tb_pedidos.prazo_entrada: prazo para pagar o sinal depois de aceitar.
+    -->
+    <changeSet id="0.18.0-prestador-percentual-sinal" author="GF">
+        <addColumn tableName="tb_prestador">
+            <column name="percentual_sinal" type="INT" defaultValueNumeric="30"
+                    remarks="Percentual do valor exigido como sinal para reservar a data (#99).">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="0.18.0-pedido-dados-sinal" author="GF">
+        <addColumn tableName="tb_pedidos">
+            <column name="valor_sinal" type="NUMERIC(10,2)"
+                    remarks="Sinal em R$ calculado no aceite (valor × percentual do prestador)."/>
+            <column name="prazo_entrada" type="TIMESTAMP"
+                    remarks="Prazo para pagar o sinal depois de aceitar o orçamento."/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -61,7 +61,7 @@ class PrestadorServiceTest {
         prestadorA.setUsuario(usuarioA); // o perfil prestadorA pertence ao usuarioA
 
         // endereco null: o service não chama o geocoding
-        dto = new PrestadorRequestDTO("Buffet Novo", "novo@buffet.com", "Descrição", "11999999999", null);
+        dto = new PrestadorRequestDTO("Buffet Novo", "novo@buffet.com", "Descrição", "11999999999", null, null);
     }
 
     private Usuario criarUsuario(Role role) {

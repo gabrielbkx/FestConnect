@@ -55,14 +55,21 @@ public record PedidoResponseDTO(
         @Schema(description = "Descrição do que o cliente precisa")
         String descricao,
 
-        @Schema(description = "Status atual do pedido. Fluxo: PENDENTE → ORCADO → RESERVADO. " +
+        @Schema(description = "Status atual do pedido. Fluxo: PENDENTE → ORCADO → AGUARDANDO_ENTRADA → RESERVADO. " +
+                "Aceitar o orçamento leva a AGUARDANDO_ENTRADA; pagar o sinal reserva a data (RESERVADO). " +
                 "O prestador pode RECUSAR a qualquer momento; o cliente pode CANCELAR. " +
-                "O sistema EXPIRA orçamentos vencidos.",
-                allowableValues = {"PENDENTE", "ORCADO", "RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+                "O sistema EXPIRA orçamentos vencidos e sinais não pagos no prazo.",
+                allowableValues = {"PENDENTE", "ORCADO", "AGUARDANDO_ENTRADA", "RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
         StatusPedido status,
 
         @Schema(description = "Valor do orçamento em R$. Preenchido após o prestador enviar o orçamento.", example = "2500.00")
         BigDecimal valor,
+
+        @Schema(description = "Sinal em R$ exigido para reservar a data. Calculado quando o cliente aceita o orçamento.", example = "750.00")
+        BigDecimal valorSinal,
+
+        @Schema(description = "Prazo para pagar o sinal depois de aceitar o orçamento. Vencido sem pagamento, o pedido é EXPIRADO.")
+        LocalDateTime prazoEntrada,
 
         @Schema(description = "Descrição do que está incluído no orçamento. Preenchido após o prestador enviar o orçamento.")
         String detalhesOrcamento,

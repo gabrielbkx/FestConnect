@@ -136,4 +136,21 @@ class PedidoExpiracaoJobTest {
         verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
         verify(emailService).enviarAposCommit(eq("prestador@test.com"), any(), any());
     }
+
+    @Test
+    @DisplayName("Deve expirar pedidos AGUARDANDO_ENTRADA com sinal não pago e notificar o cliente")
+    void deveExpirarEntradasNaoPagas() {
+        pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);
+        pedido.setValidadeOrcamento(null);
+        pedido.setPrazoEntrada(LocalDateTime.now().minusHours(1));
+
+        when(pedidoRepository.findByStatusPedidoAndPrazoEntradaBefore(eq(StatusPedido.AGUARDANDO_ENTRADA), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.EXPIRADO);
+        verify(pedidoRepository).save(pedido);
+        verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
+    }
 }

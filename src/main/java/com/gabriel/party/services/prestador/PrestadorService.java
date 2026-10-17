@@ -112,6 +112,10 @@ public class PrestadorService {
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
 
+        if (dto.percentualSinal() != null) {
+            prestador.setPercentualSinal(dto.percentualSinal());
+        }
+
         if (dto.endereco() != null) {
             var coordenadas = geocodingService.buscarCoordenadas(
                     dto.endereco().logradouro(),
