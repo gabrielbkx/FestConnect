@@ -43,14 +43,14 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
                                      @Param("status") StatusPedido status);
 
     /**
-     * Intervalos ACEITO do prestador que tocam a janela [de, ate]. Só os horários, nada do cliente:
+     * Intervalos RESERVADO do prestador que tocam a janela [de, ate]. Só os horários, nada do cliente:
      * é o que alimenta a agenda pública (ver quando está ocupado, nunca com quem).
      */
     @Query("""
             SELECT new com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO(p.dataEvento, p.dataFim)
               FROM Pedido p
              WHERE p.prestador.id = :prestadorId
-               AND p.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+               AND p.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                AND p.dataEvento < :ate
                AND :de < p.dataFim
              ORDER BY p.dataEvento

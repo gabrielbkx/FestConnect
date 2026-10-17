@@ -12,7 +12,7 @@ public enum StatusPedido {
     ORCADO("orçado"),
     RECUSADO("recusado"),
     CANCELADO("cancelado"),
-    ACEITO("aceito"),
+    RESERVADO("reservado"),
     EXPIRADO("expirado");
 
     private String valor;
@@ -22,13 +22,13 @@ public enum StatusPedido {
     }
 
     /**
-     * Para onde cada status pode ir. Quem não está no mapa (RECUSADO, CANCELADO, ACEITO, EXPIRADO)
-     * é terminal: não vai para lugar nenhum. A #90 abre as transições a partir de ACEITO.
+     * Para onde cada status pode ir. Quem não está no mapa (RECUSADO, CANCELADO, RESERVADO, EXPIRADO)
+     * é terminal: não vai para lugar nenhum. A #90 abre as transições a partir de RESERVADO.
      * Isto é só a máquina de estados; QUEM pode disparar cada transição é checado nas permissões.
      */
     private static final Map<StatusPedido, Set<StatusPedido>> TRANSICOES = Map.of(
             PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
-            ORCADO, EnumSet.of(ACEITO, RECUSADO, CANCELADO, EXPIRADO)
+            ORCADO, EnumSet.of(RESERVADO, RECUSADO, CANCELADO, EXPIRADO)
     );
 
     /** O pedido neste status pode passar para {@code novo}? */
@@ -54,6 +54,6 @@ public enum StatusPedido {
         }
 
         throw new IllegalArgumentException("Tipo de pedido inválido: '" + text + "'. Valores aceitos: pendente, " +
-                "orçado, recusado, cancelado, aceito, expirado.");
+                "orçado, recusado, cancelado, reservado, expirado.");
     }
 }

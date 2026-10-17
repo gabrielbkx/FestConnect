@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+        #99 Fase 1: o status que confirma e ocupa a agenda deixa de se chamar ACEITO e passa a ser
+        RESERVADO. Por enquanto é só a renomeação do valor persistido (EnumType.STRING); o fluxo de
+        sinal/arras (AGUARDANDO_ENTRADA entre ORCADO e RESERVADO) entra nas fatias seguintes.
+    -->
+    <changeSet id="0.17.0-renomeia-aceito-para-reservado" author="GF">
+        <update tableName="tb_pedidos">
+            <column name="status_pedido" value="RESERVADO"/>
+            <where>status_pedido = 'ACEITO'</where>
+        </update>
+        <rollback>
+            <update tableName="tb_pedidos">
+                <column name="status_pedido" value="ACEITO"/>
+                <where>status_pedido = 'RESERVADO'</where>
+            </update>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

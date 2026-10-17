@@ -117,13 +117,13 @@ public class PedidoService {
 
     /**
      * Recusa (409) se a agenda do prestador está CHEIA no intervalo [inicio, fim). "Cheia" = o número
-     * de eventos ACEITO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
+     * de eventos RESERVADO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
      * aplicada expandindo a janela para [inicio - folga, fim + folga).
      * <p>
      * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE). Usado no ACEITE para
      * serializar aceites concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do
      * banco (ela só garante zero sobreposição), então o lock é o que mantém a contagem consistente.
-     * Na criação/orçamento (que não geram ACEITO) é uma pré-checagem leve, sem lock.
+     * Na criação/orçamento (que não geram RESERVADO) é uma pré-checagem leve, sem lock.
      */
     private void recusarSeAgendaCheia(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim, boolean comLock) {
         Prestador prestador = (comLock
@@ -133,7 +133,7 @@ public class PedidoService {
 
         LocalDateTime de = inicio.minusMinutes(prestador.getFolgaMinutos());
         LocalDateTime ate = fim.plusMinutes(prestador.getFolgaMinutos());
-        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.ACEITO);
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.RESERVADO);
         List<BloqueioAgenda> bloqueios = bloqueioRepository.buscarSobreposicoes(prestadorId, de, ate);
 
         // Pedido confirmado e bloqueio ocupam a agenda do mesmo jeito: somam na conta da capacidade.
@@ -153,7 +153,7 @@ public class PedidoService {
         }
     }
 
-    /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
+    /** Agenda pública do prestador: só os intervalos ocupados (RESERVADO) na janela, sem dado de cliente. */
     @Transactional(readOnly = true)
     public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
         // A agenda ocupada junta eventos confirmados e bloqueios manuais, ordenados por início.
@@ -194,11 +194,11 @@ public class PedidoService {
 
     /**
      * Depois do aceite, o prestador precisa falar com o cliente. Revela o WhatsApp do cliente só
-     * nesse caso (status ACEITO e quem lê é o prestador do pedido); nos demais, o campo fica nulo.
+     * nesse caso (status RESERVADO e quem lê é o prestador do pedido); nos demais, o campo fica nulo.
      */
     private PedidoResponseDTO comContatoDoCliente(Pedido pedido, boolean solicitanteEhPrestador) {
         PedidoResponseDTO dto = pedidoMapper.toResponseDTO(pedido);
-        if (solicitanteEhPrestador && pedido.getStatusPedido() == StatusPedido.ACEITO) {
+        if (solicitanteEhPrestador && pedido.getStatusPedido() == StatusPedido.RESERVADO) {
             return pedidoMapper.comWhatsappCliente(dto, pedido.getCliente().getWhatsapp());
         }
         return dto;
@@ -283,7 +283,7 @@ public class PedidoService {
 
         recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
 
-        pedido.setStatusPedido(StatusPedido.ACEITO);
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
 
         emailService.enviarEmail(

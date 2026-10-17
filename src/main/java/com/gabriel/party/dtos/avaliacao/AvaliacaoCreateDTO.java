@@ -17,7 +17,7 @@ public record AvaliacaoCreateDTO(
         @Schema(description = "Comentário opcional sobre a experiência", example = "Ótimo profissional, muito pontual!")
         String comentario,
 
-        @Schema(description = "ID do pedido a ser avaliado (deve estar no status ACEITO)", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+        @Schema(description = "ID do pedido a ser avaliado (deve estar no status RESERVADO)", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
         @NotNull
         UUID pedidoId
 ) {}

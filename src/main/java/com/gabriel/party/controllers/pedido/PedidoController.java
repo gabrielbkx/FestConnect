@@ -22,7 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/pedidos")
 @Tag(name = "Pedidos", description = "Fluxo de orçamento entre cliente e prestador. " +
-        "Ciclo: PENDENTE → ORCADO → ACEITO. O prestador pode RECUSAR; o cliente pode CANCELAR; " +
+        "Ciclo: PENDENTE → ORCADO → RESERVADO. O prestador pode RECUSAR; o cliente pode CANCELAR; " +
         "orçamentos vencidos são automaticamente EXPIRADOS.")
 public class PedidoController {
 
@@ -130,7 +130,7 @@ public class PedidoController {
             @ApiResponse(responseCode = "404", description = "Pedido não encontrado"),
             @ApiResponse(responseCode = "409", description = "Prestador já tem pedido confirmado nesta data")
     })
-    @Operation(summary = "Aceitar orçamento", description = "O cliente aceita o orçamento enviado pelo prestador. Status muda para ACEITO. Exige status atual = ORCADO.")
+    @Operation(summary = "Aceitar orçamento", description = "O cliente aceita o orçamento enviado pelo prestador. Status muda para RESERVADO. Exige status atual = ORCADO.")
     @PutMapping("/{id}/aceitar")
     @PreAuthorize("hasRole('ROLE_CLIENTE')")
     public ResponseEntity<PedidoResponseDTO> aceitar(@PathVariable UUID id,

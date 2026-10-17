@@ -143,10 +143,10 @@ class PedidoServiceTest {
     // ── whatsappCliente: revelado só ao prestador do pedido e depois do aceite
 
     @Test
-    @DisplayName("prestador vê o WhatsApp do cliente quando o pedido está ACEITO")
+    @DisplayName("prestador vê o WhatsApp do cliente quando o pedido está RESERVADO")
     void buscarPorId_prestadorEPedidoAceito_revelaWhatsappDoCliente() {
         cliente.setWhatsapp("11912345678");
-        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var pedido = pedidoCom(StatusPedido.RESERVADO);
         var dtoBase = mock(PedidoResponseDTO.class);
         var dtoComWhatsapp = mock(PedidoResponseDTO.class);
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
@@ -179,7 +179,7 @@ class PedidoServiceTest {
     @DisplayName("o cliente não recebe o próprio WhatsApp de volta (só o prestador vê)")
     void buscarPorId_clienteDono_naoRevela() {
         cliente.setWhatsapp("11912345678");
-        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var pedido = pedidoCom(StatusPedido.RESERVADO);
         var dtoBase = mock(PedidoResponseDTO.class);
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
@@ -201,13 +201,13 @@ class PedidoServiceTest {
         var pedido = pedidoOrcado(inicio);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(pedidoOrcado(inicio))); // 1 já confirmado < capacidade 2
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.aceitarOrcamento(pedido.getId(), usuarioCliente);
 
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
     }
 
     @Test
@@ -218,7 +218,7 @@ class PedidoServiceTest {
         var pedido = pedidoOrcado(inicio);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 já confirmados = capacidade
 
         assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
@@ -235,7 +235,7 @@ class PedidoServiceTest {
         var pedido = pedidoOrcado(inicio); // [20:00, 00:00)
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of());
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -243,7 +243,7 @@ class PedidoServiceTest {
 
         // janela = [20:00 - 60min, 00:00 + 60min) = [19:00, 01:00)
         verify(pedidoRepository).buscarSobreposicoes(prestador.getId(),
-                inicio.minusMinutes(60), inicio.plusMinutes(240).plusMinutes(60), StatusPedido.ACEITO);
+                inicio.minusMinutes(60), inicio.plusMinutes(240).plusMinutes(60), StatusPedido.RESERVADO);
     }
 
     @Test
@@ -256,7 +256,7 @@ class PedidoServiceTest {
         bloqueio.setFim(inicio.plusHours(4));
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of()); // nenhum pedido confirmado
         when(bloqueioRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any()))
                 .thenReturn(List.of(bloqueio)); // mas há um bloqueio (capacidade 1)
@@ -282,7 +282,7 @@ class PedidoServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @EnumSource(value = StatusPedido.class, names = {"RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
     @DisplayName("recusar um pedido já encerrado devolve PEDIDO_STATUS_INVALIDO")
     void recusarPedido_statusInvalido_barra(StatusPedido status) {
         var pedido = pedidoCom(status);
@@ -309,7 +309,7 @@ class PedidoServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @EnumSource(value = StatusPedido.class, names = {"RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
     @DisplayName("cancelar um pedido aceito ou já encerrado devolve PEDIDO_STATUS_INVALIDO")
     void cancelarPedido_statusInvalido_barra(StatusPedido status) {
         var pedido = pedidoCom(status);
@@ -353,10 +353,10 @@ class PedidoServiceTest {
         var inicio = LocalDateTime.now().plusDays(10);
         var pedido = pedidoPendente(inicio);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO);
         when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.enviarOrcamento(pedido.getId(), orcamento(), prestador.getUsuario()))
@@ -372,7 +372,7 @@ class PedidoServiceTest {
         var pedido = pedidoPendente(inicio);
         when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of());
         when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ORCADO)))
                 .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 concorrentes
@@ -410,10 +410,10 @@ class PedidoServiceTest {
         var inicio = LocalDateTime.now().plusDays(10);
         var pedido = pedidoOrcado(inicio);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO); // o que já ocupa a agenda (20:00–00:00)
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO); // o que já ocupa a agenda (20:00–00:00)
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.RESERVADO))
                 .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
@@ -428,7 +428,7 @@ class PedidoServiceTest {
         var inicio = LocalDateTime.now().plusDays(10);
         var pedido = pedidoOrcado(inicio);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0)); // 20:00–00:00 em 12/12
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
         when(pedidoRepository.buscarSobreposicoes(any(), any(), any(), any())).thenReturn(List.of(jaConfirmado));
@@ -446,13 +446,13 @@ class PedidoServiceTest {
         var pedido = pedidoOrcado(inicio);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
+        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.RESERVADO))
                 .thenReturn(List.of());
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.aceitarOrcamento(pedido.getId(), usuarioCliente);
 
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
     }
 
     @Test
@@ -473,7 +473,7 @@ class PedidoServiceTest {
     void criarPedido_horarioConfirmado_barra() {
         LocalDateTime dataEvento = LocalDateTime.now().plusDays(10);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO);
 
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(prestadorRepository.findById(prestador.getId())).thenReturn(Optional.of(prestador));
@@ -482,7 +482,7 @@ class PedidoServiceTest {
         pedidoEntity.setPrestador(prestador);
         pedidoEntity.setDataEvento(dataEvento);
         when(pedidoMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(pedidoEntity);
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.criarPedido(novoRequest(dataEvento), usuarioCliente))

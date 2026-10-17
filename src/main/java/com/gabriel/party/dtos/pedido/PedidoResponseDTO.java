@@ -31,7 +31,7 @@ public record PedidoResponseDTO(
         @Schema(description = "WhatsApp do prestador (disponível após aceite)", example = "11987654321")
         String whatsappPrestador,
 
-        @Schema(description = "WhatsApp do cliente. Só é preenchido para o prestador do pedido e depois do aceite (status ACEITO); nos demais casos vem nulo.", example = "11912345678")
+        @Schema(description = "WhatsApp do cliente. Só é preenchido para o prestador do pedido e depois do aceite (status RESERVADO); nos demais casos vem nulo.", example = "11912345678")
         String whatsappCliente,
 
         @Schema(description = "ID do item do catálogo solicitado")
@@ -55,10 +55,10 @@ public record PedidoResponseDTO(
         @Schema(description = "Descrição do que o cliente precisa")
         String descricao,
 
-        @Schema(description = "Status atual do pedido. Fluxo: PENDENTE → ORCADO → ACEITO. " +
+        @Schema(description = "Status atual do pedido. Fluxo: PENDENTE → ORCADO → RESERVADO. " +
                 "O prestador pode RECUSAR a qualquer momento; o cliente pode CANCELAR. " +
                 "O sistema EXPIRA orçamentos vencidos.",
-                allowableValues = {"PENDENTE", "ORCADO", "ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+                allowableValues = {"PENDENTE", "ORCADO", "RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
         StatusPedido status,
 
         @Schema(description = "Valor do orçamento em R$. Preenchido após o prestador enviar o orçamento.", example = "2500.00")
