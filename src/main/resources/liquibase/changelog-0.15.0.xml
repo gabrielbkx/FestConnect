@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!--
+      Remove a restrição de exclusão da #85. Ela garantia ZERO sobreposição de ACEITO por prestador,
+      o que é incompatível com capacidade > 1 (buffet que atende 2 eventos ao mesmo tempo). A garantia
+      passa a ser na aplicação: contar as sobreposições (com folga) sob lock pessimista no prestador
+      (PrestadorRepository.buscarComLock) e recusar quando atingir a capacidade. Trade-off consciente:
+      troca o backstop declarativo do banco por uma serialização por lock. Ver #88.
+    -->
+    <changeSet id="0.15.0-remover-exclusao-pedido" author="GF">
+        <sql>ALTER TABLE tb_pedidos DROP CONSTRAINT IF EXISTS pedido_sem_sobreposicao</sql>
+
+        <rollback>
+            CREATE EXTENSION IF NOT EXISTS btree_gist;
+            ALTER TABLE tb_pedidos ADD CONSTRAINT pedido_sem_sobreposicao
+              EXCLUDE USING gist (
+                prestador_id WITH =,
+                tsrange(data_do_evento, data_fim, '[)') WITH &amp;&amp;
+              ) WHERE (status_pedido = 'ACEITO');
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
