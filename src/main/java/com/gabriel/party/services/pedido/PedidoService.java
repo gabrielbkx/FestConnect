@@ -4,6 +4,8 @@ import com.gabriel.party.dtos.pedido.OrcamentoLoteItemDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoLoteRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO;
+import com.gabriel.party.model.agenda.BloqueioAgenda;
+import com.gabriel.party.repositories.agenda.BloqueioAgendaRepository;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
 import com.gabriel.party.exceptions.AppException;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class PedidoService {
@@ -46,6 +49,7 @@ public class PedidoService {
     private final PrestadorRepository prestadorRepository;
     private final ItemCatalogoRepository itemCatalogoRepository;
     private final EventoRepository eventoRepository;
+    private final BloqueioAgendaRepository bloqueioRepository;
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
     private final long prazoRespostaHoras;
@@ -55,6 +59,7 @@ public class PedidoService {
                          PrestadorRepository prestadorRepository,
                          ItemCatalogoRepository itemCatalogoRepository,
                          EventoRepository eventoRepository,
+                         BloqueioAgendaRepository bloqueioRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService,
                          @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras) {
@@ -64,6 +69,7 @@ public class PedidoService {
         this.prestadorRepository = prestadorRepository;
         this.itemCatalogoRepository = itemCatalogoRepository;
         this.eventoRepository = eventoRepository;
+        this.bloqueioRepository = bloqueioRepository;
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
         this.prazoRespostaHoras = prazoRespostaHoras;
@@ -128,20 +134,34 @@ public class PedidoService {
         LocalDateTime de = inicio.minusMinutes(prestador.getFolgaMinutos());
         LocalDateTime ate = fim.plusMinutes(prestador.getFolgaMinutos());
         List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.ACEITO);
+        List<BloqueioAgenda> bloqueios = bloqueioRepository.buscarSobreposicoes(prestadorId, de, ate);
 
-        if (conflitos.size() >= prestador.getEventosSimultaneos()) {
-            Pedido jaConfirmado = conflitos.get(0);
+        // Pedido confirmado e bloqueio ocupam a agenda do mesmo jeito: somam na conta da capacidade.
+        if (conflitos.size() + bloqueios.size() >= prestador.getEventosSimultaneos()) {
+            if (!conflitos.isEmpty()) {
+                Pedido jaConfirmado = conflitos.get(0);
+                throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
+                        jaConfirmado.getDataEvento().format(HORA),
+                        jaConfirmado.getDataFim().format(HORA),
+                        jaConfirmado.getDataEvento().format(DIA));
+            }
+            BloqueioAgenda bloqueio = bloqueios.get(0);
             throw new AppException(ErrorCode.PEDIDO_CONFLITO_AGENDA,
-                    jaConfirmado.getDataEvento().format(HORA),
-                    jaConfirmado.getDataFim().format(HORA),
-                    jaConfirmado.getDataEvento().format(DIA));
+                    bloqueio.getInicio().format(HORA),
+                    bloqueio.getFim().format(HORA),
+                    bloqueio.getInicio().format(DIA));
         }
     }
 
     /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
     @Transactional(readOnly = true)
     public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
-        return pedidoRepository.agendaOcupada(prestadorId, de, ate);
+        // A agenda ocupada junta eventos confirmados e bloqueios manuais, ordenados por início.
+        return Stream.concat(
+                        pedidoRepository.agendaOcupada(prestadorId, de, ate).stream(),
+                        bloqueioRepository.agendaOcupada(prestadorId, de, ate).stream())
+                .sorted(java.util.Comparator.comparing(IntervaloOcupadoDTO::inicio))
+                .toList();
     }
 
     @Transactional(readOnly = true)
