@@ -47,6 +47,16 @@ public class Prestador {
     @Embedded
     private Endereco endereco;
 
+    // Quantos eventos o prestador atende ao mesmo tempo (buffet com 2 equipes = 2). Com valor > 1 a
+    // garantia deixa de ser a restrição de exclusão do banco e vira contagem sob lock (#88).
+    @Column(name = "eventos_simultaneos", nullable = false)
+    private Integer eventosSimultaneos = 1;
+
+    // Minutos de folga (montagem/deslocamento) antes e depois de cada evento. A ocupação real do
+    // prestador é [inicio - folga, fim + folga). Entra na checagem de conflito e na agenda.
+    @Column(name = "folga_minutos", nullable = false)
+    private Integer folgaMinutos = 0;
+
     private Boolean ativo = true;
 
     @EqualsAndHashCode.Exclude
