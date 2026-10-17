@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="0.16.0-bloqueio-agenda" author="GF">
+        <createTable tableName="tb_bloqueio_agenda" remarks="Períodos em que o prestador se marca indisponível (bloqueios manuais da agenda).">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="prestador_id" type="UUID" remarks="Dono do bloqueio.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inicio" type="TIMESTAMP" remarks="Início do período bloqueado.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fim" type="TIMESTAMP" remarks="Fim do período bloqueado.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="motivo" type="TEXT" remarks="Motivo opcional do bloqueio."/>
+            <column name="data_hora_criacao" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="prestador_id" baseTableName="tb_bloqueio_agenda"
+                                 constraintName="fk_bloqueio_prestador"
+                                 referencedColumnNames="id" referencedTableName="tb_prestador"/>
+
+        <createIndex tableName="tb_bloqueio_agenda" indexName="idx_bloqueio_prestador_inicio">
+            <column name="prestador_id"/>
+            <column name="inicio"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
