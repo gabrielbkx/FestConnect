@@ -54,7 +54,10 @@ public class PagamentoService {
         Cliente cliente = clienteRepository.findByUsuarioId(usuarioLogado.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.CLIENTE_NAO_ENCONTRADO, usuarioLogado.getId().toString()));
 
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        // Com lock, antes do gateway e do lock do prestador (ordem: pedido → prestador). Se o evento
+        // for cancelado ao mesmo tempo, um espera o outro e relê o status: nada de sinal pago em
+        // pedido CANCELADO, nem reserva ativa em evento cancelado (#105).
+        Pedido pedido = pedidoRepository.buscarComLock(pedidoId)
                 .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
 
         if (!pedido.getCliente().getId().equals(cliente.getId())) {

@@ -20,6 +20,7 @@ import com.gabriel.party.services.email.EmailTemplates;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,15 +79,22 @@ public class EventoService {
         Evento evento = buscarEventoDoCliente(eventoId, usuarioLogado);
 
         // Valida os pedidos antes de mexer no evento, para nada ficar meio-cancelado
-        List<Pedido> pedidosAtivos = dto.status() == StatusEvento.CANCELADO
-                ? pedidoRepository.findByEventoIdAndStatusPedidoIn(eventoId, List.of(
-                        StatusPedido.PENDENTE, StatusPedido.ORCADO,
-                        StatusPedido.AGUARDANDO_ENTRADA, StatusPedido.RESERVADO))
-                : List.of();
+        List<Pedido> pedidosAtivos = new ArrayList<>();
+        if (dto.status() == StatusEvento.CANCELADO) {
+            // Com lock, e nesta ordem: primeiro os que o pagarSinal disputa (AGUARDANDO_ENTRADA/RESERVADO),
+            // depois PENDENTE/ORCADO. O pagarSinal trava pedido → prestador → concorrentes PENDENTE/ORCADO;
+            // seguindo a mesma ordem, não fecha ciclo (deadlock). Se o sinal for pago antes, esperamos,
+            // relemos RESERVADO e caímos no 400 abaixo; se cancelarmos antes, o pagamento relê CANCELADO.
+            pedidosAtivos.addAll(pedidoRepository.buscarDoEventoComLock(eventoId,
+                    List.of(StatusPedido.AGUARDANDO_ENTRADA, StatusPedido.RESERVADO)));
 
-        // Reserva tem sinal pago: o cancelamento vai pelo pedido (motivo, prazo e arras), não em massa
-        if (pedidosAtivos.stream().anyMatch(p -> p.getStatusPedido() == StatusPedido.RESERVADO)) {
-            throw new AppException(ErrorCode.EVENTO_COM_RESERVA);
+            // Reserva tem sinal pago: o cancelamento vai pelo pedido (motivo, prazo e arras), não em massa
+            if (pedidosAtivos.stream().anyMatch(p -> p.getStatusPedido() == StatusPedido.RESERVADO)) {
+                throw new AppException(ErrorCode.EVENTO_COM_RESERVA);
+            }
+
+            pedidosAtivos.addAll(pedidoRepository.buscarDoEventoComLock(eventoId,
+                    List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO)));
         }
 
         evento.setStatus(dto.status());

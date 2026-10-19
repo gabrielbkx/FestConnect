@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
@@ -33,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -96,8 +99,12 @@ class EventoServiceTest {
         return pedido;
     }
 
+    // O service busca em duas etapas: primeiro AGUARDANDO_ENTRADA/RESERVADO, depois PENDENTE/ORCADO
     private void mockarPedidosDoEvento(List<Pedido> pedidos) {
-        when(pedidoRepository.findByEventoIdAndStatusPedidoIn(eq(evento.getId()), anyList())).thenReturn(pedidos);
+        when(pedidoRepository.buscarDoEventoComLock(eq(evento.getId()), anyList())).thenAnswer(inv -> {
+            List<StatusPedido> statuses = inv.getArgument(1);
+            return pedidos.stream().filter(p -> statuses.contains(p.getStatusPedido())).toList();
+        });
     }
 
     private EventoStatusUpdateDTO cancelar() {
@@ -139,16 +146,21 @@ class EventoServiceTest {
     }
 
     @Test
-    @DisplayName("Cancelar evento deve buscar PENDENTE, ORCADO, AGUARDANDO_ENTRADA e RESERVADO")
-    void cancelarEventoDeveConsultarTodosOsStatusAtivos() {
+    @DisplayName("Cancelar evento deve travar AGUARDANDO_ENTRADA/RESERVADO antes de PENDENTE/ORCADO")
+    void cancelarEventoDeveTravarNaOrdemCerta() {
         var orcado = pedidoComStatus(StatusPedido.ORCADO);
         var aguardando = pedidoComStatus(StatusPedido.AGUARDANDO_ENTRADA);
-        when(pedidoRepository.findByEventoIdAndStatusPedidoIn(evento.getId(), List.of(
-                StatusPedido.PENDENTE, StatusPedido.ORCADO,
-                StatusPedido.AGUARDANDO_ENTRADA, StatusPedido.RESERVADO)))
-                .thenReturn(List.of(orcado, aguardando));
+        mockarPedidosDoEvento(List.of(orcado, aguardando));
 
         service.atualizarStatus(evento.getId(), cancelar(), usuarioCliente);
+
+        ArgumentCaptor<List<StatusPedido>> statuses = ArgumentCaptor.captor();
+        InOrder ordem = inOrder(pedidoRepository);
+        ordem.verify(pedidoRepository, times(2)).buscarDoEventoComLock(eq(evento.getId()), statuses.capture());
+        assertThat(statuses.getAllValues().get(0))
+                .containsExactlyInAnyOrder(StatusPedido.AGUARDANDO_ENTRADA, StatusPedido.RESERVADO);
+        assertThat(statuses.getAllValues().get(1))
+                .containsExactlyInAnyOrder(StatusPedido.PENDENTE, StatusPedido.ORCADO);
 
         assertThat(orcado.getStatusPedido()).isEqualTo(StatusPedido.CANCELADO);
         assertThat(aguardando.getStatusPedido()).isEqualTo(StatusPedido.CANCELADO);
@@ -162,7 +174,7 @@ class EventoServiceTest {
 
         assertThat(evento.getStatus()).isEqualTo(StatusEvento.CONFIRMADO);
         verify(eventoRepository).save(evento);
-        verify(pedidoRepository, never()).findByEventoIdAndStatusPedidoIn(any(), anyList());
+        verify(pedidoRepository, never()).buscarDoEventoComLock(any(), anyList());
         verify(emailService, never()).enviarAposCommit(anyString(), anyString(), anyString());
     }
 }
