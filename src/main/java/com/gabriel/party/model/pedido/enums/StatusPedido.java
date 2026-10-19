@@ -14,6 +14,7 @@ public enum StatusPedido {
     CANCELADO("cancelado"),
     AGUARDANDO_ENTRADA("aguardando_entrada"),
     RESERVADO("reservado"),
+    CONCLUIDO("concluido"),
     EXPIRADO("expirado");
 
     private String valor;
@@ -23,16 +24,18 @@ public enum StatusPedido {
     }
 
     /**
-     * Para onde cada status pode ir. Quem não está no mapa (RECUSADO, CANCELADO, RESERVADO, EXPIRADO)
+     * Para onde cada status pode ir. Quem não está no mapa (RECUSADO, CANCELADO, CONCLUIDO, EXPIRADO)
      * é terminal: não vai para lugar nenhum. O cliente aceitar o orçamento leva ORCADO →
      * AGUARDANDO_ENTRADA (ainda sem travar a agenda); pagar o sinal leva AGUARDANDO_ENTRADA →
-     * RESERVADO (aí sim a data é garantida). A #90 abre as transições a partir de RESERVADO.
-     * Isto é só a máquina de estados; QUEM pode disparar cada transição é checado nas permissões.
+     * RESERVADO (aí sim a data é garantida). Depois do evento, RESERVADO → CONCLUIDO (job); o
+     * cancelamento a partir de RESERVADO entra na #90. Isto é só a máquina de estados; QUEM pode
+     * disparar cada transição é checado nas permissões.
      */
     private static final Map<StatusPedido, Set<StatusPedido>> TRANSICOES = Map.of(
             PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
             ORCADO, EnumSet.of(AGUARDANDO_ENTRADA, RECUSADO, CANCELADO, EXPIRADO),
-            AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO)
+            AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO),
+            RESERVADO, EnumSet.of(CONCLUIDO)
     );
 
     /** O pedido neste status pode passar para {@code novo}? */
@@ -58,6 +61,6 @@ public enum StatusPedido {
         }
 
         throw new IllegalArgumentException("Tipo de pedido inválido: '" + text + "'. Valores aceitos: pendente, " +
-                "orçado, recusado, cancelado, aguardando_entrada, reservado, expirado.");
+                "orçado, recusado, cancelado, aguardando_entrada, reservado, concluido, expirado.");
     }
 }

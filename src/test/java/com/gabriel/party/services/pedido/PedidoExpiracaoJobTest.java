@@ -138,6 +138,23 @@ class PedidoExpiracaoJobTest {
     }
 
     @Test
+    @DisplayName("Deve concluir eventos RESERVADO cujo fim já passou (sem notificar)")
+    void deveConcluirEventosPassados() {
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        pedido.setValidadeOrcamento(null);
+        pedido.setDataFim(LocalDateTime.now().minusHours(2));
+
+        when(pedidoRepository.findByStatusPedidoAndDataFimBefore(eq(StatusPedido.RESERVADO), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.CONCLUIDO);
+        verify(pedidoRepository).save(pedido);
+        verify(emailService, never()).enviarAposCommit(any(), any(), any());
+    }
+
+    @Test
     @DisplayName("Deve expirar pedidos AGUARDANDO_ENTRADA com sinal não pago e notificar o cliente")
     void deveExpirarEntradasNaoPagas() {
         pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);

@@ -31,6 +31,24 @@ public class PedidoExpiracaoJob {
         expirarPendentesSemResposta(agora);
         expirarOrcamentosNaoAceitos(agora);
         expirarEntradasNaoPagas(agora);
+        concluirEventosPassados(agora);
+    }
+
+    /**
+     * Evento reservado cujo fim já passou vira CONCLUIDO. Idempotente: só pega RESERVADO, então rodar
+     * de novo não reprocessa quem já concluiu. É o que libera a avaliação (só depois do evento) e faz
+     * o "pedidos concluídos" do perfil contar eventos que de fato aconteceram (#90).
+     */
+    private void concluirEventosPassados(LocalDateTime agora) {
+        var aConcluir = pedidoRepository.findByStatusPedidoAndDataFimBefore(StatusPedido.RESERVADO, agora);
+        if (aConcluir.isEmpty()) return;
+
+        aConcluir.forEach(pedido -> {
+            pedido.setStatusPedido(StatusPedido.CONCLUIDO);
+            pedidoRepository.save(pedido);
+        });
+
+        logger.info("[PedidoExpiracaoJob] " + aConcluir.size() + " evento(s) RESERVADO concluído(s) por já terem passado.");
     }
 
     private void expirarPendentesSemResposta(LocalDateTime agora) {

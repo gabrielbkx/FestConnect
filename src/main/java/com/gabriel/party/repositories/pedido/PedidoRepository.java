@@ -86,6 +86,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     List<Pedido> findByStatusPedidoAndPrazoEntradaBefore(StatusPedido status, LocalDateTime agora);
 
+    List<Pedido> findByStatusPedidoAndDataFimBefore(StatusPedido status, LocalDateTime agora);
+
     Long countByPrestadorIdAndStatusPedido(UUID prestadorId, StatusPedido status);
 
     boolean existsByPrestadorIdAndItemCatalogoIdAndEventoIdAndStatusPedidoIn(

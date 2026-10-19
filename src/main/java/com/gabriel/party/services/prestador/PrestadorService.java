@@ -102,7 +102,7 @@ public class PrestadorService {
     public PrestadorResponseDTO buscarPrestadorPorId(UUID id) {
         var prestador = repository.findByIdComMidias(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
-        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.RESERVADO);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.CONCLUIDO);
         return mapper.toDto(prestador, pedidosConcluidos);
     }
 
@@ -129,7 +129,7 @@ public class PrestadorService {
         }
 
         repository.save(prestador);
-        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.RESERVADO);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.CONCLUIDO);
         return mapper.toDto(prestador, pedidosConcluidos);
     }
 
