@@ -88,6 +88,28 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
 
     List<Pedido> findByStatusPedidoAndDataFimBefore(StatusPedido status, LocalDateTime agora);
 
+    /** Eventos reservados na janela [de, ate] que ainda não receberam o lembrete da semana (#90). */
+    @Query("""
+            SELECT p FROM Pedido p
+             WHERE p.statusPedido = :status
+               AND p.dataEvento BETWEEN :de AND :ate
+               AND p.lembreteSemanaEnviado = false
+            """)
+    List<Pedido> buscarParaLembreteSemana(@Param("status") StatusPedido status,
+                                          @Param("de") LocalDateTime de,
+                                          @Param("ate") LocalDateTime ate);
+
+    /** Eventos reservados na janela [de, ate] que ainda não receberam o lembrete da véspera (#90). */
+    @Query("""
+            SELECT p FROM Pedido p
+             WHERE p.statusPedido = :status
+               AND p.dataEvento BETWEEN :de AND :ate
+               AND p.lembreteVesperaEnviado = false
+            """)
+    List<Pedido> buscarParaLembreteVespera(@Param("status") StatusPedido status,
+                                           @Param("de") LocalDateTime de,
+                                           @Param("ate") LocalDateTime ate);
+
     Long countByPrestadorIdAndStatusPedido(UUID prestadorId, StatusPedido status);
 
     boolean existsByPrestadorIdAndItemCatalogoIdAndEventoIdAndStatusPedidoIn(

@@ -239,6 +239,42 @@ public class EmailTemplates {
         );
     }
 
+    public static String lembreteParaCliente(Pedido pedido, String quando) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento());
+
+        return construir(
+                "Seu evento é " + quando,
+                "Olá, " + nomeCliente + "!",
+                "Passando para lembrar: o seu evento com <strong>" + nomePrestador + "</strong> é " + quando + ".",
+                detalhes,
+                caixa("info", "Qualquer ajuste, fale com o prestador pela Resenha.")
+        );
+    }
+
+    public static String lembreteParaPrestador(Pedido pedido, String quando) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento());
+
+        return construir(
+                "Você tem um evento " + quando,
+                "Olá, " + nomePrestador + "!",
+                "Lembrete: o evento de <strong>" + nomeCliente + "</strong> é " + quando + ".",
+                detalhes,
+                caixa("info", "Prepare tudo e combine os últimos detalhes com o cliente.")
+        );
+    }
+
     public static String sinalPendenteParaCliente(Pedido pedido) {
         String nomeCliente = pedido.getCliente().getNomeCompleto();
         String nomePrestador = pedido.getPrestador().getNomeCompleto();
