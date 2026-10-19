@@ -127,5 +127,12 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     boolean existsByPrestadorIdAndItemCatalogoIdAndEventoIdAndStatusPedidoIn(
             UUID prestadorId, UUID itemCatalogoId, UUID eventoId, List<StatusPedido> statuses);
 
-    List<Pedido> findByEventoIdAndStatusPedidoIn(UUID eventoId, List<StatusPedido> statuses);
+    /**
+     * Pedidos do evento nos status dados, travando as linhas até o fim da transação (#105). O
+     * ORDER BY p.id faz os locks saírem sempre na mesma ordem, para dois cancelamentos ou lotes
+     * concorrentes não se travarem (deadlock).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Pedido p WHERE p.evento.id = :eventoId AND p.statusPedido IN :statuses ORDER BY p.id")
+    List<Pedido> buscarDoEventoComLock(@Param("eventoId") UUID eventoId, @Param("statuses") List<StatusPedido> statuses);
 }

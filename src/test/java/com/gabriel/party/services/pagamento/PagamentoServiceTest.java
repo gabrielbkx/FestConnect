@@ -69,7 +69,7 @@ class PagamentoServiceTest {
         pedido.setPrazoEntrada(LocalDateTime.now().plusHours(72));
 
         lenient().when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        lenient().when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        lenient().when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
         lenient().when(pagamentoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(gateway.nome()).thenReturn("FAKE");
     }
