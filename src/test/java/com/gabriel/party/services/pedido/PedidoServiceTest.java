@@ -457,7 +457,7 @@ class PedidoServiceTest {
     @DisplayName("cliente cancela um evento reservado dentro do prazo: vira CANCELADO com motivo e quem cancelou")
     void cancelarEventoReservado_peloCliente_ok() {
         var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
 
         service.cancelarEventoReservado(pedido.getId(), "Mudança de planos", usuarioCliente);
@@ -472,7 +472,7 @@ class PedidoServiceTest {
     @DisplayName("parceiro cancela um evento reservado dentro do prazo e o cliente é avisado")
     void cancelarEventoReservado_peloPrestador_ok() {
         var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.empty());
         when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
 
@@ -487,7 +487,7 @@ class PedidoServiceTest {
     @DisplayName("cancelar fora do prazo (muito perto do evento) é barrado")
     void cancelarEventoReservado_foraDoPrazo_barra() {
         var pedido = pedidoReservado(LocalDateTime.now().plusDays(3)); // prazo é 7 dias antes
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
 
         assertThatThrownBy(() -> service.cancelarEventoReservado(pedido.getId(), "tarde demais", usuarioCliente))
@@ -502,13 +502,34 @@ class PedidoServiceTest {
         var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
         var estranho = new Usuario();
         estranho.setId(UUID.randomUUID());
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(estranho.getId())).thenReturn(Optional.empty());
         when(prestadorRepository.findByUsuarioId(estranho.getId())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cancelarEventoReservado(pedido.getId(), "nada", estranho))
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_SEM_PERMISSAO);
+    }
+
+    @Test
+    @DisplayName("cancelamento concorrente: lê o pedido com lock e, se o outro lado já cancelou, barra sem sobrescrever quem cancelou")
+    void cancelarEventoReservado_jaCancelado_barraComLock() {
+        // Simula o segundo cancelamento: ao ganhar o lock, relê o pedido já CANCELADO pelo parceiro.
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
+        pedido.setStatusPedido(StatusPedido.CANCELADO);
+        pedido.setCanceladoPor(CanceladoPor.PRESTADOR);
+        when(pedidoRepository.buscarComLock(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+
+        assertThatThrownBy(() -> service.cancelarEventoReservado(pedido.getId(), "Mudança de planos", usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
+
+        assertThat(pedido.getCanceladoPor()).isEqualTo(CanceladoPor.PRESTADOR);
+        verify(pedidoRepository).buscarComLock(pedido.getId());
+        verify(pedidoRepository, never()).findById(any());
+        verify(pedidoRepository, never()).save(any());
+        verify(emailService, never()).enviarAposCommit(any(), any(), any());
     }
 
     @Test
