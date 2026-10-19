@@ -18,6 +18,7 @@ public enum ErrorCode {
     BLOQUEIO_SEM_PERMISSAO("bloqueio_sem_permissao", HttpStatus.FORBIDDEN, "Você não tem permissão para alterar este bloqueio."),
     BLOQUEIO_INTERVALO_INVALIDO("bloqueio_intervalo_invalido", HttpStatus.BAD_REQUEST, "O fim do bloqueio precisa ser depois do início."),
     PEDIDO_PRAZO_EXPIRADO("pedido_prazo_expirado", HttpStatus.BAD_REQUEST, "O prazo para responder a este pedido expirou."),
+    PEDIDO_PRAZO_CANCELAMENTO("pedido_prazo_cancelamento", HttpStatus.BAD_REQUEST, "O prazo para cancelar este evento já passou."),
 
     // Erros de prestador
     PRESTADOR_NAO_ENCONTRADO("prestador_nao_encontrado", HttpStatus.NOT_FOUND, "Prestador '%id%' não encontrado."),

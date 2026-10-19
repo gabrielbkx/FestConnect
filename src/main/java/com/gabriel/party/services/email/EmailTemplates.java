@@ -114,6 +114,48 @@ public class EmailTemplates {
         );
     }
 
+    public static String eventoReservadoCanceladoParaPrestador(Pedido pedido) {
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String detalhes =
+                linha("Cliente", nomeCliente) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento()) +
+                linha("Motivo", pedido.getMotivoCancelamento());
+
+        String rodape = caixa("aviso", "A data voltou a ficar livre na sua agenda.");
+
+        return construir(
+                "Evento cancelado pelo cliente",
+                "Olá, " + nomePrestador + ".",
+                "<strong>" + nomeCliente + "</strong> cancelou um evento que já estava reservado:",
+                detalhes,
+                rodape
+        );
+    }
+
+    public static String eventoReservadoCanceladoParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento()) +
+                linha("Motivo", pedido.getMotivoCancelamento());
+
+        String rodape = caixa("aviso", "Você pode procurar outro prestador para essa data na Resenha.");
+
+        return construir(
+                "Evento cancelado pelo parceiro",
+                "Olá, " + nomeCliente + ".",
+                "<strong>" + nomePrestador + "</strong> precisou cancelar um evento que já estava reservado:",
+                detalhes,
+                rodape
+        );
+    }
+
     public static String eventoCanceladoParaPrestador(Pedido pedido) {
         String nomePrestador = pedido.getPrestador().getNomeCompleto();
         String nomeCliente = pedido.getCliente().getNomeCompleto();
