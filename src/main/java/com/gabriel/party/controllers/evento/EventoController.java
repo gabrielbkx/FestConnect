@@ -118,7 +118,7 @@ public class EventoController {
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Status do evento atualizado"),
-            @ApiResponse(responseCode = "400", description = "Evento tem pedido reservado (sinal pago): cancele cada reserva pelo próprio pedido antes de cancelar o evento"),
+            @ApiResponse(responseCode = "400", description = "Evento tem pedido reservado (sinal pago): cancele cada reserva pelo próprio pedido (PUT /pedidos/{id}/cancelar-evento, dentro do prazo de cancelamento) antes de cancelar o evento"),
             @ApiResponse(responseCode = "403", description = "Evento não pertence ao cliente autenticado"),
             @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
