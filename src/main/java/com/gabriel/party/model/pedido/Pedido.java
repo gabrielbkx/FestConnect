@@ -71,6 +71,22 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     private StatusPedido statusPedido;
 
+    // Preenchidos ao cancelar um evento já reservado (#90): o motivo (obrigatório) e quem cancelou.
+    @Column(name = "motivo_cancelamento", columnDefinition = "TEXT")
+    private String motivoCancelamento;
+
+    @Column(name = "cancelado_por")
+    @Enumerated(EnumType.STRING)
+    private com.gabriel.party.model.pedido.enums.CanceladoPor canceladoPor;
+
+    // Lembretes do evento (#90). Cada flag vira true quando o respectivo lembrete é enviado, para o
+    // job não mandar de novo (idempotência): rodar de hora em hora não repete o e-mail.
+    @Column(name = "lembrete_semana_enviado", nullable = false)
+    private boolean lembreteSemanaEnviado = false;
+
+    @Column(name = "lembrete_vespera_enviado", nullable = false)
+    private boolean lembreteVesperaEnviado = false;
+
     @ManyToOne
     private Cliente cliente;
     @ManyToOne

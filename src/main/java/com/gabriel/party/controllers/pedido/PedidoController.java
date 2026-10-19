@@ -1,5 +1,6 @@
 package com.gabriel.party.controllers.pedido;
 
+import com.gabriel.party.dtos.pedido.CancelamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.OrcamentoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoRequestDTO;
 import com.gabriel.party.dtos.pedido.PedidoResponseDTO;
@@ -163,6 +164,22 @@ public class PedidoController {
     public ResponseEntity<Void> recusarOrcamento(@PathVariable UUID id,
                                                  @AuthenticationPrincipal Usuario usuario) {
         pedidoService.recusarOrcamentoPeloCliente(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Evento cancelado; a outra parte é notificada por e-mail"),
+            @ApiResponse(responseCode = "400", description = "Pedido não está RESERVADO, prazo de cancelamento vencido ou motivo ausente"),
+            @ApiResponse(responseCode = "403", description = "Pedido não pertence a este usuário"),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    @Operation(summary = "Cancelar evento reservado", description = "Cliente ou parceiro cancela um evento RESERVADO, com motivo obrigatório e dentro do prazo (até N dias antes). Status muda para CANCELADO e a data volta a ficar livre.")
+    @PutMapping("/{id}/cancelar-evento")
+    @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_PRESTADOR')")
+    public ResponseEntity<Void> cancelarEvento(@PathVariable UUID id,
+                                               @RequestBody @Valid CancelamentoRequestDTO dto,
+                                               @AuthenticationPrincipal Usuario usuario) {
+        pedidoService.cancelarEventoReservado(id, dto.motivo(), usuario);
         return ResponseEntity.noContent().build();
     }
 }

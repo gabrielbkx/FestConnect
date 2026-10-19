@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.gabriel.party.model.pedido.enums.StatusPedido.AGUARDANDO_ENTRADA;
+import static com.gabriel.party.model.pedido.enums.StatusPedido.CONCLUIDO;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.CANCELADO;
 import static com.gabriel.party.model.pedido.enums.StatusPedido.EXPIRADO;
@@ -22,7 +23,8 @@ class StatusPedidoTest {
     private static final Map<StatusPedido, Set<StatusPedido>> PERMITIDAS = Map.of(
             PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
             ORCADO, EnumSet.of(AGUARDANDO_ENTRADA, RECUSADO, CANCELADO, EXPIRADO),
-            AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO)
+            AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO),
+            RESERVADO, EnumSet.of(CONCLUIDO, CANCELADO)
     );
 
     @Test
@@ -41,7 +43,7 @@ class StatusPedidoTest {
     @Test
     @DisplayName("status terminais não vão para lugar nenhum")
     void statusTerminais_naoTransicionam() {
-        for (StatusPedido terminal : EnumSet.of(RESERVADO, RECUSADO, CANCELADO, EXPIRADO)) {
+        for (StatusPedido terminal : EnumSet.of(CONCLUIDO, RECUSADO, CANCELADO, EXPIRADO)) {
             for (StatusPedido para : StatusPedido.values()) {
                 assertThat(terminal.podeIrPara(para))
                         .as("terminal %s → %s", terminal, para)

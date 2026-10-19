@@ -90,5 +90,11 @@ public record PedidoResponseDTO(
         String eventoNome,
 
         @Schema(description = "Quantos OUTROS pedidos orçados do prestador disputam este mesmo horário. Só é preenchido na resposta do envio do orçamento; nos demais casos vem nulo.", example = "2")
-        Integer pedidosConcorrentes
+        Integer pedidosConcorrentes,
+
+        @Schema(description = "Motivo do cancelamento, quando o evento foi cancelado. Nulo nos demais casos.")
+        String motivoCancelamento,
+
+        @Schema(description = "Quem cancelou o evento (cliente ou prestador). Nulo se não foi cancelado.", example = "cliente")
+        com.gabriel.party.model.pedido.enums.CanceladoPor canceladoPor
 ) {}

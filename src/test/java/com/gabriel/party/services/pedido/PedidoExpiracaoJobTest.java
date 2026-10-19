@@ -138,6 +138,61 @@ class PedidoExpiracaoJobTest {
     }
 
     @Test
+    @DisplayName("Deve concluir eventos RESERVADO cujo fim já passou (sem notificar)")
+    void deveConcluirEventosPassados() {
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        pedido.setValidadeOrcamento(null);
+        pedido.setDataFim(LocalDateTime.now().minusHours(2));
+
+        when(pedidoRepository.findByStatusPedidoAndDataFimBefore(eq(StatusPedido.RESERVADO), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.CONCLUIDO);
+        verify(pedidoRepository).save(pedido);
+        verify(emailService, never()).enviarAposCommit(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve mandar o lembrete da semana e marcar a flag (idempotente)")
+    void deveEnviarLembreteSemana() {
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        pedido.setValidadeOrcamento(null);
+        pedido.setDataEvento(LocalDateTime.now().plusDays(5));
+        pedido.setLocalEvento("Salão");
+
+        when(pedidoRepository.buscarParaLembreteSemana(eq(StatusPedido.RESERVADO), any(), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.isLembreteSemanaEnviado()).isTrue();
+        verify(pedidoRepository).save(pedido);
+        // um e-mail para o cliente e um para o prestador
+        verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
+        verify(emailService).enviarAposCommit(eq("prestador@test.com"), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve mandar o lembrete da véspera e marcar a flag")
+    void deveEnviarLembreteVespera() {
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        pedido.setValidadeOrcamento(null);
+        pedido.setDataEvento(LocalDateTime.now().plusHours(12));
+        pedido.setLocalEvento("Salão");
+
+        when(pedidoRepository.buscarParaLembreteVespera(eq(StatusPedido.RESERVADO), any(), any()))
+                .thenReturn(List.of(pedido));
+
+        scheduler.expirarPedidosVencidos();
+
+        assertThat(pedido.isLembreteVesperaEnviado()).isTrue();
+        verify(pedidoRepository).save(pedido);
+        verify(emailService).enviarAposCommit(eq("cliente@test.com"), any(), any());
+    }
+
+    @Test
     @DisplayName("Deve expirar pedidos AGUARDANDO_ENTRADA com sinal não pago e notificar o cliente")
     void deveExpirarEntradasNaoPagas() {
         pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);

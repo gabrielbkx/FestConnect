@@ -11,6 +11,7 @@ import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.itemcatalogo.Servico;
 import com.gabriel.party.model.pedido.Pedido;
+import com.gabriel.party.model.pedido.enums.CanceladoPor;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
@@ -64,9 +65,9 @@ class PedidoServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Injeção via construtor nos dá controle dos prazos (resposta e sinal), ambos 72h
+        // Injeção via construtor nos dá controle dos prazos: resposta 72h, sinal 72h, cancelamento 7 dias
         service = new PedidoService(pedidoRepository, clienteRepository, prestadorRepository,
-                itemCatalogoRepository, eventoRepository, bloqueioRepository, pedidoMapper, emailService, 72L, 72L);
+                itemCatalogoRepository, eventoRepository, bloqueioRepository, pedidoMapper, emailService, 72L, 72L, 7L);
 
         usuarioCliente = new Usuario();
         usuarioCliente.setId(UUID.randomUUID());
@@ -442,6 +443,85 @@ class PedidoServiceTest {
                 .isInstanceOf(AppException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
         verify(prestadorRepository, never()).buscarComLock(any());
+    }
+
+    // ── cancelarEventoReservado: cancelamento pós-reserva, pelo cliente ou pelo parceiro (#90)
+
+    private Pedido pedidoReservado(LocalDateTime inicio) {
+        var pedido = pedidoOrcado(inicio);
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        return pedido;
+    }
+
+    @Test
+    @DisplayName("cliente cancela um evento reservado dentro do prazo: vira CANCELADO com motivo e quem cancelou")
+    void cancelarEventoReservado_peloCliente_ok() {
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+
+        service.cancelarEventoReservado(pedido.getId(), "Mudança de planos", usuarioCliente);
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.CANCELADO);
+        assertThat(pedido.getMotivoCancelamento()).isEqualTo("Mudança de planos");
+        assertThat(pedido.getCanceladoPor()).isEqualTo(CanceladoPor.CLIENTE);
+        verify(emailService).enviarAposCommit(eq("prestador@test.com"), any(), any()); // avisa o prestador
+    }
+
+    @Test
+    @DisplayName("parceiro cancela um evento reservado dentro do prazo e o cliente é avisado")
+    void cancelarEventoReservado_peloPrestador_ok() {
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.empty());
+        when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
+
+        service.cancelarEventoReservado(pedido.getId(), "Imprevisto", prestador.getUsuario());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.CANCELADO);
+        assertThat(pedido.getCanceladoPor()).isEqualTo(CanceladoPor.PRESTADOR);
+        verify(emailService).enviarAposCommit(any(), any(), any()); // avisa o cliente
+    }
+
+    @Test
+    @DisplayName("cancelar fora do prazo (muito perto do evento) é barrado")
+    void cancelarEventoReservado_foraDoPrazo_barra() {
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(3)); // prazo é 7 dias antes
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+
+        assertThatThrownBy(() -> service.cancelarEventoReservado(pedido.getId(), "tarde demais", usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_PRAZO_CANCELAMENTO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
+    }
+
+    @Test
+    @DisplayName("quem não é dono nem prestador do pedido não cancela")
+    void cancelarEventoReservado_naoDono_barra() {
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
+        var estranho = new Usuario();
+        estranho.setId(UUID.randomUUID());
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(clienteRepository.findByUsuarioId(estranho.getId())).thenReturn(Optional.empty());
+        when(prestadorRepository.findByUsuarioId(estranho.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cancelarEventoReservado(pedido.getId(), "nada", estranho))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_SEM_PERMISSAO);
+    }
+
+    @Test
+    @DisplayName("o cancelamento antigo (sem motivo) não serve para um evento RESERVADO")
+    void cancelarPedidoPeloCliente_reservado_barra() {
+        var pedido = pedidoReservado(LocalDateTime.now().plusDays(30));
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> service.cancelarPedidoPeloCliente(pedido.getId(), usuarioCliente))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
     }
 
     @Test

@@ -31,6 +31,60 @@ public class PedidoExpiracaoJob {
         expirarPendentesSemResposta(agora);
         expirarOrcamentosNaoAceitos(agora);
         expirarEntradasNaoPagas(agora);
+        concluirEventosPassados(agora);
+        enviarLembretes(agora);
+    }
+
+    /**
+     * Lembra cliente e parceiro do evento reservado: um aviso quando falta menos de uma semana e outro
+     * na véspera. As flags no pedido garantem idempotência — cada lembrete sai uma vez só, ainda que o
+     * job rode de hora em hora. As janelas não se sobrepõem: semana é [agora+1d, agora+7d], véspera é
+     * [agora, agora+1d].
+     */
+    private void enviarLembretes(LocalDateTime agora) {
+        var semana = pedidoRepository.buscarParaLembreteSemana(
+                StatusPedido.RESERVADO, agora.plusDays(1), agora.plusDays(7));
+        semana.forEach(pedido -> {
+            pedido.setLembreteSemanaEnviado(true);
+            pedidoRepository.save(pedido);
+            emailService.enviarAposCommit(pedido.getCliente().getUsuario().getEmail(),
+                    "Resenha - Seu evento está chegando", EmailTemplates.lembreteParaCliente(pedido, "na próxima semana"));
+            emailService.enviarAposCommit(pedido.getPrestador().getUsuario().getEmail(),
+                    "Resenha - Evento na próxima semana", EmailTemplates.lembreteParaPrestador(pedido, "na próxima semana"));
+        });
+
+        var vespera = pedidoRepository.buscarParaLembreteVespera(
+                StatusPedido.RESERVADO, agora, agora.plusDays(1));
+        vespera.forEach(pedido -> {
+            pedido.setLembreteVesperaEnviado(true);
+            pedidoRepository.save(pedido);
+            emailService.enviarAposCommit(pedido.getCliente().getUsuario().getEmail(),
+                    "Resenha - Seu evento é amanhã", EmailTemplates.lembreteParaCliente(pedido, "amanhã"));
+            emailService.enviarAposCommit(pedido.getPrestador().getUsuario().getEmail(),
+                    "Resenha - Evento amanhã", EmailTemplates.lembreteParaPrestador(pedido, "amanhã"));
+        });
+
+        int total = semana.size() + vespera.size();
+        if (total > 0) {
+            logger.info("[PedidoExpiracaoJob] " + semana.size() + " lembrete(s) de semana e " + vespera.size() + " de véspera enviado(s).");
+        }
+    }
+
+    /**
+     * Evento reservado cujo fim já passou vira CONCLUIDO. Idempotente: só pega RESERVADO, então rodar
+     * de novo não reprocessa quem já concluiu. É o que libera a avaliação (só depois do evento) e faz
+     * o "pedidos concluídos" do perfil contar eventos que de fato aconteceram (#90).
+     */
+    private void concluirEventosPassados(LocalDateTime agora) {
+        var aConcluir = pedidoRepository.findByStatusPedidoAndDataFimBefore(StatusPedido.RESERVADO, agora);
+        if (aConcluir.isEmpty()) return;
+
+        aConcluir.forEach(pedido -> {
+            pedido.setStatusPedido(StatusPedido.CONCLUIDO);
+            pedidoRepository.save(pedido);
+        });
+
+        logger.info("[PedidoExpiracaoJob] " + aConcluir.size() + " evento(s) RESERVADO concluído(s) por já terem passado.");
     }
 
     private void expirarPendentesSemResposta(LocalDateTime agora) {

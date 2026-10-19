@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- #90: flags de idempotência dos lembretes de evento (semana anterior e véspera). -->
+    <changeSet id="0.21.0-pedido-lembretes" author="GF">
+        <addColumn tableName="tb_pedidos">
+            <column name="lembrete_semana_enviado" type="BOOLEAN" defaultValueBoolean="false"
+                    remarks="Já mandou o lembrete da semana anterior? (#90)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lembrete_vespera_enviado" type="BOOLEAN" defaultValueBoolean="false"
+                    remarks="Já mandou o lembrete da véspera? (#90)">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

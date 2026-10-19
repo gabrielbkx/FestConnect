@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- #90: cancelamento de evento reservado guarda o motivo e quem cancelou (cliente ou prestador). -->
+    <changeSet id="0.20.0-pedido-cancelamento" author="GF">
+        <addColumn tableName="tb_pedidos">
+            <column name="motivo_cancelamento" type="TEXT"
+                    remarks="Motivo informado ao cancelar um evento reservado (#90)."/>
+            <column name="cancelado_por" type="VARCHAR(20)"
+                    remarks="Quem cancelou o evento reservado: CLIENTE ou PRESTADOR (#90)."/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

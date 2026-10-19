@@ -54,6 +54,7 @@ public class PedidoService {
     private final EmailService emailService;
     private final long prazoRespostaHoras;
     private final long prazoEntradaHoras;
+    private final long prazoCancelamentoDias;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ClienteRepository clienteRepository,
@@ -64,7 +65,8 @@ public class PedidoService {
                          PedidoMapper pedidoMapper,
                          EmailService emailService,
                          @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras,
-                         @Value("${festconnect.pedido.prazo-entrada-horas}") Long prazoEntradaHoras) {
+                         @Value("${festconnect.pedido.prazo-entrada-horas}") Long prazoEntradaHoras,
+                         @Value("${festconnect.pedido.prazo-cancelamento-dias}") Long prazoCancelamentoDias) {
 
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
@@ -76,6 +78,7 @@ public class PedidoService {
         this.emailService = emailService;
         this.prazoRespostaHoras = prazoRespostaHoras;
         this.prazoEntradaHoras = prazoEntradaHoras;
+        this.prazoCancelamentoDias = prazoCancelamentoDias;
     }
 
     @Transactional
@@ -399,7 +402,10 @@ public class PedidoService {
     public void cancelarPedidoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
 
-        if (!pedido.getStatusPedido().podeIrPara(StatusPedido.CANCELADO)) {
+        // Cancelar um evento JÁ reservado tem regra própria (motivo + prazo) em cancelarEventoReservado.
+        // Aqui é só o cancelamento antes da reserva, quando nada foi travado nem pago.
+        if (pedido.getStatusPedido() == StatusPedido.RESERVADO
+                || !pedido.getStatusPedido().podeIrPara(StatusPedido.CANCELADO)) {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
@@ -411,6 +417,60 @@ public class PedidoService {
                 "Resenha - Pedido cancelado",
                 EmailTemplates.pedidoCanceladoParaPrestador(pedido)
         );
+    }
+
+    /**
+     * Cancela um evento já RESERVADO. Pode ser disparado pelo cliente ou pelo parceiro; o motivo é
+     * obrigatório (validado no DTO) e só vale dentro do prazo (até N dias corridos antes do evento).
+     * Registra quem cancelou, e a data volta a ficar livre na agenda automaticamente (CANCELADO não
+     * conta na ocupação). A regra de arras sobre o sinal entra na próxima fatia (#90). Avisa a outra parte.
+     */
+    @Transactional
+    public void cancelarEventoReservado(UUID pedidoId, String motivo, Usuario usuarioLogado) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
+
+        com.gabriel.party.model.pedido.enums.CanceladoPor quem = resolverAtor(pedido, usuarioLogado);
+
+        if (pedido.getStatusPedido() != StatusPedido.RESERVADO) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+        LocalDateTime limite = pedido.getDataEvento().minusDays(prazoCancelamentoDias);
+        if (LocalDateTime.now().isAfter(limite)) {
+            throw new AppException(ErrorCode.PEDIDO_PRAZO_CANCELAMENTO);
+        }
+
+        pedido.setStatusPedido(StatusPedido.CANCELADO);
+        pedido.setMotivoCancelamento(motivo);
+        pedido.setCanceladoPor(quem);
+        pedidoRepository.save(pedido);
+
+        if (quem == com.gabriel.party.model.pedido.enums.CanceladoPor.CLIENTE) {
+            emailService.enviarAposCommit(
+                    pedido.getPrestador().getUsuario().getEmail(),
+                    "Resenha - Evento cancelado pelo cliente",
+                    EmailTemplates.eventoReservadoCanceladoParaPrestador(pedido));
+        } else {
+            emailService.enviarAposCommit(
+                    pedido.getCliente().getUsuario().getEmail(),
+                    "Resenha - Evento cancelado pelo parceiro",
+                    EmailTemplates.eventoReservadoCanceladoParaCliente(pedido));
+        }
+    }
+
+    /** Descobre se quem pediu o cancelamento é o cliente ou o prestador do pedido — ou barra (403). */
+    private com.gabriel.party.model.pedido.enums.CanceladoPor resolverAtor(Pedido pedido, Usuario usuario) {
+        boolean ehCliente = clienteRepository.findByUsuarioId(usuario.getId())
+                .map(c -> c.getId().equals(pedido.getCliente().getId())).orElse(false);
+        if (ehCliente) {
+            return com.gabriel.party.model.pedido.enums.CanceladoPor.CLIENTE;
+        }
+        boolean ehPrestador = prestadorRepository.findByUsuarioId(usuario.getId())
+                .map(p -> p.getId().equals(pedido.getPrestador().getId())).orElse(false);
+        if (ehPrestador) {
+            return com.gabriel.party.model.pedido.enums.CanceladoPor.PRESTADOR;
+        }
+        throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
     }
 
     @Transactional
