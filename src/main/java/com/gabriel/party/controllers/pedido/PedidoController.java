@@ -22,8 +22,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/pedidos")
 @Tag(name = "Pedidos", description = "Fluxo de orçamento entre cliente e prestador. " +
-        "Ciclo: PENDENTE → ORCADO → RESERVADO. O prestador pode RECUSAR; o cliente pode CANCELAR; " +
-        "orçamentos vencidos são automaticamente EXPIRADOS.")
+        "Ciclo: PENDENTE → ORCADO → AGUARDANDO_ENTRADA → RESERVADO (a data trava no pagamento do sinal). " +
+        "O prestador pode RECUSAR; o cliente pode CANCELAR; orçamentos e sinais vencidos são EXPIRADOS.")
 public class PedidoController {
 
     private final PedidoService pedidoService;
@@ -124,13 +124,12 @@ public class PedidoController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Orçamento aceito e prestador notificado por e-mail"),
+            @ApiResponse(responseCode = "200", description = "Orçamento aceito; cliente recebe o sinal a pagar por e-mail"),
             @ApiResponse(responseCode = "400", description = "Pedido não está com status ORCADO"),
             @ApiResponse(responseCode = "403", description = "Pedido não pertence a este cliente"),
-            @ApiResponse(responseCode = "404", description = "Pedido não encontrado"),
-            @ApiResponse(responseCode = "409", description = "Prestador já tem pedido confirmado nesta data")
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
     })
-    @Operation(summary = "Aceitar orçamento", description = "O cliente aceita o orçamento enviado pelo prestador. Status muda para RESERVADO. Exige status atual = ORCADO.")
+    @Operation(summary = "Aceitar orçamento", description = "O cliente aceita o orçamento. Status muda para AGUARDANDO_ENTRADA e o sinal é calculado; a data só é reservada quando o sinal é pago. Exige status atual = ORCADO.")
     @PutMapping("/{id}/aceitar")
     @PreAuthorize("hasRole('ROLE_CLIENTE')")
     public ResponseEntity<PedidoResponseDTO> aceitar(@PathVariable UUID id,

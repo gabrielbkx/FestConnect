@@ -152,6 +152,51 @@ public class EmailTemplates {
                 rodape
         );
     }
+    public static String reservaConfirmadaParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String whatsappPrestador = pedido.getPrestador().getWhatsapp();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento()) +
+                linha("Sinal pago", "R$ " + pedido.getValorSinal()) +
+                linha("Valor do orçamento", "R$ " + pedido.getValor());
+
+        String contato = whatsappPrestador != null
+                ? caixa("sucesso", "A data está reservada! Fale com o prestador para alinhar os detalhes.<br>WhatsApp: <strong>" + whatsappPrestador + "</strong>")
+                : caixa("sucesso", "A data está reservada! Combine os detalhes com o prestador pela plataforma.");
+
+        return construir(
+                "Data reservada!",
+                "Tudo certo, " + nomeCliente + "!",
+                "Recebemos o sinal e a sua data com <strong>" + nomePrestador + "</strong> está garantida.",
+                detalhes,
+                contato
+        );
+    }
+
+    public static String dataReservadaParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
+
+        String rodape = caixa("aviso",
+                "Essa data acabou de ser reservada por outro cliente. Você pode escolher outra data ou outro prestador na Resenha.");
+
+        return construir(
+                "Essa data não está mais disponível",
+                "Olá, " + nomeCliente + ".",
+                "O horário que você pediu com <strong>" + nomePrestador + "</strong> foi reservado por outro cliente, então este pedido foi encerrado.",
+                detalhes,
+                rodape
+        );
+    }
+
     public static String sinalPendenteParaCliente(Pedido pedido) {
         String nomeCliente = pedido.getCliente().getNomeCompleto();
         String nomePrestador = pedido.getPrestador().getNomeCompleto();

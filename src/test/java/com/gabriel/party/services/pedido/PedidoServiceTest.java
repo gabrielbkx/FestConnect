@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -362,6 +363,84 @@ class PedidoServiceTest {
         service.aceitarOrcamento(pedido.getId(), usuarioCliente);
 
         verify(pedidoRepository, never()).buscarSobreposicoes(any(), any(), any(), any());
+        verify(prestadorRepository, never()).buscarComLock(any());
+    }
+
+    // ── reservarAposSinalAprovado: a data trava aqui (lock), com fechamento dos concorrentes (#99, #89)
+
+    private Pedido pedidoAguardandoEntrada(LocalDateTime inicio) {
+        var pedido = pedidoOrcado(inicio);
+        pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);
+        pedido.setValorSinal(java.math.BigDecimal.valueOf(750));
+        pedido.setPrazoEntrada(LocalDateTime.now().plusHours(72));
+        return pedido;
+    }
+
+    @Test
+    @DisplayName("sinal aprovado trava a agenda e leva o pedido a RESERVADO")
+    void reservarAposSinalAprovado_semConcorrentes_reserva() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of()); // agenda livre, sem reservas no horário
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reservarAposSinalAprovado(pedido.getId());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
+        verify(prestadorRepository).buscarComLock(prestador.getId());
+        verify(emailService, times(2)).enviarAposCommit(any(), any(), any()); // prestador + cliente
+    }
+
+    @Test
+    @DisplayName("sinal aprovado é barrado (409) se a agenda encheu durante o pagamento")
+    void reservarAposSinalAprovado_agendaCheia_conflito() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of(pedidoOrcado(inicio))); // já há uma reserva (capacidade 1)
+
+        assertThatThrownBy(() -> service.reservarAposSinalAprovado(pedido.getId()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.AGUARDANDO_ENTRADA);
+        verify(pedidoRepository, never()).buscarSobreposicoesAtivas(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("ao encher a data, os pedidos concorrentes (PENDENTE/ORCADO) no mesmo horário viram RECUSADO")
+    void reservarAposSinalAprovado_slotCheio_fechaConcorrentes() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        var concorrente = pedidoOrcado(inicio); // outro pedido disputando o mesmo horário
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of())                 // checagem do lock: agenda livre
+                .thenReturn(List.of(pedido));          // contagem após reservar: 1 = capacidade cheia
+        when(pedidoRepository.buscarSobreposicoesAtivas(eq(prestador.getId()), any(), any(),
+                eq(List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO)), eq(pedido.getId())))
+                .thenReturn(List.of(concorrente));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reservarAposSinalAprovado(pedido.getId());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
+        assertThat(concorrente.getStatusPedido()).isEqualTo(StatusPedido.RECUSADO);
+        verify(pedidoRepository).save(concorrente);
+    }
+
+    @Test
+    @DisplayName("reservarAposSinalAprovado só vale a partir de AGUARDANDO_ENTRADA")
+    void reservarAposSinalAprovado_statusInvalido_barra() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio); // ainda ORCADO, não aceito
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> service.reservarAposSinalAprovado(pedido.getId()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
         verify(prestadorRepository, never()).buscarComLock(any());
     }
 

@@ -315,6 +315,68 @@ public class PedidoService {
                 .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
     }
 
+    /**
+     * Passo interno do pagamento do sinal (#99): aqui a data é finalmente travada. Pega o lock do
+     * prestador, confere a capacidade (409 se a agenda encheu enquanto o sinal era pago), leva o pedido
+     * a RESERVADO e fecha os concorrentes do mesmo horário. NÃO revalida permissão nem pagamento: quem
+     * chama (o PagamentoService) já garantiu que o cliente dono pagou. Roda dentro da transação do pagamento.
+     */
+    @Transactional
+    public void reservarAposSinalAprovado(UUID pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
+
+        if (pedido.getStatusPedido() != StatusPedido.AGUARDANDO_ENTRADA) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
+        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
+
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        Pedido reservado = pedidoRepository.save(pedido);
+
+        fecharConcorrentes(reservado);
+
+        emailService.enviarAposCommit(
+                reservado.getPrestador().getUsuario().getEmail(),
+                "Resenha - Evento confirmado!",
+                EmailTemplates.orcamentoAceitoParaPrestador(reservado));
+        emailService.enviarAposCommit(
+                reservado.getCliente().getUsuario().getEmail(),
+                "Resenha - Data reservada!",
+                EmailTemplates.reservaConfirmadaParaCliente(reservado));
+    }
+
+    /**
+     * Quando a data fica cheia (as reservas no horário alcançam a capacidade do prestador), os pedidos
+     * ainda em disputa (PENDENTE/ORCADO) de outros clientes no mesmo horário não têm mais como acontecer:
+     * viram RECUSADO e o cliente é avisado (#89). Com capacidade > 1 só fecha quando a última vaga é tomada.
+     */
+    private void fecharConcorrentes(Pedido reservado) {
+        Prestador prestador = reservado.getPrestador();
+        LocalDateTime de = reservado.getDataEvento().minusMinutes(prestador.getFolgaMinutos());
+        LocalDateTime ate = reservado.getDataFim().plusMinutes(prestador.getFolgaMinutos());
+
+        int reservas = pedidoRepository.buscarSobreposicoes(prestador.getId(), de, ate, StatusPedido.RESERVADO).size();
+        if (reservas < prestador.getEventosSimultaneos()) {
+            return; // ainda sobra vaga no horário; ninguém é fechado
+        }
+
+        List<Pedido> concorrentes = pedidoRepository.buscarSobreposicoesAtivas(
+                prestador.getId(), de, ate,
+                List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO),
+                reservado.getId());
+
+        concorrentes.forEach(c -> {
+            c.setStatusPedido(StatusPedido.RECUSADO);
+            pedidoRepository.save(c);
+            emailService.enviarAposCommit(
+                    c.getCliente().getUsuario().getEmail(),
+                    "Resenha - Data indisponível",
+                    EmailTemplates.dataReservadaParaCliente(c));
+        });
+    }
+
     @Transactional
     public void recusarOrcamentoPeloCliente(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
