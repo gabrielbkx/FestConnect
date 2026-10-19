@@ -53,7 +53,8 @@ public class AvaliacaoService {
             throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
         }
 
-        if (pedido.getStatusPedido() != StatusPedido.RESERVADO) {
+        // Só vale avaliar depois que o evento aconteceu (pedido CONCLUIDO), não ao reservar (#90).
+        if (pedido.getStatusPedido() != StatusPedido.CONCLUIDO) {
             throw new AppException(ErrorCode.AVALIACAO_SEM_CONTRATO_ACEITO);
         }
 
