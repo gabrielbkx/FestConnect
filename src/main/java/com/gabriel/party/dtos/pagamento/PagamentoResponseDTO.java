@@ -14,13 +14,13 @@ public record PagamentoResponseDTO(
         @Schema(description = "ID do pagamento registrado")
         UUID pagamentoId,
 
-        @Schema(description = "O que foi pago", example = "SINAL")
+        @Schema(description = "O que foi pago", example = "sinal")
         TipoPagamento tipo,
 
         @Schema(description = "Valor cobrado em R$", example = "750.00")
         BigDecimal valor,
 
-        @Schema(description = "Situação do pagamento no gateway", example = "APROVADO")
+        @Schema(description = "Situação do pagamento no gateway", example = "aprovado")
         StatusPagamento statusPagamento,
 
         @Schema(description = "Link do comprovante/checkout, quando houver")
@@ -29,6 +29,6 @@ public record PagamentoResponseDTO(
         @Schema(description = "ID do pedido pago")
         UUID pedidoId,
 
-        @Schema(description = "Status em que o pedido ficou após o pagamento. Com o sinal aprovado, vai para RESERVADO.", example = "RESERVADO")
+        @Schema(description = "Status em que o pedido ficou após o pagamento. Com o sinal aprovado, vai para RESERVADO.", example = "reservado")
         StatusPedido statusPedido
 ) {}
