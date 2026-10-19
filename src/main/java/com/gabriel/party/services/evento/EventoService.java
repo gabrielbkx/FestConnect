@@ -76,21 +76,31 @@ public class EventoService {
     @Transactional
     public EventoResponseDTO atualizarStatus(UUID eventoId, EventoStatusUpdateDTO dto, Usuario usuarioLogado) {
         Evento evento = buscarEventoDoCliente(eventoId, usuarioLogado);
+
+        // Valida os pedidos antes de mexer no evento, para nada ficar meio-cancelado
+        List<Pedido> pedidosAtivos = dto.status() == StatusEvento.CANCELADO
+                ? pedidoRepository.findByEventoIdAndStatusPedidoIn(eventoId, List.of(
+                        StatusPedido.PENDENTE, StatusPedido.ORCADO,
+                        StatusPedido.AGUARDANDO_ENTRADA, StatusPedido.RESERVADO))
+                : List.of();
+
+        // Reserva tem sinal pago: o cancelamento vai pelo pedido (motivo, prazo e arras), não em massa
+        if (pedidosAtivos.stream().anyMatch(p -> p.getStatusPedido() == StatusPedido.RESERVADO)) {
+            throw new AppException(ErrorCode.EVENTO_COM_RESERVA);
+        }
+
         evento.setStatus(dto.status());
         eventoRepository.save(evento);
 
-        if (dto.status() == StatusEvento.CANCELADO) {
-            List<Pedido> pedidosAtivos = pedidoRepository.findByEventoIdAndStatusPedidoIn(
-                    eventoId, List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO));
-            pedidosAtivos.forEach(p -> {
-                p.setStatusPedido(StatusPedido.CANCELADO);
-                emailService.enviarAposCommit(
-                        p.getPrestador().getUsuario().getEmail(),
-                        "Resenha - Evento cancelado",
-                        EmailTemplates.eventoCanceladoParaPrestador(p)
-                );
-            });
-        }
+        // Sem sinal pago (PENDENTE, ORCADO, AGUARDANDO_ENTRADA): cancela junto e avisa o prestador
+        pedidosAtivos.forEach(p -> {
+            p.setStatusPedido(StatusPedido.CANCELADO);
+            emailService.enviarAposCommit(
+                    p.getPrestador().getUsuario().getEmail(),
+                    "Resenha - Evento cancelado",
+                    EmailTemplates.eventoCanceladoParaPrestador(p)
+            );
+        });
 
         return eventoMapper.toResponseDTO(evento);
     }

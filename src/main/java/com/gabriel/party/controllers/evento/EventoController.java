@@ -118,11 +118,12 @@ public class EventoController {
 
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Status do evento atualizado"),
+            @ApiResponse(responseCode = "400", description = "Evento tem pedido reservado (sinal pago): cancele cada reserva pelo próprio pedido antes de cancelar o evento"),
             @ApiResponse(responseCode = "403", description = "Evento não pertence ao cliente autenticado"),
             @ApiResponse(responseCode = "404", description = "Evento não encontrado")
     })
     @Operation(summary = "Atualizar status do evento",
-            description = "Transita o evento entre PLANEJANDO, CONFIRMADO e CANCELADO. Transição livre no MVP.")
+            description = "Transita o evento entre PLANEJANDO, CONFIRMADO e CANCELADO. Ao cancelar, pedidos PENDENTE, ORCADO e AGUARDANDO_ENTRADA são cancelados juntos; se houver pedido RESERVADO, o cancelamento é barrado.")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ROLE_CLIENTE')")
     public ResponseEntity<EventoResponseDTO> atualizarStatus(@PathVariable UUID id,
