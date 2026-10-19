@@ -57,6 +57,11 @@ public class Prestador {
     @Column(name = "folga_minutos", nullable = false)
     private Integer folgaMinutos = 0;
 
+    // Percentual do valor do orçamento exigido como sinal (arras) para reservar a data (#99). Ex.: 30 = 30%.
+    // O sinal é calculado no aceite do orçamento; o pagamento é o que efetiva a reserva.
+    @Column(name = "percentual_sinal", nullable = false)
+    private Integer percentualSinal = 30;
+
     private Boolean ativo = true;
 
     @EqualsAndHashCode.Exclude

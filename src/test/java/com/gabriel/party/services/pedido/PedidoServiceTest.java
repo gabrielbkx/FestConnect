@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,9 +64,9 @@ class PedidoServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Injeção via construtor nos dá controle das 72h
+        // Injeção via construtor nos dá controle dos prazos (resposta e sinal), ambos 72h
         service = new PedidoService(pedidoRepository, clienteRepository, prestadorRepository,
-                itemCatalogoRepository, eventoRepository, bloqueioRepository, pedidoMapper, emailService, 72L);
+                itemCatalogoRepository, eventoRepository, bloqueioRepository, pedidoMapper, emailService, 72L, 72L);
 
         usuarioCliente = new Usuario();
         usuarioCliente.setId(UUID.randomUUID());
@@ -143,10 +144,10 @@ class PedidoServiceTest {
     // ── whatsappCliente: revelado só ao prestador do pedido e depois do aceite
 
     @Test
-    @DisplayName("prestador vê o WhatsApp do cliente quando o pedido está ACEITO")
+    @DisplayName("prestador vê o WhatsApp do cliente quando o pedido está RESERVADO")
     void buscarPorId_prestadorEPedidoAceito_revelaWhatsappDoCliente() {
         cliente.setWhatsapp("11912345678");
-        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var pedido = pedidoCom(StatusPedido.RESERVADO);
         var dtoBase = mock(PedidoResponseDTO.class);
         var dtoComWhatsapp = mock(PedidoResponseDTO.class);
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
@@ -179,7 +180,7 @@ class PedidoServiceTest {
     @DisplayName("o cliente não recebe o próprio WhatsApp de volta (só o prestador vê)")
     void buscarPorId_clienteDono_naoRevela() {
         cliente.setWhatsapp("11912345678");
-        var pedido = pedidoCom(StatusPedido.ACEITO);
+        var pedido = pedidoCom(StatusPedido.RESERVADO);
         var dtoBase = mock(PedidoResponseDTO.class);
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
@@ -191,81 +192,10 @@ class PedidoServiceTest {
         verify(pedidoMapper, never()).comWhatsappCliente(any(), any());
     }
 
-    // ── capacidade (eventos simultâneos) e folga no aceite
-
-    @Test
-    @DisplayName("com capacidade 2, um evento sobreposto ainda deixa aceitar (2º cabe)")
-    void aceitar_capacidade2_umSobreposto_aceita() {
-        prestador.setEventosSimultaneos(2);
-        var inicio = LocalDateTime.now().plusDays(10);
-        var pedido = pedidoOrcado(inicio);
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
-                .thenReturn(List.of(pedidoOrcado(inicio))); // 1 já confirmado < capacidade 2
-        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
-
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
-    }
-
-    @Test
-    @DisplayName("com capacidade 2, o terceiro evento sobreposto é recusado")
-    void aceitar_capacidade2_doisSobrepostos_barra() {
-        prestador.setEventosSimultaneos(2);
-        var inicio = LocalDateTime.now().plusDays(10);
-        var pedido = pedidoOrcado(inicio);
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
-                .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 já confirmados = capacidade
-
-        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
-    }
-
-    @Test
-    @DisplayName("a folga expande a janela consultada ([início - folga, fim + folga))")
-    void aceitar_folga_expandeAJanela() {
-        prestador.setFolgaMinutos(60);
-        var inicio = LocalDateTime.of(2026, 12, 12, 20, 0);
-        var pedido = pedidoOrcado(inicio); // [20:00, 00:00)
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
-                .thenReturn(List.of());
-        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
-
-        // janela = [20:00 - 60min, 00:00 + 60min) = [19:00, 01:00)
-        verify(pedidoRepository).buscarSobreposicoes(prestador.getId(),
-                inicio.minusMinutes(60), inicio.plusMinutes(240).plusMinutes(60), StatusPedido.ACEITO);
-    }
-
-    @Test
-    @DisplayName("um bloqueio manual ocupa a agenda e barra o aceite")
-    void aceitar_comBloqueio_barra() {
-        var inicio = LocalDateTime.of(2026, 12, 12, 20, 0);
-        var pedido = pedidoOrcado(inicio);
-        var bloqueio = new com.gabriel.party.model.agenda.BloqueioAgenda();
-        bloqueio.setInicio(inicio);
-        bloqueio.setFim(inicio.plusHours(4));
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
-                .thenReturn(List.of()); // nenhum pedido confirmado
-        when(bloqueioRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any()))
-                .thenReturn(List.of(bloqueio)); // mas há um bloqueio (capacidade 1)
-
-        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
-    }
+    // Capacidade (eventos simultâneos), folga e bloqueio no aceite saíram daqui: o aceite não trava
+    // mais a agenda (#99). Essa checagem sob lock passa para o pagamento do sinal (fatia 4), onde a
+    // data vira RESERVADO; lá esses cenários voltam a ser testados. O pré-check leve de
+    // criar/orçar/lote continua cobrindo o conflito básico de agenda.
 
     // ── recusarPedido (prestador): só vale enquanto o pedido ainda pode ser recusado
 
@@ -282,7 +212,7 @@ class PedidoServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @EnumSource(value = StatusPedido.class, names = {"RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
     @DisplayName("recusar um pedido já encerrado devolve PEDIDO_STATUS_INVALIDO")
     void recusarPedido_statusInvalido_barra(StatusPedido status) {
         var pedido = pedidoCom(status);
@@ -309,7 +239,7 @@ class PedidoServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StatusPedido.class, names = {"ACEITO", "RECUSADO", "CANCELADO", "EXPIRADO"})
+    @EnumSource(value = StatusPedido.class, names = {"RESERVADO", "RECUSADO", "CANCELADO", "EXPIRADO"})
     @DisplayName("cancelar um pedido aceito ou já encerrado devolve PEDIDO_STATUS_INVALIDO")
     void cancelarPedido_statusInvalido_barra(StatusPedido status) {
         var pedido = pedidoCom(status);
@@ -353,10 +283,10 @@ class PedidoServiceTest {
         var inicio = LocalDateTime.now().plusDays(10);
         var pedido = pedidoPendente(inicio);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO);
         when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.enviarOrcamento(pedido.getId(), orcamento(), prestador.getUsuario()))
@@ -372,7 +302,7 @@ class PedidoServiceTest {
         var pedido = pedidoPendente(inicio);
         when(prestadorRepository.findByUsuarioId(prestador.getUsuario().getId())).thenReturn(Optional.of(prestador));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of());
         when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ORCADO)))
                 .thenReturn(List.of(pedidoOrcado(inicio), pedidoOrcado(inicio))); // 2 concorrentes
@@ -386,7 +316,7 @@ class PedidoServiceTest {
         assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO);
     }
 
-    // ── aceitarOrcamento: usa a checagem de SOBREPOSIÇÃO (não mais igualdade de horário)
+    // ── aceitarOrcamento: não trava a agenda; calcula o sinal e abre o prazo de pagamento (#99)
 
     private Pedido pedidoOrcado(LocalDateTime inicio) {
         var pedido = new Pedido();
@@ -405,54 +335,113 @@ class PedidoServiceTest {
     }
 
     @Test
-    @DisplayName("aceitar barra quando o intervalo do pedido se sobrepõe a outro já aceito")
-    void aceitarOrcamento_comSobreposicao_barra() {
+    @DisplayName("aceitar leva a AGUARDANDO_ENTRADA e calcula o sinal pelo percentual do prestador")
+    void aceitarOrcamento_geraAguardandoEntradaComSinal() {
         var inicio = LocalDateTime.now().plusDays(10);
-        var pedido = pedidoOrcado(inicio);
-        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO); // o que já ocupa a agenda (20:00–00:00)
+        var pedido = pedidoOrcado(inicio); // valor 2500
+        prestador.setPercentualSinal(30);
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
-                .thenReturn(List.of(jaConfirmado));
-
-        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
-                .isInstanceOf(AppException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ORCADO); // não aceitou
-    }
-
-    @Test
-    @DisplayName("a mensagem do 409 diz o horário e o dia do evento já confirmado")
-    void aceitarOrcamento_comSobreposicao_mensagemComHorario() {
-        var inicio = LocalDateTime.now().plusDays(10);
-        var pedido = pedidoOrcado(inicio);
-        var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0)); // 20:00–00:00 em 12/12
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(any(), any(), any(), any())).thenReturn(List.of(jaConfirmado));
-
-        assertThatThrownBy(() -> service.aceitarOrcamento(pedido.getId(), usuarioCliente))
-                .hasMessageContaining("20:00")
-                .hasMessageContaining("00:00")
-                .hasMessageContaining("12/12");
-    }
-
-    @Test
-    @DisplayName("aceitar passa quando não há sobreposição na agenda do prestador")
-    void aceitarOrcamento_semSobreposicao_aceita() {
-        var inicio = LocalDateTime.now().plusDays(10);
-        var pedido = pedidoOrcado(inicio);
-        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
-        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
-        when(pedidoRepository.buscarSobreposicoes(prestador.getId(), inicio, inicio.plusMinutes(240), StatusPedido.ACEITO))
-                .thenReturn(List.of());
         when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.aceitarOrcamento(pedido.getId(), usuarioCliente);
 
-        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.ACEITO);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.AGUARDANDO_ENTRADA);
+        assertThat(pedido.getValorSinal()).isEqualByComparingTo("750.00"); // 2500 × 30%
+        assertThat(pedido.getPrazoEntrada()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("aceitar não trava a agenda: não consulta sobreposição nem pega lock do prestador")
+    void aceitarOrcamento_naoTravaAgenda() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio);
+        when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.aceitarOrcamento(pedido.getId(), usuarioCliente);
+
+        verify(pedidoRepository, never()).buscarSobreposicoes(any(), any(), any(), any());
+        verify(prestadorRepository, never()).buscarComLock(any());
+    }
+
+    // ── reservarAposSinalAprovado: a data trava aqui (lock), com fechamento dos concorrentes (#99, #89)
+
+    private Pedido pedidoAguardandoEntrada(LocalDateTime inicio) {
+        var pedido = pedidoOrcado(inicio);
+        pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);
+        pedido.setValorSinal(java.math.BigDecimal.valueOf(750));
+        pedido.setPrazoEntrada(LocalDateTime.now().plusHours(72));
+        return pedido;
+    }
+
+    @Test
+    @DisplayName("sinal aprovado trava a agenda e leva o pedido a RESERVADO")
+    void reservarAposSinalAprovado_semConcorrentes_reserva() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of()); // agenda livre, sem reservas no horário
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reservarAposSinalAprovado(pedido.getId());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
+        verify(prestadorRepository).buscarComLock(prestador.getId());
+        verify(emailService, times(2)).enviarAposCommit(any(), any(), any()); // prestador + cliente
+    }
+
+    @Test
+    @DisplayName("sinal aprovado é barrado (409) se a agenda encheu durante o pagamento")
+    void reservarAposSinalAprovado_agendaCheia_conflito() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of(pedidoOrcado(inicio))); // já há uma reserva (capacidade 1)
+
+        assertThatThrownBy(() -> service.reservarAposSinalAprovado(pedido.getId()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_CONFLITO_AGENDA);
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.AGUARDANDO_ENTRADA);
+        verify(pedidoRepository, never()).buscarSobreposicoesAtivas(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("ao encher a data, os pedidos concorrentes (PENDENTE/ORCADO) no mesmo horário viram RECUSADO")
+    void reservarAposSinalAprovado_slotCheio_fechaConcorrentes() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoAguardandoEntrada(inicio);
+        var concorrente = pedidoOrcado(inicio); // outro pedido disputando o mesmo horário
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
+                .thenReturn(List.of())                 // checagem do lock: agenda livre
+                .thenReturn(List.of(pedido));          // contagem após reservar: 1 = capacidade cheia
+        when(pedidoRepository.buscarSobreposicoesAtivas(eq(prestador.getId()), any(), any(),
+                eq(List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO)), eq(pedido.getId())))
+                .thenReturn(List.of(concorrente));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reservarAposSinalAprovado(pedido.getId());
+
+        assertThat(pedido.getStatusPedido()).isEqualTo(StatusPedido.RESERVADO);
+        assertThat(concorrente.getStatusPedido()).isEqualTo(StatusPedido.RECUSADO);
+        verify(pedidoRepository).save(concorrente);
+    }
+
+    @Test
+    @DisplayName("reservarAposSinalAprovado só vale a partir de AGUARDANDO_ENTRADA")
+    void reservarAposSinalAprovado_statusInvalido_barra() {
+        var inicio = LocalDateTime.now().plusDays(10);
+        var pedido = pedidoOrcado(inicio); // ainda ORCADO, não aceito
+        when(pedidoRepository.findById(pedido.getId())).thenReturn(Optional.of(pedido));
+
+        assertThatThrownBy(() -> service.reservarAposSinalAprovado(pedido.getId()))
+                .isInstanceOf(AppException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.PEDIDO_STATUS_INVALIDO);
+        verify(prestadorRepository, never()).buscarComLock(any());
     }
 
     @Test
@@ -473,7 +462,7 @@ class PedidoServiceTest {
     void criarPedido_horarioConfirmado_barra() {
         LocalDateTime dataEvento = LocalDateTime.now().plusDays(10);
         var jaConfirmado = pedidoOrcado(LocalDateTime.of(2026, 12, 12, 20, 0));
-        jaConfirmado.setStatusPedido(StatusPedido.ACEITO);
+        jaConfirmado.setStatusPedido(StatusPedido.RESERVADO);
 
         when(clienteRepository.findByUsuarioId(usuarioCliente.getId())).thenReturn(Optional.of(cliente));
         when(prestadorRepository.findById(prestador.getId())).thenReturn(Optional.of(prestador));
@@ -482,7 +471,7 @@ class PedidoServiceTest {
         pedidoEntity.setPrestador(prestador);
         pedidoEntity.setDataEvento(dataEvento);
         when(pedidoMapper.toEntity(any(), any(), any(), any(), any())).thenReturn(pedidoEntity);
-        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.ACEITO)))
+        when(pedidoRepository.buscarSobreposicoes(eq(prestador.getId()), any(), any(), eq(StatusPedido.RESERVADO)))
                 .thenReturn(List.of(jaConfirmado));
 
         assertThatThrownBy(() -> service.criarPedido(novoRequest(dataEvento), usuarioCliente))

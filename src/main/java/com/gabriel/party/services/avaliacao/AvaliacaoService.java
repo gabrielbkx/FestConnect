@@ -53,7 +53,7 @@ public class AvaliacaoService {
             throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
         }
 
-        if (pedido.getStatusPedido() != StatusPedido.ACEITO) {
+        if (pedido.getStatusPedido() != StatusPedido.RESERVADO) {
             throw new AppException(ErrorCode.AVALIACAO_SEM_CONTRATO_ACEITO);
         }
 

@@ -23,5 +23,10 @@ public record PrestadorRequestDTO(
         String whatsapp,
 
         @Schema(description = "Endereço do prestador. As coordenadas (lat/lon) são preenchidas automaticamente via geocoding.")
-        EnderecoDTO endereco
+        EnderecoDTO endereco,
+
+        @Schema(description = "Percentual do valor exigido como sinal para reservar a data (1 a 100). Se omitido na atualização, o valor atual é mantido.", example = "30")
+        @Min(value = 1, message = "O percentual do sinal deve ser no mínimo 1")
+        @Max(value = 100, message = "O percentual do sinal deve ser no máximo 100")
+        Integer percentualSinal
 ) {}

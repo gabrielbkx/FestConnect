@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- #99 Fase 1 (fatia 3): registro de pagamentos. A plataforma só orquestra a cobrança via gateway. -->
+    <changeSet id="0.19.0-pagamento" author="GF">
+        <createTable tableName="tb_pagamento" remarks="Pagamentos de pedidos processados por um gateway (hoje só o sinal).">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="pedido_id" type="UUID" remarks="Pedido ao qual o pagamento se refere.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="VARCHAR(20)" remarks="O que está sendo pago (SINAL).">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valor" type="NUMERIC(10,2)" remarks="Valor cobrado em R$.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" remarks="Situação perante o gateway (PENDENTE, APROVADO, RECUSADO).">
+                <constraints nullable="false"/>
+            </column>
+            <column name="gateway" type="VARCHAR(40)" remarks="Provedor que processou a cobrança (ex.: FAKE).">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_externo" type="VARCHAR(255)" remarks="Identificador da cobrança no gateway."/>
+            <column name="url_comprovante" type="VARCHAR(500)" remarks="Link do comprovante/checkout, quando houver."/>
+            <column name="data_hora_criacao" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_hora_atualizacao" type="TIMESTAMP"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="pedido_id" baseTableName="tb_pagamento"
+                                 constraintName="fk_pagamento_pedido"
+                                 referencedColumnNames="id" referencedTableName="tb_pedidos"/>
+
+        <createIndex tableName="tb_pagamento" indexName="idx_pagamento_pedido">
+            <column name="pedido_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

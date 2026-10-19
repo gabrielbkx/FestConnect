@@ -152,6 +152,95 @@ public class EmailTemplates {
                 rodape
         );
     }
+    public static String reservaConfirmadaParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String whatsappPrestador = pedido.getPrestador().getWhatsapp();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Local", pedido.getLocalEvento()) +
+                linha("Sinal pago", "R$ " + pedido.getValorSinal()) +
+                linha("Valor do orçamento", "R$ " + pedido.getValor());
+
+        String contato = whatsappPrestador != null
+                ? caixa("sucesso", "A data está reservada! Fale com o prestador para alinhar os detalhes.<br>WhatsApp: <strong>" + whatsappPrestador + "</strong>")
+                : caixa("sucesso", "A data está reservada! Combine os detalhes com o prestador pela plataforma.");
+
+        return construir(
+                "Data reservada!",
+                "Tudo certo, " + nomeCliente + "!",
+                "Recebemos o sinal e a sua data com <strong>" + nomePrestador + "</strong> está garantida.",
+                detalhes,
+                contato
+        );
+    }
+
+    public static String dataReservadaParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
+
+        String rodape = caixa("aviso",
+                "Essa data acabou de ser reservada por outro cliente. Você pode escolher outra data ou outro prestador na Resenha.");
+
+        return construir(
+                "Essa data não está mais disponível",
+                "Olá, " + nomeCliente + ".",
+                "O horário que você pediu com <strong>" + nomePrestador + "</strong> foi reservado por outro cliente, então este pedido foi encerrado.",
+                detalhes,
+                rodape
+        );
+    }
+
+    public static String sinalPendenteParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA)) +
+                linha("Valor do orçamento", "R$ " + pedido.getValor()) +
+                linha("Sinal para reservar", "R$ " + pedido.getValorSinal()) +
+                linha("Pague até", pedido.getPrazoEntrada().format(FORMATO_DATA));
+
+        String rodape = caixa("info",
+                "A data só é reservada depois que o sinal é pago. Acesse a Resenha para pagar o sinal até " +
+                "<strong>" + pedido.getPrazoEntrada().format(FORMATO_DATA) + "</strong>; passado o prazo, o pedido é encerrado.");
+
+        return construir(
+                "Falta pouco para garantir a data",
+                "Olá, " + nomeCliente + "!",
+                "Você aceitou o orçamento de <strong>" + nomePrestador + "</strong>. Para reservar a data, pague o sinal:",
+                detalhes,
+                rodape
+        );
+    }
+
+    public static String entradaNaoPagaParaCliente(Pedido pedido) {
+        String nomeCliente = pedido.getCliente().getNomeCompleto();
+        String nomePrestador = pedido.getPrestador().getNomeCompleto();
+        String detalhes =
+                linha("Prestador", nomePrestador) +
+                linha("Tipo de evento", pedido.getTipoEvento()) +
+                linha("Data do evento", pedido.getDataEvento().format(FORMATO_DATA));
+
+        String rodape = caixa("aviso",
+                "A data não ficou reservada. Se ainda quiser contratar, é só solicitar um novo orçamento na Resenha.");
+
+        return construir(
+                "Reserva não efetivada",
+                "Olá, " + nomeCliente + ".",
+                "O prazo para pagar o sinal do orçamento de <strong>" + nomePrestador + "</strong> expirou, e o pedido foi encerrado automaticamente.",
+                detalhes,
+                rodape
+        );
+    }
+
     public static String prestadorNaoRespondeuParaCliente(Pedido pedido) {
         String nomeCliente = pedido.getCliente().getNomeCompleto();
         String nomePrestador = pedido.getPrestador().getNomeCompleto();

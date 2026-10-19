@@ -53,6 +53,7 @@ public class PedidoService {
     private final PedidoMapper pedidoMapper;
     private final EmailService emailService;
     private final long prazoRespostaHoras;
+    private final long prazoEntradaHoras;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          ClienteRepository clienteRepository,
@@ -62,7 +63,8 @@ public class PedidoService {
                          BloqueioAgendaRepository bloqueioRepository,
                          PedidoMapper pedidoMapper,
                          EmailService emailService,
-                         @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras) {
+                         @Value("${festconnect.pedido.prazo-resposta-horas}") Long prazoRespostaHoras,
+                         @Value("${festconnect.pedido.prazo-entrada-horas}") Long prazoEntradaHoras) {
 
         this.pedidoRepository = pedidoRepository;
         this.clienteRepository = clienteRepository;
@@ -73,6 +75,7 @@ public class PedidoService {
         this.pedidoMapper = pedidoMapper;
         this.emailService = emailService;
         this.prazoRespostaHoras = prazoRespostaHoras;
+        this.prazoEntradaHoras = prazoEntradaHoras;
     }
 
     @Transactional
@@ -117,13 +120,14 @@ public class PedidoService {
 
     /**
      * Recusa (409) se a agenda do prestador está CHEIA no intervalo [inicio, fim). "Cheia" = o número
-     * de eventos ACEITO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
+     * de eventos RESERVADO que se sobrepõem já alcançou a capacidade (eventos simultâneos). A folga é
      * aplicada expandindo a janela para [inicio - folga, fim + folga).
      * <p>
-     * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE). Usado no ACEITE para
-     * serializar aceites concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do
-     * banco (ela só garante zero sobreposição), então o lock é o que mantém a contagem consistente.
-     * Na criação/orçamento (que não geram ACEITO) é uma pré-checagem leve, sem lock.
+     * {@code comLock} trava a linha do prestador (SELECT ... FOR UPDATE) para serializar reservas
+     * concorrentes: com capacidade > 1 não dá para usar a restrição de exclusão do banco (ela só
+     * garante zero sobreposição), então o lock é o que mantém a contagem consistente. Será usado no
+     * pagamento do sinal (#99, fatia 4), que é o momento em que a data vira RESERVADO. Na
+     * criação/orçamento/aceite (que não geram RESERVADO) é uma pré-checagem leve, sem lock.
      */
     private void recusarSeAgendaCheia(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim, boolean comLock) {
         Prestador prestador = (comLock
@@ -133,7 +137,7 @@ public class PedidoService {
 
         LocalDateTime de = inicio.minusMinutes(prestador.getFolgaMinutos());
         LocalDateTime ate = fim.plusMinutes(prestador.getFolgaMinutos());
-        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.ACEITO);
+        List<Pedido> conflitos = pedidoRepository.buscarSobreposicoes(prestadorId, de, ate, StatusPedido.RESERVADO);
         List<BloqueioAgenda> bloqueios = bloqueioRepository.buscarSobreposicoes(prestadorId, de, ate);
 
         // Pedido confirmado e bloqueio ocupam a agenda do mesmo jeito: somam na conta da capacidade.
@@ -153,7 +157,7 @@ public class PedidoService {
         }
     }
 
-    /** Agenda pública do prestador: só os intervalos ocupados (ACEITO) na janela, sem dado de cliente. */
+    /** Agenda pública do prestador: só os intervalos ocupados (RESERVADO) na janela, sem dado de cliente. */
     @Transactional(readOnly = true)
     public List<IntervaloOcupadoDTO> agendaOcupada(UUID prestadorId, LocalDateTime de, LocalDateTime ate) {
         // A agenda ocupada junta eventos confirmados e bloqueios manuais, ordenados por início.
@@ -194,11 +198,11 @@ public class PedidoService {
 
     /**
      * Depois do aceite, o prestador precisa falar com o cliente. Revela o WhatsApp do cliente só
-     * nesse caso (status ACEITO e quem lê é o prestador do pedido); nos demais, o campo fica nulo.
+     * nesse caso (status RESERVADO e quem lê é o prestador do pedido); nos demais, o campo fica nulo.
      */
     private PedidoResponseDTO comContatoDoCliente(Pedido pedido, boolean solicitanteEhPrestador) {
         PedidoResponseDTO dto = pedidoMapper.toResponseDTO(pedido);
-        if (solicitanteEhPrestador && pedido.getStatusPedido() == StatusPedido.ACEITO) {
+        if (solicitanteEhPrestador && pedido.getStatusPedido() == StatusPedido.RESERVADO) {
             return pedidoMapper.comWhatsappCliente(dto, pedido.getCliente().getWhatsapp());
         }
         return dto;
@@ -273,6 +277,12 @@ public class PedidoService {
         );
     }
 
+    /**
+     * O cliente aceita o orçamento. Aqui a data ainda NÃO é travada: o aceite só calcula o sinal
+     * (arras) e abre o prazo para pagá-lo. Quem garante a data é o pagamento do sinal (#99, fatia 4),
+     * que leva o pedido a RESERVADO. Por isso vários clientes podem aceitar o mesmo horário; a disputa
+     * é resolvida no pagamento, sob lock. O status vai para AGUARDANDO_ENTRADA.
+     */
     @Transactional
     public PedidoResponseDTO aceitarOrcamento(UUID pedidoId, Usuario usuarioLogado) {
         Pedido pedido = buscarPedidoComPermissaoCliente(pedidoId, usuarioLogado);
@@ -281,18 +291,90 @@ public class PedidoService {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
         }
 
-        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
-
-        pedido.setStatusPedido(StatusPedido.ACEITO);
+        pedido.setValorSinal(calcularSinal(pedido.getValor(), pedido.getPrestador().getPercentualSinal()));
+        pedido.setPrazoEntrada(LocalDateTime.now().plusHours(prazoEntradaHoras));
+        pedido.setStatusPedido(StatusPedido.AGUARDANDO_ENTRADA);
         PedidoResponseDTO resposta = pedidoMapper.toResponseDTO(pedidoRepository.save(pedido));
 
         emailService.enviarEmail(
-                pedido.getPrestador().getUsuario().getEmail(),
-                "Resenha - Orçamento aceito!",
-                EmailTemplates.orcamentoAceitoParaPrestador(pedido)
+                pedido.getCliente().getUsuario().getEmail(),
+                "Resenha - Pague o sinal para reservar a data",
+                EmailTemplates.sinalPendenteParaCliente(pedido)
         );
 
         return resposta;
+    }
+
+    /** Sinal = valor × percentual do prestador, arredondado a 2 casas. Nulo se ainda não há valor. */
+    private java.math.BigDecimal calcularSinal(java.math.BigDecimal valor, Integer percentual) {
+        if (valor == null || percentual == null) {
+            return null;
+        }
+        return valor
+                .multiply(java.math.BigDecimal.valueOf(percentual))
+                .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Passo interno do pagamento do sinal (#99): aqui a data é finalmente travada. Pega o lock do
+     * prestador, confere a capacidade (409 se a agenda encheu enquanto o sinal era pago), leva o pedido
+     * a RESERVADO e fecha os concorrentes do mesmo horário. NÃO revalida permissão nem pagamento: quem
+     * chama (o PagamentoService) já garantiu que o cliente dono pagou. Roda dentro da transação do pagamento.
+     */
+    @Transactional
+    public void reservarAposSinalAprovado(UUID pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
+
+        if (pedido.getStatusPedido() != StatusPedido.AGUARDANDO_ENTRADA) {
+            throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
+        }
+
+        recusarSeAgendaCheia(pedido.getPrestador().getId(), pedido.getDataEvento(), pedido.getDataFim(), true);
+
+        pedido.setStatusPedido(StatusPedido.RESERVADO);
+        Pedido reservado = pedidoRepository.save(pedido);
+
+        fecharConcorrentes(reservado);
+
+        emailService.enviarAposCommit(
+                reservado.getPrestador().getUsuario().getEmail(),
+                "Resenha - Evento confirmado!",
+                EmailTemplates.orcamentoAceitoParaPrestador(reservado));
+        emailService.enviarAposCommit(
+                reservado.getCliente().getUsuario().getEmail(),
+                "Resenha - Data reservada!",
+                EmailTemplates.reservaConfirmadaParaCliente(reservado));
+    }
+
+    /**
+     * Quando a data fica cheia (as reservas no horário alcançam a capacidade do prestador), os pedidos
+     * ainda em disputa (PENDENTE/ORCADO) de outros clientes no mesmo horário não têm mais como acontecer:
+     * viram RECUSADO e o cliente é avisado (#89). Com capacidade > 1 só fecha quando a última vaga é tomada.
+     */
+    private void fecharConcorrentes(Pedido reservado) {
+        Prestador prestador = reservado.getPrestador();
+        LocalDateTime de = reservado.getDataEvento().minusMinutes(prestador.getFolgaMinutos());
+        LocalDateTime ate = reservado.getDataFim().plusMinutes(prestador.getFolgaMinutos());
+
+        int reservas = pedidoRepository.buscarSobreposicoes(prestador.getId(), de, ate, StatusPedido.RESERVADO).size();
+        if (reservas < prestador.getEventosSimultaneos()) {
+            return; // ainda sobra vaga no horário; ninguém é fechado
+        }
+
+        List<Pedido> concorrentes = pedidoRepository.buscarSobreposicoesAtivas(
+                prestador.getId(), de, ate,
+                List.of(StatusPedido.PENDENTE, StatusPedido.ORCADO),
+                reservado.getId());
+
+        concorrentes.forEach(c -> {
+            c.setStatusPedido(StatusPedido.RECUSADO);
+            pedidoRepository.save(c);
+            emailService.enviarAposCommit(
+                    c.getCliente().getUsuario().getEmail(),
+                    "Resenha - Data indisponível",
+                    EmailTemplates.dataReservadaParaCliente(c));
+        });
     }
 
     @Transactional

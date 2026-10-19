@@ -43,14 +43,33 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
                                      @Param("status") StatusPedido status);
 
     /**
-     * Intervalos ACEITO do prestador que tocam a janela [de, ate]. Só os horários, nada do cliente:
+     * Intervalos RESERVADO do prestador que tocam a janela [de, ate]. Só os horários, nada do cliente:
      * é o que alimenta a agenda pública (ver quando está ocupado, nunca com quem).
      */
+    /**
+     * Pedidos do prestador em algum dos status dados que se sobrepõem a [inicio, fim), exceto um
+     * (o que acabou de reservar). Usado para fechar os concorrentes quando a data é reservada (#89).
+     */
+    @Query("""
+            SELECT p FROM Pedido p
+             WHERE p.prestador.id = :prestadorId
+               AND p.statusPedido IN :statuses
+               AND p.id <> :exceto
+               AND p.dataEvento < :fim
+               AND :inicio < p.dataFim
+             ORDER BY p.dataEvento
+            """)
+    List<Pedido> buscarSobreposicoesAtivas(@Param("prestadorId") UUID prestadorId,
+                                           @Param("inicio") LocalDateTime inicio,
+                                           @Param("fim") LocalDateTime fim,
+                                           @Param("statuses") List<StatusPedido> statuses,
+                                           @Param("exceto") UUID exceto);
+
     @Query("""
             SELECT new com.gabriel.party.dtos.pedido.IntervaloOcupadoDTO(p.dataEvento, p.dataFim)
               FROM Pedido p
              WHERE p.prestador.id = :prestadorId
-               AND p.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+               AND p.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                AND p.dataEvento < :ate
                AND :de < p.dataFim
              ORDER BY p.dataEvento
@@ -64,6 +83,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, UUID> {
     List<Pedido> findByStatusPedidoAndValidadeOrcamentoBefore(StatusPedido status, LocalDateTime agora);
 
     List<Pedido> findByStatusPedidoAndPrazoRespostaBefore(StatusPedido status, LocalDateTime agora);
+
+    List<Pedido> findByStatusPedidoAndPrazoEntradaBefore(StatusPedido status, LocalDateTime agora);
 
     Long countByPrestadorIdAndStatusPedido(UUID prestadorId, StatusPedido status);
 

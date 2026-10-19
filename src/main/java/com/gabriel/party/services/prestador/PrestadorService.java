@@ -102,7 +102,7 @@ public class PrestadorService {
     public PrestadorResponseDTO buscarPrestadorPorId(UUID id) {
         var prestador = repository.findByIdComMidias(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRESTADOR_NAO_ENCONTRADO, id.toString()));
-        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.ACEITO);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.RESERVADO);
         return mapper.toDto(prestador, pedidosConcluidos);
     }
 
@@ -111,6 +111,10 @@ public class PrestadorService {
         var prestador = buscarComAcesso(id, usuarioLogado);
 
         mapper.atualizarPrestadorDoDTO(dto, prestador);
+
+        if (dto.percentualSinal() != null) {
+            prestador.setPercentualSinal(dto.percentualSinal());
+        }
 
         if (dto.endereco() != null) {
             var coordenadas = geocodingService.buscarCoordenadas(
@@ -125,7 +129,7 @@ public class PrestadorService {
         }
 
         repository.save(prestador);
-        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.ACEITO);
+        Long pedidosConcluidos = pedidoRepository.countByPrestadorIdAndStatusPedido(id, StatusPedido.RESERVADO);
         return mapper.toDto(prestador, pedidosConcluidos);
     }
 

@@ -60,7 +60,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
               AND (:disponivelEm IS NULL OR NOT EXISTS (
                     SELECT 1 FROM Pedido pe
                      WHERE pe.prestador = i.prestador
-                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                        AND pe.dataEvento <= :disponivelEm
                        AND :disponivelEm < pe.dataFim))
             """,
@@ -75,7 +75,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
               AND (:disponivelEm IS NULL OR NOT EXISTS (
                     SELECT 1 FROM Pedido pe
                      WHERE pe.prestador = i.prestador
-                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                        AND pe.dataEvento <= :disponivelEm
                        AND :disponivelEm < pe.dataFim))
             """
@@ -101,7 +101,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
               AND (:disponivelEm IS NULL OR NOT EXISTS (
                     SELECT 1 FROM Pedido pe
                      WHERE pe.prestador = i.prestador
-                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                        AND pe.dataEvento <= :disponivelEm
                        AND :disponivelEm < pe.dataFim))
             """,
@@ -117,7 +117,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, UUID
               AND (:disponivelEm IS NULL OR NOT EXISTS (
                     SELECT 1 FROM Pedido pe
                      WHERE pe.prestador = i.prestador
-                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.ACEITO
+                       AND pe.statusPedido = com.gabriel.party.model.pedido.enums.StatusPedido.RESERVADO
                        AND pe.dataEvento <= :disponivelEm
                        AND :disponivelEm < pe.dataFim))
             """

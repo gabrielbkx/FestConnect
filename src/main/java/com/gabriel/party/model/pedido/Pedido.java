@@ -49,6 +49,15 @@ public class Pedido {
     @Column(name = "valor_do_orcamento")
     private BigDecimal valor;
 
+    // Sinal (arras) em R$ exigido para reservar a data. Calculado no aceite do orçamento a partir de
+    // valor × (percentual do prestador). Pagá-lo é o que leva o pedido a RESERVADO (#99).
+    @Column(name = "valor_sinal")
+    private BigDecimal valorSinal;
+
+    // Prazo para pagar o sinal depois de aceitar o orçamento. Vencido sem pagamento, o pedido expira.
+    @Column(name = "prazo_entrada")
+    private LocalDateTime prazoEntrada;
+
     @Column(name = "detalhes_orcamento", columnDefinition = "TEXT")
     private String detalhesOrcamento;
 
