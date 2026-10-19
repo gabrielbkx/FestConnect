@@ -71,6 +71,14 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     private StatusPedido statusPedido;
 
+    // Preenchidos ao cancelar um evento já reservado (#90): o motivo (obrigatório) e quem cancelou.
+    @Column(name = "motivo_cancelamento", columnDefinition = "TEXT")
+    private String motivoCancelamento;
+
+    @Column(name = "cancelado_por")
+    @Enumerated(EnumType.STRING)
+    private com.gabriel.party.model.pedido.enums.CanceladoPor canceladoPor;
+
     @ManyToOne
     private Cliente cliente;
     @ManyToOne

@@ -24,7 +24,7 @@ class StatusPedidoTest {
             PENDENTE, EnumSet.of(ORCADO, RECUSADO, CANCELADO, EXPIRADO),
             ORCADO, EnumSet.of(AGUARDANDO_ENTRADA, RECUSADO, CANCELADO, EXPIRADO),
             AGUARDANDO_ENTRADA, EnumSet.of(RESERVADO, CANCELADO, EXPIRADO),
-            RESERVADO, EnumSet.of(CONCLUIDO)
+            RESERVADO, EnumSet.of(CONCLUIDO, CANCELADO)
     );
 
     @Test
