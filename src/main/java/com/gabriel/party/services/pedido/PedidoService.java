@@ -15,6 +15,7 @@ import com.gabriel.party.model.cliente.Cliente;
 import com.gabriel.party.model.evento.Evento;
 import com.gabriel.party.model.itemcatalogo.ItemCatalogo;
 import com.gabriel.party.model.pedido.Pedido;
+import com.gabriel.party.model.pedido.enums.CanceladoPor;
 import com.gabriel.party.model.pedido.enums.StatusPedido;
 import com.gabriel.party.model.prestador.Prestador;
 import com.gabriel.party.model.usuario.Usuario;
@@ -427,10 +428,12 @@ public class PedidoService {
      */
     @Transactional
     public void cancelarEventoReservado(UUID pedidoId, String motivo, Usuario usuarioLogado) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        // Com lock: se cliente e parceiro cancelam juntos, o segundo espera, relê CANCELADO e cai no
+        // 400 abaixo. Sem isso, os dois passariam e o canceladoPor (que decide o sinal) seria do último.
+        Pedido pedido = pedidoRepository.buscarComLock(pedidoId)
                 .orElseThrow(() -> new AppException(ErrorCode.PEDIDO_NAO_ENCONTRADO, pedidoId.toString()));
 
-        com.gabriel.party.model.pedido.enums.CanceladoPor quem = resolverAtor(pedido, usuarioLogado);
+        CanceladoPor quem = resolverAtor(pedido, usuarioLogado);
 
         if (pedido.getStatusPedido() != StatusPedido.RESERVADO) {
             throw new AppException(ErrorCode.PEDIDO_STATUS_INVALIDO, pedido.getStatusPedido().name());
@@ -445,7 +448,7 @@ public class PedidoService {
         pedido.setCanceladoPor(quem);
         pedidoRepository.save(pedido);
 
-        if (quem == com.gabriel.party.model.pedido.enums.CanceladoPor.CLIENTE) {
+        if (quem == CanceladoPor.CLIENTE) {
             emailService.enviarAposCommit(
                     pedido.getPrestador().getUsuario().getEmail(),
                     "Resenha - Evento cancelado pelo cliente",
@@ -459,16 +462,16 @@ public class PedidoService {
     }
 
     /** Descobre se quem pediu o cancelamento é o cliente ou o prestador do pedido — ou barra (403). */
-    private com.gabriel.party.model.pedido.enums.CanceladoPor resolverAtor(Pedido pedido, Usuario usuario) {
+    private CanceladoPor resolverAtor(Pedido pedido, Usuario usuario) {
         boolean ehCliente = clienteRepository.findByUsuarioId(usuario.getId())
                 .map(c -> c.getId().equals(pedido.getCliente().getId())).orElse(false);
         if (ehCliente) {
-            return com.gabriel.party.model.pedido.enums.CanceladoPor.CLIENTE;
+            return CanceladoPor.CLIENTE;
         }
         boolean ehPrestador = prestadorRepository.findByUsuarioId(usuario.getId())
                 .map(p -> p.getId().equals(pedido.getPrestador().getId())).orElse(false);
         if (ehPrestador) {
-            return com.gabriel.party.model.pedido.enums.CanceladoPor.PRESTADOR;
+            return CanceladoPor.PRESTADOR;
         }
         throw new AppException(ErrorCode.PEDIDO_SEM_PERMISSAO);
     }
